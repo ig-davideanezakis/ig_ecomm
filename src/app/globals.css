@@ -49,8 +49,48 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Dark theme as default — no light mode */
+/* ── Light theme (default) ── */
 :root {
+  --background: #fafafa;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #ff0c3c;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #111111;
+  --muted: #f5f5f5;
+  --muted-foreground: #666666;
+  --accent: #ff0c3c;
+  --accent-foreground: #ffffff;
+  --destructive: #e00000;
+  --destructive-foreground: #ffffff;
+  --success: #00b859;
+  --warning: #e68a00;
+  --border: #e0e0e0;
+  --input: #e0e0e0;
+  --ring: #ff0c3c;
+  --neon-glow: #ff0c3c;
+  --radius: 0.5rem;
+  --chart-1: #ff0c3c;
+  --chart-2: #ff4d6d;
+  --chart-3: #ff7a93;
+  --chart-4: #ffa6b8;
+  --chart-5: #ffd1db;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #ff0c3c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e0e0e0;
+  --sidebar-ring: #ff0c3c;
+}
+
+/* ── Dark theme ── */
+.dark {
   --background: #0a0a0a;
   --foreground: #fafafa;
   --card: #141414;
@@ -97,20 +137,20 @@
     @apply bg-background text-foreground;
   }
 
-  /* Neon glow utility — apply to interactive elements */
-  .neon-glow {
+  /* Neon glow — dark mode only */
+  .dark .neon-glow {
     box-shadow: 0 0 6px color-mix(in srgb, var(--neon-glow) 60%, transparent),
                 0 0 20px color-mix(in srgb, var(--neon-glow) 30%, transparent);
   }
-  .neon-glow:hover {
+  .dark .neon-glow:hover {
     box-shadow: 0 0 8px color-mix(in srgb, var(--neon-glow) 80%, transparent),
                 0 0 30px color-mix(in srgb, var(--neon-glow) 40%, transparent);
   }
 
-  /* Subtle red glow on focus */
+  /* Red focus ring for both modes */
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    box-shadow: 0 0 0 2px #0a0a0a, 0 0 0 4px #ff0c3c;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px #ff0c3c;
   }
 }

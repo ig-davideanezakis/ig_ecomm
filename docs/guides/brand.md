@@ -14,8 +14,9 @@
 
 ## Logo
 
-- **File:** `/public/logo.png`
-- **Description:** 1200x300px, transparent background. White "Infograf" text with red (#ff0c3c) accent elements. Clean, modern wordmark.
+- **PNG file:** `/public/logo.png` — original logo (1200x300px, transparent background)
+- **SVG file:** `/public/logo.svg` — vector version for dynamic theming
+- **Behavior:** Uses `currentColor` so text color adapts to theme (black text in light mode, white text in dark mode). Red accent (#ff0c3c) is fixed and stays red in both modes.
 
 ## Color Palette
 
