@@ -15,19 +15,26 @@
 ## Logo
 
 - **File:** `/public/logo.png`
-- **Description:** Logo uploaded by PM. Dimensions: 1200x300px, transparent background.
-- **Note:** Color analysis shows teal/cyan (#01f2c2) and blue (#000ce7) as prominent accent colors alongside black and white. PM mentioned brand colors as white/red — needs clarification.
+- **Description:** 1200x300px, transparent background. White "Infograf" text with red (#ff0c3c) accent elements. Clean, modern wordmark.
 
 ## Color Palette
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| Primary | TBD — PM to confirm | Buttons, links, accents |
-| Secondary | TBD | Secondary elements |
-| Background | TBD | Page background |
-| Foreground | TBD | Text color |
-| Muted | TBD | Subtle backgrounds |
-| Accent | TBD | Highlights, badges |
+| Primary | `#ff0c3c` | Buttons, links, active states, accents |
+| Primary hover | `#e00a35` | Button hover states |
+| Background | `#0a0a0a` | Page background (dark) |
+| Foreground | `#fafafa` | Text color (white-ish) |
+| Card | `#141414` | Card backgrounds |
+| Card border | `#1f1f1f` | Subtle card borders |
+| Muted | `#1a1a1a` | Subtle section backgrounds |
+| Muted foreground | `#a1a1a1` | Muted text |
+| Accent | `#ff0c3c` | Highlight badges, tags, icons |
+| Neon glow | `#ff0c3c` | Box-shadow glow effects on interactive elements |
+| Border | `#2a2a2a` | General borders |
+| Destructive | `#ff1a1a` | Delete/error states |
+| Success | `#00ff88` | Stock availability, success |
+| Warning | `#ffaa00` | Low stock warnings |
 
 ## Typography
 
