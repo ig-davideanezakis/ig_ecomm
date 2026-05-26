@@ -127,13 +127,33 @@ REQUESTED -> APPROVED -> RECEIVED -> REFUNDED
          \-> REJECTED
 ```
 
-## Conventions
+## Team & Communication
 
-- All project files, docs, and code comments are in **English** (chat is in Italian with the PM)
-- Docs go in `docs/decisions/` — living documents, updated in place
-- Features tracked in Linear (project: Ig_ecomm)
-- Database changes via Prisma migrations
-- Admin routes under `/admin/*`
+- **PM / Stakeholder:** Davide Anezakis (ig-davideanezakis)
+- **AI Agent role:** Lead Software Architect / tech executor — proposes solutions, implements code, pushes to GitHub, creates Linear issues
+- **Language:** Chat with the PM is in **Italian**; all project files (MD, docs, code comments, commit messages) in **English**
+
+## Workflow
+
+- **Decision tracking:** Every architectural decision is in `docs/decisions/` as living documents (updated in place, not numbered ADRs)
+- **Feature tracking:** Linear project `Ig_ecomm` (team key: IG) — issues for feature areas, not individual tasks
+- **AI handoff:** AGENTS.md contains full context so any AI agent can pick up where the last one left off
+- **Git flow:** Direct commits to `main` (single dev + PM, no PR workflow needed for MVP)
+- **Cost constraint:** Everything must cost $0/month for MVP — no paid SaaS, no paid tiers
+- **Scope:** MVP features listed above; all can grow post-MVP, feature list evolves constantly
+
+## AI Agent Instructions
+
+When onboarding to this project:
+1. Read this AGENTS.md first
+2. Read `docs/decisions/architecture.md` for architectural context
+3. Check Linear project for issue status
+4. Check `prisma/schema.prisma` for database model before building features
+5. All new code: TypeScript, App Router, Tailwind CSS
+6. Use Prisma for all database access
+7. Admin routes under `/admin/*`
+8. Public facing routes under `(shop)/` layout
+
 
 ## Project Structure (planned)
 
