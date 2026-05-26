@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─── Auth (NextAuth.js v5) ───────────────────────────────────────
@@ -30,6 +29,8 @@ model User {
   reviews        Review[]
   questions      Question[]
   wishlistItems  WishlistItem[]
+  blogPosts      BlogPost[]
+  stockMovements StockMovement[]
 }
 
 enum UserRole {
@@ -150,6 +151,9 @@ model ProductVariant {
 
   productId   String
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItems        OrderItem[]
+  stockMovements    StockMovement[]
 
   @@unique([productId, name])
 }
