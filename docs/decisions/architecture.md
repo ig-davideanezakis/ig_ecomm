@@ -120,6 +120,12 @@
 **Rationale:**
 - Vercel Hobby plan ($0/mo) covers automatic Preview Deployments per PR and Production deploy from main
 - GitHub Actions for lint + test + build verification before merge
+- **Repo made public** to enable Preview Deployments (Vercel Hobby requires public repo for collaboration)
+
+**Deploy mechanism:**
+- **Production:** triggered via Vercel Deploy Hook from GitHub Actions CI (bypasses commit author check on Hobby plan)
+- **Preview (per PR):** Vercel Git integration handles this natively now that the repo is public
+- Deploy hook URL stored in `ci.yml` env variable; for extra security, move it to a GitHub Secret
 
 **Database environment strategy (MVP):**
 - Production and Preview deployments share the same Supabase database
