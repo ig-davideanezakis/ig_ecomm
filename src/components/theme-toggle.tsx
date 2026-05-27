@@ -2,17 +2,20 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // useSyncExternalStore: returns true on client, false during SSR
+  // Elimina la necessità di useEffect per l'hydration safety
+  const hydrated = useSyncExternalStore(
+    () => () => {}, // subscribe — no-op (no external store)
+    () => true, // getSnapshot — client always returns true
+    () => false, // getServerSnapshot — SSR returns false
+  );
 
-  if (!mounted) {
+  if (!hydrated) {
     return (
       <button
         type="button"
