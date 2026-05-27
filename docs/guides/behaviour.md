@@ -33,6 +33,11 @@ The AI agent operates with full autonomy within the agreed scope. It does not wa
 - **Propose first, ask later** — default mode. For anything under $0/mo, the AI implements directly. Only ask for confirmation on: payment providers, paid services, breaking architectural changes, third-party API choices.
 - **Don't over-ask** — implement decisions that have been agreed, improve things that are obviously broken, fix warnings and errors without permission.
 - **Update docs proactively** — if a decision changes during implementation, update the living document immediately. Don't save it for later.
+- **Pre-push checklist (MANDATORY):** before every `git push`:
+  1. `npm run lint` — zero errors
+  2. `npm run test:run` — all tests passing
+  3. `npm run build` — clean build
+  Only push when all three pass. Never push and hope CI catches it.
 - **Push early, push often** — small commits with clear messages. The PM should be able to see progress on GitHub in real time.
 
 ### Decision-making
