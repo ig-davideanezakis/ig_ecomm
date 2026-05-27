@@ -93,4 +93,43 @@
 - Installment support (Klarna/Scalapay) postponed to post-MVP
 
 ---
-*Next area to define: database schema*
+
+## Testing
+
+**Decision:** Vitest + @testing-library/react + @testing-library/jest-dom + Playwright
+
+**Date:** 2026-05-26
+
+**Rationale:**
+- Vitest: fast ESM-native runner, jsdom environment, path alias support
+- @testing-library: enforces accessible queries (role, label, text) over implementation details
+- Playwright: multi-browser E2E with auto-waiting, parallel execution
+
+**Consequences:**
+- Tests in `src/**/__tests__/` (Vitest) and `e2e/` (Playwright)
+- All tools are free and local (no SaaS)
+
+---
+
+## CI/CD & Deployment
+
+**Decision:** Vercel (GitHub integration) + GitHub Actions
+
+**Date:** 2026-05-27
+
+**Rationale:**
+- Vercel Hobby plan ($0/mo) covers automatic Preview Deployments per PR and Production deploy from main
+- GitHub Actions for lint + test + build verification before merge
+
+**Database environment strategy (MVP):**
+- Production and Preview deployments share the same Supabase database
+- Rationale: MVP has no real traffic yet; separates after launch
+- **Planned migration (post-MVP):** create a second Supabase project (`ig_ecomm_preview`) for Preview/development environments, keeping Production isolated
+
+**Environment variables required on Vercel:**
+| Variable | Production | Preview |
+|----------|:----------:|:-------:|
+| `DATABASE_URL` | ✅ | ✅ |
+| `DIRECT_URL` | ✅ | ✅ |
+| `AUTH_SECRET` | ✅ | ✅ |
+| `AUTH_RESEND_KEY` | ✅ | ✅ |

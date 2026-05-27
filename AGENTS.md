@@ -17,4 +17,5 @@
 | [docs/guides/brand.md](docs/guides/brand.md) | Brand identity, colors, fonts, design decisions |
 | [docs/guides/features.md](docs/guides/features.md) | MVP feature list with Linear references |
 | [docs/guides/scope.md](docs/guides/scope.md) | MVP boundaries, what's postponed |
+| [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
 | [prisma/schema.prisma](prisma/schema.prisma) | Full database schema |
