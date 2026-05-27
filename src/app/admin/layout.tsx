@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { InfografLogo } from "@/components/infograf-logo";
 
 const sidebarLinks = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
@@ -23,8 +24,8 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside className="w-64 border-r bg-card flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
-          <Link href="/admin/dashboard" className="font-bold text-sm">
-            Infograf Admin
+          <Link href="/admin/dashboard" className="block">
+            <InfografLogo className="h-5 w-auto" />
           </Link>
           <ThemeToggle />
         </div>

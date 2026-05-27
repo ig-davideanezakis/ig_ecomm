@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { InfografLogo } from "@/components/infograf-logo";
 
 export default function ShopLayout({
   children,
@@ -13,14 +13,7 @@ export default function ShopLayout({
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/logo.svg"
-              alt="Infograf"
-              width={140}
-              height={28}
-              priority
-              className="h-7 w-auto"
-            />
+            <InfografLogo className="h-7 w-auto" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -68,13 +61,7 @@ export default function ShopLayout({
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <Image
-                src="/logo.svg"
-                alt="Infograf"
-                width={120}
-                height={24}
-                className="h-6 w-auto mb-4"
-              />
+              <InfografLogo className="h-6 w-auto mb-4" />
               <p className="text-sm text-muted-foreground">
                 Dal 1992 il tuo punto di riferimento per computer, componenti e assistenza IT a Palermo.
               </p>

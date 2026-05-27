@@ -15,8 +15,12 @@
 ## Logo
 
 - **PNG file:** `/public/logo.png` — original logo (1200x300px, transparent background)
-- **SVG file:** `/public/logo.svg` — vector version for dynamic theming
-- **Behavior:** Uses `currentColor` so text color adapts to theme (black text in light mode, white text in dark mode). Red accent (#ff0c3c) is fixed and stays red in both modes.
+- **SVG component:** `@/components/infograf-logo` — inline SVG rendered as a React component for theme-aware coloring
+- **Behavior inline SVG:**
+  - Dark mode: white text (`#fafafa`) + red accent (`#ff0c3c`)
+  - Light mode: black text (`#111111`) + red accent (`#ff0c3c`)
+  - Red accent rect (`#ff0c3c`) is fixed across both themes
+- **Legacy SVG file:** `/public/logo.svg` — kept for reference but no longer used in the app (inline component replaces it)
 
 ## Color Palette
 
@@ -54,9 +58,10 @@
 
 *Design decisions for specific UI elements.*
 
-| Component | Decision |
-|-----------|----------|
-| Buttons | TBD (rounded? square? outline? filled?) |
+|| Component | Decision |
+||-----------|----------|
+|| Theme toggle | Simple click button (no dropdown). Toggles between dark and light. Sun/Moon icons with 300ms rotation + opacity transition. |
+|| Buttons | TBD (rounded? square? outline? filled?) |
 | Cards | TBD (bordered? shadow? radius?) |
 | Inputs | TBD |
 | Navigation | TBD |
