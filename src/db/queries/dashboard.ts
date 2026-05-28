@@ -97,7 +97,7 @@ export async function getRecentOrders(limit: number = 5): Promise<RecentOrder[]>
   return result.rows as RecentOrder[];
 }
 
-export async function getLowStockProducts(_threshold?: number): Promise<LowStockItem[]> {
+export async function getLowStockProducts(): Promise<LowStockItem[]> {
   const result = await pool.query(
     `
     SELECT

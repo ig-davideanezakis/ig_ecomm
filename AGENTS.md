@@ -55,3 +55,9 @@ npm run db:push      # Push schema to DB (Drizzle Kit)
 npm run db:generate  # Generate migrations
 npm run db:seed      # Seed test data
 ```
+
+## ⚠️ Known Pitfalls
+
+- **Missing `@types/*` packages** cause Vercel build to fail. When adding a new npm dependency that's imported in TypeScript files, check if it needs a corresponding `@types/` package. Example: `pg` needs `@types/pg`.
+- **Middleware file** (`middleware.ts`) is deprecated in Next.js 16 in favor of `proxy.ts`, but the old name still works.
+- **Pre-push checklist** is the single most important rule — never skip it.
