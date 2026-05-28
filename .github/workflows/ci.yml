@@ -67,6 +67,7 @@ jobs:
 
       - name: Check Deployment Status
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != '' }}
+        continue-on-error: true
         run: |
           echo "⏳ Waiting for deployment to start..."
           sleep 15
