@@ -5,9 +5,9 @@
 
 ## Technology Stack
 
-**Decision:** Next.js (App Router) full-stack + Supabase (PostgreSQL) + Prisma + NextAuth.js + Resend (email) + Vercel (deploy)
+**Decision:** Next.js (App Router) full-stack + Supabase (PostgreSQL) + Drizzle ORM + NextAuth.js + Resend (email) + Vercel (deploy)
 
-**Date:** 2026-05-26
+**Date:** 2026-05-26 (updated 2026-05-28 — Prisma → Drizzle ORM)
 
 **Rationale:**
 - Single deploy (Vercel), no separate backend to maintain
@@ -47,14 +47,15 @@
 
 ## Database
 
-**Decision:** Supabase (PostgreSQL) + Prisma ORM
+**Decision:** Supabase (PostgreSQL) + Drizzle ORM
 
-**Date:** 2026-05-26
+**Date:** 2026-05-26 (updated 2026-05-28 — Prisma → Drizzle ORM)
 
 **Rationale:**
 - Free tier (500MB) sufficient for MVP
-- Prisma for type safety and migrations
+- Drizzle for type safety and light migrations
 - Supabase Auth / Storage integration
+- Drizzle is lighter than Prisma 7 — no code generation runtime, no adapter issues
 - Future migration: RDS/Aurora PostgreSQL direct
 
 ---
@@ -64,6 +65,8 @@
 **Decision:** NextAuth.js (Auth.js)
 
 **Date:** 2026-05-26
+
+**Adapter:** `@auth/drizzle-adapter`
 
 **Rationale:**
 - Native Next.js integration
@@ -136,6 +139,5 @@
 | Variable | Production | Preview |
 |----------|:----------:|:-------:|
 | `DATABASE_URL` | ✅ | ✅ |
-| `DIRECT_URL` | ✅ | ✅ |
 | `AUTH_SECRET` | ✅ | ✅ |
 | `AUTH_RESEND_KEY` | ✅ | ✅ |

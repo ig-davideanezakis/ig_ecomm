@@ -3,7 +3,7 @@
 **Computer store e-commerce** — Infograf Store
 
 - **Repo:** `git@github.com:ig-davideanezakis/ig_ecomm.git`
-- **Stack:** Next.js 16 + Supabase + Prisma + NextAuth + Tailwind + Framer Motion
+- **Stack:** Next.js 16 + Supabase + Drizzle ORM + NextAuth + Tailwind CSS + Framer Motion
 - **Deploy:** Vercel ($0/mo MVP)
 - **Tracking:** [Linear Project](https://linear.app/ig-ecomm/project/ig-ecomm-a56b8c556371) (team: IG)
 
@@ -18,4 +18,17 @@
 | [docs/guides/features.md](docs/guides/features.md) | MVP feature list with Linear references |
 | [docs/guides/scope.md](docs/guides/scope.md) | MVP boundaries, what's postponed |
 | [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
-| [prisma/schema.prisma](prisma/schema.prisma) | Full database schema |
+| [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
+
+## Quick Commands
+
+```bash
+npm run dev          # Start Next.js dev server
+npm run build        # Production build
+npm run lint         # ESLint
+npm run test:run     # Vitest
+npm run test:e2e     # Playwright E2E
+npm run db:push      # Push schema to DB (Drizzle Kit)
+npm run db:generate  # Generate migrations
+npm run db:seed      # Seed test data
+```

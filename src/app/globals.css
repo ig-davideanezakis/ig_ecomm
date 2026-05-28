@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -153,4 +154,76 @@
   select:focus-visible {
     box-shadow: 0 0 0 2px var(--background), 0 0 0 4px #ff0c3c;
   }
+}
+
+/* ── Scroll-reveal animation ── */
+@utility animate-in {
+  animation: animate-in 0.6s ease-out both;
+}
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@utility fade-in {
+  opacity: 0;
+  animation: fade-in 0.6s ease-out both;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@utility slide-in-from-bottom-4 {
+  animation: slide-in-from-bottom-4 0.6s ease-out both;
+}
+@keyframes slide-in-from-bottom-4 {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@utility duration-700 {
+  animation-duration: 0.7s;
+}
+
+/* ── Product rich content ── */
+.product-rich-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+.product-rich-content ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.product-rich-content li {
+  color: var(--muted-foreground);
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+.product-rich-content table.specs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+.product-rich-content table.specs-table td {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+}
+.product-rich-content table.specs-table td:first-child {
+  background: var(--muted);
+  font-weight: 600;
+  width: 40%;
 }

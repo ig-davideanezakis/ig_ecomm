@@ -13,8 +13,8 @@ ig_ecomm/
 │       ├── organization.md      # This file — structure & conventions
 │       ├── features.md          # MVP feature list
 │       └── scope.md             # MVP boundaries
-├── prisma/
-│   └── schema.prisma            # Database models
+├── drizzle/                     # Drizzle Kit migration files
+├── drizzle.config.ts            # Drizzle Kit configuration
 ├── src/
 │   ├── app/
 │   │   ├── (shop)/              # Public storefront routes
@@ -43,16 +43,18 @@ ig_ecomm/
 │   │   │   ├── checkout/
 │   │   │   └── admin/
 │   │   └── layout.tsx           # Root layout
+│   ├── db/                      # Database schema & client
+│   │   └── schema/              # Drizzle ORM schema definitions
+│   │       ├── index.ts         # Re-exports all schema files
+│   │       ├── auth.ts          # Auth tables (User, Account, Session, VerificationToken)
+│   │       └── store.ts         # E-commerce tables (Product, Category, Brand, Order, etc.)
 │   ├── components/
 │   │   ├── ui/                  # shadcn/ui base components
-│   │   ├── shop/                # Storefront components
-│   │   └── admin/               # Admin panel components
+│   │   └── shop/                # Storefront components
 │   ├── lib/
-│   │   ├── db.ts                # Prisma client singleton
+│   │   ├── db.ts                # Drizzle ORM client (drizzle instance + pg Pool)
 │   │   ├── auth.ts              # NextAuth configuration
 │   │   └── utils.ts             # Shared utilities (cn, formatters)
-│   └── generated/
-│       └── prisma/              # Auto-generated Prisma client
 ```
 
 ## Coding Conventions
@@ -68,8 +70,20 @@ ig_ecomm/
 
 ## Database Access
 
-- Always use Prisma (`import { prisma } from "@/lib/db"`)
-- No raw SQL queries unless absolutely necessary
+- Always use Drizzle (`import { db } from "@/lib/db"`)
+- Write queries with Drizzle's type-safe query builder:
+  ```ts
+  import { db } from "@/lib/db";
+  import { products, categories } from "@/db/schema";
+  import { eq, like, and, gte, lte } from "drizzle-orm";
+
+  const result = await db
+    .select()
+    .from(products)
+    .where(eq(products.published, true))
+    .limit(12);
+  ```
+- For complex queries (nested JSON, aggregations), use `db.execute(sql\`...\`)` with raw SQL
 - Server Components can query the DB directly (no API needed for internal reads)
 - Mutations go through either API routes (client-side) or Server Actions (form submissions)
 
