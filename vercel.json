@@ -3,10 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "env": {
-    "AUTH_SECRET": "@auth-secret",
-    "AUTH_RESEND_KEY": "@auth-resend-key",
-    "DATABASE_URL": "@database-url"
-  }
+  "devCommand": "npm run dev"
 }
