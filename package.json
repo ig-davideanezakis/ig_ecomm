@@ -16,7 +16,10 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx scripts/seed-admin.ts",
+    "db:seed-admin": "npx tsx scripts/seed-admin.ts",
+    "db:promote-admin": "npx tsx scripts/promote-admin.ts",
+    "db:check": "npx tsx -e \"const {Pool}=require('pg');const pool=new Pool({connectionString:process.env.DATABASE_URL});pool.query('SELECT 1').then(()=>{console.log('DB OK');process.exit(0)}).catch(e=>{console.log('DB ERROR:',e.message);process.exit(1)})\""
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
@@ -58,6 +61,7 @@
     "eslint-config-next": "16.2.6",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
+    "tsx": "^4.22.3",
     "typescript": "^5",
     "vitest": "^4.1.7"
   }

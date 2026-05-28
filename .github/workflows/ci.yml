@@ -8,9 +8,14 @@ on:
 
 env:
   NODE_VERSION: "22"
-  # Deploy hook URL — per best practice spostalo in un GitHub Secret:
-  # Settings → Secrets and variables → Actions → New repository secret → VERCEL_DEPLOY_HOOK
-  VERCEL_DEPLOY_HOOK: "https://api.vercel.com/v1/integrations/deploy/prj_iMSZzN6bTKqj8MX6YxXRA2aYkdIK/GjqsJlYbSt"
+  # Vercel configuration — set these in GitHub Secrets:
+  # Settings → Secrets and variables → Actions → New repository secret
+  # - VERCEL_DEPLOY_HOOK: from Vercel project → Deploy Hooks
+  # - VERCEL_TOKEN: from https://vercel.com/account/tokens
+  # - VERCEL_PROJECT_ID: from Vercel project → Settings → General → Project ID
+  VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   lint:
@@ -57,3 +62,13 @@ jobs:
     steps:
       - name: Trigger Vercel Deploy Hook
         run: curl -X POST "${{ env.VERCEL_DEPLOY_HOOK }}"
+
+      - name: Check Deployment Status
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != ''
+        run: |
+          echo "⏳ Waiting for deployment to start..."
+          sleep 15
+          node scripts/check-deployment.js latest
+        env:
+          VERCEL_TOKEN: ${{ env.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
