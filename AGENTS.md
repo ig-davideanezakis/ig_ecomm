@@ -20,6 +20,18 @@
 | [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
 | [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
 
+## ⚠️ CRITICAL: Pre-push Checklist
+
+Before every `git push`, run these 3 commands **in order** and verify all pass:
+
+```bash
+npm run lint        # Zero errors
+npm run test:run    # All tests passing
+npm run build       # Clean build
+```
+
+Only push when all three pass. Never skip this — GitHub Actions will fail and the PM will notice.
+
 ## Quick Commands
 
 ```bash
