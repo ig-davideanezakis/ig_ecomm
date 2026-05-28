@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice, parseDecimal } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 
 export interface ProductCardData {
   id: string;

@@ -5,8 +5,6 @@ import {
   timestamp,
   text,
   integer,
-  decimal,
-  boolean,
   primaryKey,
 } from "drizzle-orm/pg-core";
 

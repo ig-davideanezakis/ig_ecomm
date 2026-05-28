@@ -18,12 +18,13 @@ async function main() {
       await pool.query(trimmed);
       applied++;
       console.log(`  ✓ ${trimmed.substring(0, 70)}...`);
-    } catch (e: any) {
-      if (e.message?.includes("already exists")) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("already exists")) {
         skipped++;
       } else {
         errors++;
-        console.log(`  ✗ ${e.message?.substring(0, 200)}`);
+        console.log(`  ✗ ${msg.substring(0, 200)}`);
       }
     }
   }

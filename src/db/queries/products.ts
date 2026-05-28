@@ -1,6 +1,4 @@
-import { db, pool } from "@/lib/db";
-import { sql, eq, and, ilike, or, gte, lte, desc, asc, count } from "drizzle-orm";
-import { products } from "@/db/schema";
+import { pool } from "@/lib/db";
 
 // ─── Types ────────────────────────────────────────────────────────
 

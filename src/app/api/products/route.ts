@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductList, getFilterOptions } from "@/db/queries";
+import { getProductList } from "@/db/queries";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;

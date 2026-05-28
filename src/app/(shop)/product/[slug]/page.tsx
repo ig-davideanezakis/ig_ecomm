@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug } from "@/db/queries";
+import { getProductBySlug, type ProductDetail } from "@/db/queries";
 import { ProductDetailClient } from "./product-detail-client";
 import type { Metadata } from "next";
 
@@ -35,5 +35,5 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <ProductDetailClient product={product as any} />;
+  return <ProductDetailClient product={product as ProductDetail} />;
 }
