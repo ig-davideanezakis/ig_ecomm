@@ -19,6 +19,17 @@ export const metadata: Metadata = {
     "Infograf — Il tuo punto di riferimento per computer, componenti e assistenza IT a Palermo. Dal 1992.",
 };
 
+/** Inline script that blocks rendering until the correct theme class is applied */
+const themeScript = `
+(function() {
+  var theme = localStorage.getItem('theme');
+  if (!theme) theme = 'dark';
+  var cl = document.documentElement.classList;
+  if (theme === 'dark') cl.add('dark');
+  else cl.remove('dark');
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,8 +39,11 @@ export default function RootLayout({
     <html
       lang="it"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>
