@@ -24,7 +24,7 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside className="w-64 border-r bg-card flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
-          <Link href="/admin/dashboard" className="block">
+          <Link href="/admin/dashboard" className="block text-foreground">
             <InfografLogo className="h-5 w-auto" />
           </Link>
           <ThemeToggle />

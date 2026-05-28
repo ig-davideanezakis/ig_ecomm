@@ -1,14 +1,4 @@
-"use client";
-
-import { useTheme } from "next-themes";
-
 export function InfografLogo({ className }: { className?: string }) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-
-  const textColor = isDark ? "#fafafa" : "#111111";
-  const redAccent = "#ff0c3c";
-
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -17,8 +7,8 @@ export function InfografLogo({ className }: { className?: string }) {
       className={className}
     >
       {/* Red accent mark */}
-      <rect x="0" y="10" width="6" height="28" rx="3" fill={redAccent} />
-      {/* Brand text */}
+      <rect x="0" y="10" width="6" height="28" rx="3" fill="#ff0c3c" />
+      {/* Brand text — uses currentColor so it adapts to dark/light mode via CSS */}
       <text
         x="20"
         y="34"
@@ -26,7 +16,7 @@ export function InfografLogo({ className }: { className?: string }) {
         fontWeight="800"
         fontSize="28"
         letterSpacing="1"
-        fill={textColor}
+        fill="currentColor"
       >
         INFOGRAF
       </text>
@@ -38,7 +28,7 @@ export function InfografLogo({ className }: { className?: string }) {
         fontWeight="500"
         fontSize="10"
         letterSpacing="0.5"
-        fill={textColor}
+        fill="currentColor"
         opacity="0.5"
       >
         SINCE 1992

@@ -16,10 +16,8 @@
 
 - **PNG file:** `/public/logo.png` — original logo (1200x300px, transparent background)
 - **SVG component:** `@/components/infograf-logo` — inline SVG rendered as a React component for theme-aware coloring
-- **Behavior inline SVG:**
-  - Dark mode: white text (`#fafafa`) + red accent (`#ff0c3c`)
-  - Light mode: black text (`#111111`) + red accent (`#ff0c3c`)
-  - Red accent rect (`#ff0c3c`) is fixed across both themes
+- **Behavior:** SVG uses `fill="currentColor"` so the text color adapts via CSS inheritance from the parent element (which has `text-foreground` in dark/light mode). The red accent rect (`#ff0c3c`) is fixed across both themes.
+- **No hydration flash** — by using `currentColor` instead of `useTheme()`, the logo renders correctly on first paint without client-side re-render.
 - **Legacy SVG file:** `/public/logo.svg` — kept for reference but no longer used in the app (inline component replaces it)
 
 ## Color Palette
