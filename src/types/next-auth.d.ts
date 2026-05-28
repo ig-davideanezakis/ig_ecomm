@@ -1,15 +1,14 @@
-import { DefaultSession, DefaultUser } from "next-auth";
-import { UserRole } from "@/generated/prisma/enums";
+import { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: UserRole;
+      role: string;
     } & DefaultSession["user"];
   }
 
-  interface User extends DefaultUser {
-    role: UserRole;
+  interface User {
+    role: string;
   }
 }
