@@ -60,11 +60,13 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Trigger Vercel Deploy Hook
         run: curl -X POST "${{ env.VERCEL_DEPLOY_HOOK }}"
 
       - name: Check Deployment Status
-        if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != ''
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != '' }}
         run: |
           echo "⏳ Waiting for deployment to start..."
           sleep 15
