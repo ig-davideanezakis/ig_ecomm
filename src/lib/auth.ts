@@ -7,7 +7,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db),
   providers: [
     Resend({
-      from: "noreply@infografstore.it",
+      // TEMP: Use Resend's test sender. Can only deliver to
+      // davide.anezakis@infograf.it (the Resend account owner).
+      // TODO: Switch to "noreply@infografstore.it" once the
+      //       domain is verified on https://resend.com/domains
+      from: "onboarding@resend.dev",
     }),
   ],
   pages: {
