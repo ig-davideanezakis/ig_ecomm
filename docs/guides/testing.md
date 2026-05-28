@@ -38,7 +38,8 @@ src/
 │       └── __tests__/      # Page-level component tests
 e2e/
 ├── smoke.spec.ts           # Core smoke tests (always pass)
-├── auth.spec.ts            # Auth flow tests
+├── theme.spec.ts           # Theme toggle tests
+├── admin.spec.ts           # Admin redirect/access tests
 └── catalog.spec.ts         # Catalog browsing tests
 ```
 
@@ -113,7 +114,9 @@ test("user can browse products", async ({ page }) => {
 | Scenario | Test Type | Example |
 |----------|-----------|---------|
 | Utility function | **Unit** (Vitest) | Price formatting, slug generation |
-| Client component interaction | **Component** (Testing Library) | Toggle button, cart quantity update |
+| Dashboard helpers | **Unit** (Vitest) | formatCurrency, formatDate, getStatusColor |
+| Client component interaction | **Component** (Testing Library) | Toggle button, cart quantity update, dashboard widgets |
+| Admin dashboard | **Component + E2E** | DashboardClient rendering, revenue chart, admin redirect |
 | Form validation | **Component** | Login form, checkout form |
 | Server Component rendering | **E2E** (Playwright) | Product page, catalog listing |
 | API route | **Integration** (Vitest + MSW) | Order creation, product search |

@@ -1,6 +1,7 @@
 "use client";
 
 import type { RevenueDataPoint } from "@/db/queries/dashboard";
+import { formatCompactCurrency, formatShortDate } from "./helpers";
 
 interface Props {
   data: RevenueDataPoint[];
@@ -19,14 +20,6 @@ export function RevenueChart({ data }: Props) {
   const maxValue = Math.max(...values, 1);
   const chartHeight = 200;
   const barWidth = Math.max(12, Math.min(40, (600 - 60) / data.length - 4));
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", notation: "compact" }).format(value);
-
-  const formatDay = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short" }).format(d);
-  };
 
   const isToday = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -48,7 +41,7 @@ export function RevenueChart({ data }: Props) {
               style={{ top: y }}
             >
               <span className="w-14 text-right text-xs text-muted-foreground">
-                {formatCurrency(maxValue * ratio)}
+                  {formatCompactCurrency(maxValue * ratio)}
               </span>
               <div className="ml-2 flex-1 border-t border-border/40" />
             </div>
@@ -73,7 +66,7 @@ export function RevenueChart({ data }: Props) {
                 {/* Tooltip */}
                 <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
                   <div className="rounded-md bg-popover px-3 py-1.5 text-xs font-medium shadow-md border text-popover-foreground whitespace-nowrap">
-                    {formatDay(point.date)} — {formatCurrency(point.revenue)}
+                    {formatShortDate(point.date)} — {formatCompactCurrency(point.revenue)}
                     <span className="ml-1 text-muted-foreground">
                       ({point.orders} ordini)
                     </span>
@@ -109,7 +102,7 @@ export function RevenueChart({ data }: Props) {
               className="text-xs text-muted-foreground truncate"
               style={{ width: `${100 / data.length}%`, textAlign: "center" }}
             >
-              {formatDay(point.date)}
+              {formatShortDate(point.date)}
             </div>
           ))}
       </div>

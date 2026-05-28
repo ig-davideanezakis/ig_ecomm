@@ -32,6 +32,17 @@ npm run build       # Clean build
 
 Only push when all three pass. Never skip this — GitHub Actions will fail and the PM will notice.
 
+## Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Project Scaffolding | ✅ Done | IG-21 |
+| CI/CD & Vercel Deploy | ✅ Done | IG-22 |
+| Authentication (Magic Link) | ✅ Done | IG-23 |
+| Theme System & Brand Identity | ✅ Done | IG-24 |
+| Catalog (DB schema + queries) | ✅ Done | IG-6 |
+| Admin — Dashboard & Reports | ✅ Done | IG-14 |
+
 ## Quick Commands
 
 ```bash

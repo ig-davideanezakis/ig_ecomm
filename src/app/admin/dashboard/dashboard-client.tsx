@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { DashboardStats, RevenueDataPoint, RecentOrder, LowStockItem } from "@/db/queries/dashboard";
 import { RevenueChart } from "./revenue-chart";
+import { formatCurrency, formatDate, getStatusColor } from "./helpers";
 
 interface DashboardData {
   stats: DashboardStats;
@@ -16,44 +17,15 @@ interface Props {
   data: DashboardData;
 }
 
-// ─── Status badge colors ──────────────────────────────────────────
-
-const statusColors: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  CONFIRMED: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  PROCESSING: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-  SHIPPED: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
 function StatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        statusColors[status] ?? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-      }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(status)}`}
     >
       {status}
     </span>
   );
 }
-
-// ─── Format helpers ───────────────────────────────────────────────
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(value);
-
-const formatDate = (date: string | Date) => {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-};
 
 // ─── Main component ───────────────────────────────────────────────
 
