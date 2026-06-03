@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ShopNavbar } from "./shop-navbar";
 import { InfografLogo } from "@/components/infograf-logo";
 
 export default function ShopLayout({
@@ -9,51 +9,8 @@ export default function ShopLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 text-foreground">
-            <InfografLogo className="h-7 w-auto" />
-          </Link>
+      <ShopNavbar />
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <Link href="/products" className="hover:text-primary transition-colors">
-              Prodotti
-            </Link>
-            <Link href="/blog" className="hover:text-primary transition-colors">
-              Blog
-            </Link>
-            <Link href="/#contact" className="hover:text-primary transition-colors">
-              Contatti
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/cart"
-              className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
-            </Link>
-            <Link
-              href="/account"
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
