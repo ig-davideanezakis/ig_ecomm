@@ -42,6 +42,10 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Theme System & Brand Identity | ✅ Done | IG-24 |
 | Catalog (DB schema + queries) | ✅ Done | IG-6 |
 | Admin — Dashboard & Reports | ✅ Done | IG-14 |
+| Auth — Google OAuth + Password + Magic Link | ✅ Done | Multi-method auth |
+| Auth — Selective 2FA (TOTP) for STAFF/ADMIN | ✅ Done | otplib + QR code |
+| Admin — User Management | ✅ Done | List, create, edit roles |
+| DB Schema — snake_case | ✅ Done | All tables & columns |
 
 ## Quick Commands
 

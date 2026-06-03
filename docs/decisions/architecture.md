@@ -98,19 +98,43 @@ Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit ro
 - **Admin layout**: Server-side `authorize("ADMIN")` call that checks role + 2FA
 - **Auth helpers** (`lib/auth-helpers.ts`): Reusable `authorize()` function for any page/layout
 
+### Authentication Methods
+
+| Method | For | How |
+|--------|-----|-----|
+| **Google OAuth** | CUSTOMER | "Continua con Google" button → instant login |
+| **Magic Link** | CUSTOMER | Enter email → receive link via Resend → click to login |
+| **Password + 2FA** | STAFF, ADMIN | Enter email → system detects role → password form → (if 2FA enabled) TOTP code |
+
+### Login Flow
+
+1. User lands on `/auth/login` → sees "Continua con Google" button + email input
+2. If Google OAuth: redirects to Google → callback → user created/loaded as CUSTOMER
+3. If email entered: `POST /api/auth/check-email` checks the user's role:
+   - **Not found or CUSTOMER** → Magic Link sent via Resend
+   - **STAFF or ADMIN** → password form shown
+4. After password verification (Credentials provider, bcrypt): if 2FA enabled → `needsTotp` flag set
+5. 2FA verification at `/auth/verify-2fa` completes the session
+
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/lib/auth.ts` | NextAuth configuration with callbacks (signIn, jwt, session) |
+| `src/lib/auth.ts` | NextAuth config: Google, Resend, Credentials providers + signIn/jwt/session callbacks |
 | `src/lib/auth-helpers.ts` | `authorize()` helper for route protection |
 | `src/lib/totp.ts` | TOTP secret generation, QR code, verification |
 | `src/proxy.ts` | Edge middleware (session cookie check) |
-| `src/app/auth/verify-2fa/` | 2FA verification page |
+| `src/app/(shop)/auth/login/` | Login page: Google button + email check + password form |
+| `src/app/(shop)/auth/verify-2fa/` | 2FA verification page |
+| `src/app/api/auth/check-email/` | API to detect user role by email |
+| `src/app/api/auth/set-password/` | API to set/change password (bcrypt) |
 | `src/app/api/auth/totp-setup/` | API to generate TOTP secret + QR code |
 | `src/app/api/auth/verify-totp/` | API to verify TOTP token |
 | `src/components/totp-setup.tsx` | Client component for 2FA setup UI |
+| `src/components/password-setup.tsx` | Client component for password setup UI |
 | `src/app/admin/security/` | Admin security settings page |
+| `src/app/admin/customers/` | Admin user management (list, create, edit roles, delete) |
+| `src/app/api/admin/users/` | API for user CRUD (ADMIN only) |
 
 ---
 

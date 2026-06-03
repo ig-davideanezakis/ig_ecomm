@@ -161,6 +161,13 @@ export function TotpSetup() {
         di autenticazione. Dovrai scansionare un QR code con la tua app di
         autenticazione preferita.
       </p>
+
+      {error && (
+        <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400 text-center">
+          {error}
+        </div>
+      )}
+
       <button
         onClick={startSetup}
         className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
