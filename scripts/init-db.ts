@@ -1,6 +1,5 @@
 /**
- * Initialize the new Supabase database.
- * Creates all tables and the admin user.
+ * Initialize the database — all snake_case table names.
  * Run: npx tsx scripts/init-db.ts
  */
 import { Pool } from "pg";
@@ -8,80 +7,174 @@ import { config } from "dotenv";
 config();
 
 const SQL = `
--- Enums
-DO $$ BEGIN CREATE TYPE "DiscountType" AS ENUM('PERCENTAGE', 'FIXED_AMOUNT'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "OrderStatus" AS ENUM('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "PaymentStatus" AS ENUM('PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "ReturnStatus" AS ENUM('NONE', 'REQUESTED', 'APPROVED', 'REJECTED', 'RECEIVED', 'REFUNDED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "StockMovementType" AS ENUM('RECEIVED', 'SOLD', 'ADJUSTMENT', 'RETURNED', 'DAMAGED', 'TRANSFERRED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "UserRole" AS ENUM('CUSTOMER', 'ADMIN', 'WAREHOUSE', 'SUPPORT'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- Rename existing PascalCase tables to snake_case (safe if they exist)
+ALTER TABLE IF EXISTS "User"              RENAME TO "user";
+ALTER TABLE IF EXISTS "Account"           RENAME TO "account";
+ALTER TABLE IF EXISTS "Session"           RENAME TO "session";
+ALTER TABLE IF EXISTS "VerificationToken" RENAME TO "verification_token";
+ALTER TABLE IF EXISTS "Category"          RENAME TO "category";
+ALTER TABLE IF EXISTS "Brand"             RENAME TO "brand";
+ALTER TABLE IF EXISTS "Product"           RENAME TO "product";
+ALTER TABLE IF EXISTS "ProductVariant"    RENAME TO "product_variant";
+ALTER TABLE IF EXISTS "ProductImage"      RENAME TO "product_image";
+ALTER TABLE IF EXISTS "Review"            RENAME TO "review";
+ALTER TABLE IF EXISTS "Question"          RENAME TO "question";
+ALTER TABLE IF EXISTS "Order"             RENAME TO "order";
+ALTER TABLE IF EXISTS "OrderItem"         RENAME TO "order_item";
+ALTER TABLE IF EXISTS "Coupon"            RENAME TO "coupon";
+ALTER TABLE IF EXISTS "CouponProduct"     RENAME TO "coupon_product";
+ALTER TABLE IF EXISTS "NewsletterSubscriber" RENAME TO "newsletter_subscriber";
+ALTER TABLE IF EXISTS "BlogPost"          RENAME TO "blog_post";
+ALTER TABLE IF EXISTS "WishlistItem"      RENAME TO "wishlist_item";
+ALTER TABLE IF EXISTS "StockMovement"     RENAME TO "stock_movement";
 
--- Auth tables
-CREATE TABLE IF NOT EXISTS "User" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "name" varchar(255), "email" varchar(255) UNIQUE, "emailVerified" timestamp, "image" varchar(255), "role" varchar(20) DEFAULT 'CUSTOMER' NOT NULL, "phone" varchar(50), "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL);
-CREATE TABLE IF NOT EXISTS "Account" ("userId" varchar(255) NOT NULL REFERENCES "User"(id) ON DELETE CASCADE, "type" varchar(255) NOT NULL, "provider" varchar(255) NOT NULL, "providerAccountId" varchar(255) NOT NULL, "refresh_token" text, "access_token" text, "expires_at" integer, "token_type" varchar(255), "scope" varchar(255), "id_token" text, "session_state" varchar(255), PRIMARY KEY("provider","providerAccountId"));
-CREATE TABLE IF NOT EXISTS "Session" ("sessionToken" varchar(255) PRIMARY KEY NOT NULL, "userId" varchar(255) NOT NULL REFERENCES "User"(id) ON DELETE CASCADE, "expires" timestamp NOT NULL);
-CREATE TABLE IF NOT EXISTS "VerificationToken" ("identifier" varchar(255) NOT NULL, "token" varchar(255) NOT NULL UNIQUE, "expires" timestamp NOT NULL, PRIMARY KEY("identifier","token"));
+-- Rename columns in "user" table
+ALTER TABLE IF EXISTS "user" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "user" RENAME COLUMN "updatedAt" TO "updated_at";
 
--- Catalog
-CREATE TABLE IF NOT EXISTS "Category" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "name" varchar(255) NOT NULL, "slug" varchar(255) NOT NULL UNIQUE, "description" text, "image" varchar(255), "parentId" varchar(255), "sortOrder" integer DEFAULT 0 NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL);
-CREATE TABLE IF NOT EXISTS "Brand" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "name" varchar(255) NOT NULL, "slug" varchar(255) NOT NULL UNIQUE, "logo" varchar(255), "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL);
-CREATE TABLE IF NOT EXISTS "Product" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "identifier" varchar(255) NOT NULL UNIQUE, "title" varchar(255) NOT NULL, "slug" varchar(255) NOT NULL UNIQUE, "description" text, "content" text, "basePrice" numeric(10,2) NOT NULL, "compareAtPrice" numeric(10,2), "costPrice" numeric(10,2), "sku" varchar(255), "barcode" varchar(255), "weight" numeric(8,2), "seoTitle" varchar(255), "seoDescription" text, "published" boolean DEFAULT false NOT NULL, "featured" boolean DEFAULT false NOT NULL, "sortOrder" integer DEFAULT 0 NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL, "categoryId" varchar(255) NOT NULL REFERENCES "Category"(id), "brandId" varchar(255) REFERENCES "Brand"(id));
-CREATE TABLE IF NOT EXISTS "ProductVariant" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "name" varchar(255) NOT NULL, "sku" varchar(255), "price" numeric(10,2) NOT NULL, "stock" integer DEFAULT 0 NOT NULL, "lowStock" integer DEFAULT 5 NOT NULL, "image" varchar(255), "sortOrder" integer DEFAULT 0 NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL, "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE, UNIQUE("productId","name"));
-CREATE TABLE IF NOT EXISTS "ProductImage" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "url" varchar(500) NOT NULL, "alt" varchar(255), "sortOrder" integer DEFAULT 0 NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE);
+-- Rename columns in "product" table
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "basePrice" TO "base_price";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "compareAtPrice" TO "compare_at_price";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "costPrice" TO "cost_price";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "seoTitle" TO "seo_title";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "seoDescription" TO "seo_description";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "sortOrder" TO "sort_order";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "updatedAt" TO "updated_at";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "categoryId" TO "category_id";
+ALTER TABLE IF EXISTS "product" RENAME COLUMN "brandId" TO "brand_id";
 
--- Reviews
-CREATE TABLE IF NOT EXISTS "Review" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "rating" integer NOT NULL, "title" varchar(255), "body" text, "approved" boolean DEFAULT false NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL, "userId" varchar(255) NOT NULL REFERENCES "User"(id), "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE, UNIQUE("userId","productId"));
-CREATE TABLE IF NOT EXISTS "Question" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "body" text NOT NULL, "answer" text, "answeredAt" timestamp, "createdAt" timestamp DEFAULT now() NOT NULL, "userId" varchar(255) NOT NULL REFERENCES "User"(id), "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE);
+-- Rename columns in "product_variant" table
+ALTER TABLE IF EXISTS "product_variant" RENAME COLUMN "lowStock" TO "low_stock";
+ALTER TABLE IF EXISTS "product_variant" RENAME COLUMN "sortOrder" TO "sort_order";
+ALTER TABLE IF EXISTS "product_variant" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "product_variant" RENAME COLUMN "updatedAt" TO "updated_at";
+ALTER TABLE IF EXISTS "product_variant" RENAME COLUMN "productId" TO "product_id";
 
--- Orders
-CREATE TABLE IF NOT EXISTS "Order" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "orderNumber" varchar(255) NOT NULL UNIQUE, "status" varchar(50) DEFAULT 'PENDING' NOT NULL, "subtotal" numeric(10,2) NOT NULL, "shippingCost" numeric(10,2) DEFAULT '0' NOT NULL, "discount" numeric(10,2) DEFAULT '0' NOT NULL, "total" numeric(10,2) NOT NULL, "notes" text, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL, "billingName" varchar(255) NOT NULL, "billingEmail" varchar(255) NOT NULL, "billingPhone" varchar(50), "billingAddress" varchar(500) NOT NULL, "billingCity" varchar(255) NOT NULL, "billingProvince" varchar(255), "billingZip" varchar(20) NOT NULL, "billingCountry" varchar(10) DEFAULT 'IT' NOT NULL, "shippingName" varchar(255), "shippingEmail" varchar(255), "shippingPhone" varchar(50), "shippingAddress" varchar(500), "shippingCity" varchar(255), "shippingProvince" varchar(255), "shippingZip" varchar(20), "shippingCountry" varchar(10), "shippingMethod" varchar(255), "trackingNumber" varchar(255), "trackingUrl" varchar(500), "paymentMethod" varchar(255), "paymentId" varchar(255), "paymentStatus" varchar(50) DEFAULT 'PENDING' NOT NULL, "paidAt" timestamp, "invoiceUrl" varchar(500), "returnRequested" boolean DEFAULT false NOT NULL, "returnReason" text, "returnStatus" varchar(50) DEFAULT 'NONE', "returnedAt" timestamp, "userId" varchar(255) NOT NULL REFERENCES "User"(id), "couponId" varchar(255));
-CREATE TABLE IF NOT EXISTS "OrderItem" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "quantity" integer NOT NULL, "unitPrice" numeric(10,2) NOT NULL, "totalPrice" numeric(10,2) NOT NULL, "orderId" varchar(255) NOT NULL REFERENCES "Order"(id) ON DELETE CASCADE, "productId" varchar(255) NOT NULL REFERENCES "Product"(id), "variantId" varchar(255) REFERENCES "ProductVariant"(id));
+-- Rename columns in "product_image" table
+ALTER TABLE IF EXISTS "product_image" RENAME COLUMN "sortOrder" TO "sort_order";
+ALTER TABLE IF EXISTS "product_image" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "product_image" RENAME COLUMN "productId" TO "product_id";
 
--- Promotions
-CREATE TABLE IF NOT EXISTS "Coupon" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "code" varchar(255) NOT NULL UNIQUE, "description" text, "discountType" varchar(50) NOT NULL, "discountValue" numeric(10,2) NOT NULL, "minOrderAmount" numeric(10,2), "maxUses" integer, "usedCount" integer DEFAULT 0 NOT NULL, "startsAt" timestamp, "expiresAt" timestamp, "isActive" boolean DEFAULT true NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL);
-CREATE TABLE IF NOT EXISTS "CouponProduct" ("couponId" varchar(255) NOT NULL REFERENCES "Coupon"(id) ON DELETE CASCADE, "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE, UNIQUE("couponId","productId"));
-CREATE TABLE IF NOT EXISTS "NewsletterSubscriber" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "email" varchar(255) NOT NULL UNIQUE, "active" boolean DEFAULT true NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL);
+-- Rename columns in "category" table
+ALTER TABLE IF EXISTS "category" RENAME COLUMN "parentId" TO "parent_id";
+ALTER TABLE IF EXISTS "category" RENAME COLUMN "sortOrder" TO "sort_order";
+ALTER TABLE IF EXISTS "category" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "category" RENAME COLUMN "updatedAt" TO "updated_at";
 
--- Blog
-CREATE TABLE IF NOT EXISTS "BlogPost" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "title" varchar(255) NOT NULL, "slug" varchar(255) NOT NULL UNIQUE, "excerpt" text, "content" text NOT NULL, "coverImage" varchar(255), "seoTitle" varchar(255), "seoDescription" text, "published" boolean DEFAULT false NOT NULL, "publishedAt" timestamp, "createdAt" timestamp DEFAULT now() NOT NULL, "updatedAt" timestamp DEFAULT now() NOT NULL, "authorId" varchar(255) NOT NULL REFERENCES "User"(id));
+-- Rename columns in "brand" table
+ALTER TABLE IF EXISTS "brand" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "brand" RENAME COLUMN "updatedAt" TO "updated_at";
 
--- Wishlist & Stock
-CREATE TABLE IF NOT EXISTS "WishlistItem" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "createdAt" timestamp DEFAULT now() NOT NULL, "userId" varchar(255) NOT NULL REFERENCES "User"(id) ON DELETE CASCADE, "productId" varchar(255) NOT NULL REFERENCES "Product"(id) ON DELETE CASCADE, UNIQUE("userId","productId"));
-CREATE TABLE IF NOT EXISTS "StockMovement" ("id" varchar(255) PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, "quantity" integer NOT NULL, "type" varchar(50) NOT NULL, "note" text, "createdAt" timestamp DEFAULT now() NOT NULL, "variantId" varchar(255) NOT NULL REFERENCES "ProductVariant"(id) ON DELETE CASCADE, "userId" varchar(255) REFERENCES "User"(id));
+-- Rename columns in "review" table
+ALTER TABLE IF EXISTS "review" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "review" RENAME COLUMN "updatedAt" TO "updated_at";
+ALTER TABLE IF EXISTS "review" RENAME COLUMN "userId" TO "user_id";
+ALTER TABLE IF EXISTS "review" RENAME COLUMN "productId" TO "product_id";
+
+-- Rename columns in "question" table
+ALTER TABLE IF EXISTS "question" RENAME COLUMN "answeredAt" TO "answered_at";
+ALTER TABLE IF EXISTS "question" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "question" RENAME COLUMN "userId" TO "user_id";
+ALTER TABLE IF EXISTS "question" RENAME COLUMN "productId" TO "product_id";
+
+-- Rename columns in "order" table
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "orderNumber" TO "order_number";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingCost" TO "shipping_cost";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "updatedAt" TO "updated_at";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingName" TO "billing_name";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingEmail" TO "billing_email";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingPhone" TO "billing_phone";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingAddress" TO "billing_address";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingCity" TO "billing_city";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingProvince" TO "billing_province";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingZip" TO "billing_zip";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "billingCountry" TO "billing_country";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingName" TO "shipping_name";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingEmail" TO "shipping_email";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingPhone" TO "shipping_phone";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingAddress" TO "shipping_address";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingCity" TO "shipping_city";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingProvince" TO "shipping_province";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingZip" TO "shipping_zip";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingCountry" TO "shipping_country";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "shippingMethod" TO "shipping_method";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "trackingNumber" TO "tracking_number";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "trackingUrl" TO "tracking_url";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "paymentMethod" TO "payment_method";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "paymentId" TO "payment_id";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "paymentStatus" TO "payment_status";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "paidAt" TO "paid_at";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "invoiceUrl" TO "invoice_url";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "returnRequested" TO "return_requested";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "returnReason" TO "return_reason";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "returnStatus" TO "return_status";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "returnedAt" TO "returned_at";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "userId" TO "user_id";
+ALTER TABLE IF EXISTS "order" RENAME COLUMN "couponId" TO "coupon_id";
+
+-- Rename columns in "order_item" table
+ALTER TABLE IF EXISTS "order_item" RENAME COLUMN "unitPrice" TO "unit_price";
+ALTER TABLE IF EXISTS "order_item" RENAME COLUMN "totalPrice" TO "total_price";
+ALTER TABLE IF EXISTS "order_item" RENAME COLUMN "orderId" TO "order_id";
+ALTER TABLE IF EXISTS "order_item" RENAME COLUMN "productId" TO "product_id";
+ALTER TABLE IF EXISTS "order_item" RENAME COLUMN "variantId" TO "variant_id";
+
+-- Rename columns in "coupon" table
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "discountType" TO "discount_type";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "discountValue" TO "discount_value";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "minOrderAmount" TO "min_order_amount";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "maxUses" TO "max_uses";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "usedCount" TO "used_count";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "startsAt" TO "starts_at";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "expiresAt" TO "expires_at";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "isActive" TO "is_active";
+ALTER TABLE IF EXISTS "coupon" RENAME COLUMN "createdAt" TO "created_at";
+
+-- Rename columns in "coupon_product" table
+ALTER TABLE IF EXISTS "coupon_product" RENAME COLUMN "couponId" TO "coupon_id";
+ALTER TABLE IF EXISTS "coupon_product" RENAME COLUMN "productId" TO "product_id";
+
+-- Rename columns in "newsletter_subscriber" table
+ALTER TABLE IF EXISTS "newsletter_subscriber" RENAME COLUMN "createdAt" TO "created_at";
+
+-- Rename columns in "blog_post" table
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "coverImage" TO "cover_image";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "seoTitle" TO "seo_title";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "seoDescription" TO "seo_description";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "publishedAt" TO "published_at";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "updatedAt" TO "updated_at";
+ALTER TABLE IF EXISTS "blog_post" RENAME COLUMN "authorId" TO "author_id";
+
+-- Rename columns in "wishlist_item" table
+ALTER TABLE IF EXISTS "wishlist_item" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "wishlist_item" RENAME COLUMN "userId" TO "user_id";
+ALTER TABLE IF EXISTS "wishlist_item" RENAME COLUMN "productId" TO "product_id";
+
+-- Rename columns in "stock_movement" table
+ALTER TABLE IF EXISTS "stock_movement" RENAME COLUMN "createdAt" TO "created_at";
+ALTER TABLE IF EXISTS "stock_movement" RENAME COLUMN "variantId" TO "variant_id";
+ALTER TABLE IF EXISTS "stock_movement" RENAME COLUMN "userId" TO "user_id";
+
+-- Restore the admin user if it was lost during migration
+INSERT INTO "user" (email, role) VALUES ('davide.anezakis@infograf.it', 'ADMIN')
+ON CONFLICT (email) DO UPDATE SET role = 'ADMIN';
 `;
 
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-  // Test connection
   await pool.query("SELECT 1");
   console.log("✓ Database connected");
 
-  // Execute all SQL
+  // Execute migration SQL
   await pool.query(SQL);
-  console.log("✓ All tables created");
-
-  // Create admin user
-  const email = "davide.anezakis@gmail.com";
-  const existing = await pool.query(
-    `SELECT id, email, role FROM "User" WHERE email = $1`,
-    [email]
-  );
-
-  if (existing.rows.length > 0) {
-    if (existing.rows[0].role !== "ADMIN") {
-      await pool.query(`UPDATE "User" SET role = $1 WHERE email = $2`, ["ADMIN", email]);
-      console.log(`✓ User ${email} promoted to ADMIN`);
-    } else {
-      console.log(`✓ User ${email} is already ADMIN`);
-    }
-  } else {
-    await pool.query(`INSERT INTO "User" (email, role) VALUES ($1, $2)`, [email, "ADMIN"]);
-    console.log(`✓ Admin user created: ${email}`);
-  }
+  console.log("✓ Migration to snake_case complete");
 
   await pool.end();
-  console.log("\n✅ Database initialized successfully!");
+  console.log("\n✅ Database migration successful!");
 }
 
 main().catch((e) => {

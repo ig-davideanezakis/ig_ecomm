@@ -37,7 +37,7 @@ async function main() {
   try {
     // Check if user already exists
     const existing = await pool.query(
-      `SELECT id, email, role FROM "User" WHERE email = $1`,
+      `SELECT id, email, role FROM "user" WHERE email = $1`,
       [email],
     );
 
@@ -48,7 +48,7 @@ async function main() {
       } else {
         // Promote to ADMIN
         await pool.query(
-          `UPDATE "User" SET role = 'ADMIN' WHERE id = $1`,
+          `UPDATE "user" SET role = 'ADMIN' WHERE id = $1`,
           [user.id],
         );
         console.log(`✓ User ${email} promoted to ADMIN (was: ${user.role})`);
@@ -56,7 +56,7 @@ async function main() {
     } else {
       // Create new user with ADMIN role
       const result = await pool.query(
-        `INSERT INTO "User" (email, role) VALUES ($1, 'ADMIN') RETURNING id`,
+        `INSERT INTO "user" (email, role) VALUES ($1, 'ADMIN') RETURNING id`,
         [email],
       );
       console.log(`✓ Admin user created: ${email} (id: ${result.rows[0].id})`);

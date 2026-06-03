@@ -45,14 +45,14 @@ export interface LowStockItem {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const result = await pool.query(`
     SELECT
-      (SELECT COUNT(*)::int FROM "Product") AS "totalProducts",
-      (SELECT COUNT(*)::int FROM "Order") AS "totalOrders",
-      (SELECT COALESCE(SUM(total::numeric), 0)::float FROM "Order") AS "totalRevenue",
-      (SELECT COUNT(*)::int FROM "Order" WHERE status IN ('PENDING', 'CONFIRMED', 'PROCESSING')) AS "pendingOrders",
-      (SELECT COUNT(*)::int FROM "ProductVariant" WHERE stock <= "lowStock") AS "lowStockCount",
-      (SELECT COUNT(*)::int FROM "User") AS "newCustomers",
-      (SELECT COUNT(*)::int FROM "Order" WHERE "createdAt" >= CURRENT_DATE) AS "ordersToday",
-      (SELECT COALESCE(SUM(total::numeric), 0)::float FROM "Order" WHERE "createdAt" >= CURRENT_DATE) AS "revenueToday"
+      (SELECT COUNT(*)::int FROM "product") AS "totalProducts",
+      (SELECT COUNT(*)::int FROM "order") AS "totalOrders",
+      (SELECT COALESCE(SUM(total::numeric), 0)::float FROM "order") AS "totalRevenue",
+      (SELECT COUNT(*)::int FROM "order" WHERE status IN ('PENDING', 'CONFIRMED', 'PROCESSING')) AS "pendingOrders",
+      (SELECT COUNT(*)::int FROM "product_variant" WHERE stock <= "low_stock") AS "lowStockCount",
+      (SELECT COUNT(*)::int FROM "user") AS "newCustomers",
+      (SELECT COUNT(*)::int FROM "order" WHERE "created_at" >= CURRENT_DATE) AS "ordersToday",
+      (SELECT COALESCE(SUM(total::numeric), 0)::float FROM "order" WHERE "created_at" >= CURRENT_DATE) AS "revenueToday"
   `);
 
   return result.rows[0] as DashboardStats;
@@ -70,7 +70,7 @@ export async function getRevenueData(days: number = 7): Promise<RevenueDataPoint
       CURRENT_DATE,
       '1 day'::interval
     ) d
-    LEFT JOIN "Order" o ON o."createdAt"::date = d::date
+    LEFT JOIN "order" o ON o."created_at"::date = d::date
     GROUP BY d::date
     ORDER BY d::date ASC
     `,
@@ -84,11 +84,11 @@ export async function getRecentOrders(limit: number = 5): Promise<RecentOrder[]>
   const result = await pool.query(
     `
     SELECT
-      o.id, o."orderNumber", o.status, o.total::float AS total,
-      o."billingName", o."billingEmail", o."createdAt",
-      (SELECT COUNT(*)::int FROM "OrderItem" oi WHERE oi."orderId" = o.id) AS "itemCount"
-    FROM "Order" o
-    ORDER BY o."createdAt" DESC
+      o.id, o."order_number", o.status, o.total::float AS total,
+      o."billing_name", o."billing_email", o."created_at",
+      (SELECT COUNT(*)::int FROM "order_item" oi WHERE oi."order_id" = o.id) AS "itemCount"
+    FROM "order" o
+    ORDER BY o."created_at" DESC
     LIMIT $1
     `,
     [limit],
@@ -102,11 +102,11 @@ export async function getLowStockProducts(): Promise<LowStockItem[]> {
     `
     SELECT
       v.id, v.name AS "variantName", p.title AS "productTitle",
-      p.slug AS "productSlug", v.sku, v.stock, v."lowStock"
-    FROM "ProductVariant" v
-    JOIN "Product" p ON p.id = v."productId"
-    WHERE v.stock <= v."lowStock"
-    ORDER BY v.stock ASC, v."lowStock" DESC
+      p.slug AS "productSlug", v.sku, v.stock, v."low_stock"
+    FROM "product_variant" v
+    JOIN "product" p ON p.id = v."product_id"
+    WHERE v.stock <= v."low_stock"
+    ORDER BY v.stock ASC, v."low_stock" DESC
     LIMIT 10
     `,
   );

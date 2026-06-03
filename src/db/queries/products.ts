@@ -108,27 +108,27 @@ export async function getProductList(params: ProductListParams = {}) {
 
   if (minPrice !== undefined) {
     paramIdx++;
-    conditions.push(`p."basePrice" >= $${paramIdx}`);
+    conditions.push(`p."base_price" >= $${paramIdx}`);
     queryParams.push(minPrice);
   }
 
   if (maxPrice !== undefined) {
     paramIdx++;
-    conditions.push(`p."basePrice" <= $${paramIdx}`);
+    conditions.push(`p."base_price" <= $${paramIdx}`);
     queryParams.push(maxPrice);
   }
 
   const whereClause = conditions.join(" AND ");
 
-  const orderClause = sort === "price_asc" ? 'p."basePrice" ASC'
-    : sort === "price_desc" ? 'p."basePrice" DESC'
+  const orderClause = sort === "price_asc" ? 'p."base_price" ASC'
+    : sort === "price_desc" ? 'p."base_price" DESC'
     : sort === "name" ? "p.title ASC"
-    : 'p."createdAt" DESC';
+    : 'p."created_at" DESC';
 
   // Get total count
-  const countSql = `SELECT COUNT(*)::int as total FROM "Product" p
-     LEFT JOIN "Category" c ON p."categoryId" = c.id
-     LEFT JOIN "Brand" b ON p."brandId" = b.id
+  const countSql = `SELECT COUNT(*)::int as total FROM "product" p
+     LEFT JOIN "category" c ON p."category_id" = c.id
+     LEFT JOIN "brand" b ON p."brand_id" = b.id
      WHERE ${whereClause}`;
   const countResult = await pool.query(countSql, queryParams);
   const total = countResult.rows[0]?.total ?? 0;
@@ -137,26 +137,26 @@ export async function getProductList(params: ProductListParams = {}) {
   const result = await pool.query(
     `SELECT
       p.id, p.identifier, p.title, p.slug, p.description,
-      p."basePrice"::float as "basePrice", p."compareAtPrice"::float as "compareAtPrice",
-      p.featured, p."createdAt",
+      p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
+      p.featured, p."created_at",
       CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('id', c.id, 'name', c.name, 'slug', c.slug) ELSE NULL END as category,
       CASE WHEN b.id IS NOT NULL THEN jsonb_build_object('id', b.id, 'name', b.name, 'slug', b.slug) ELSE NULL END as brand,
       COALESCE(
         (SELECT jsonb_agg(sub) FROM (
-          SELECT jsonb_build_object('id', img.id, 'url', img.url, 'alt', img.alt, '"sortOrder"', img."sortOrder") as sub
-          FROM "ProductImage" img WHERE img."productId" = p.id
-          ORDER BY img."sortOrder" ASC LIMIT 1
+          SELECT jsonb_build_object('id', img.id, 'url', img.url, 'alt', img.alt, '"sort_order"', img."sort_order") as sub
+          FROM "product_image" img WHERE img."product_id" = p.id
+          ORDER BY img."sort_order" ASC LIMIT 1
         ) t2),
         '[]'::jsonb
       ) as images,
       COALESCE(
-        (SELECT jsonb_agg(jsonb_build_object('id', v.id, 'name', v.name, 'price', v.price::float, 'stock', v.stock) ORDER BY v."sortOrder" ASC)
-         FROM "ProductVariant" v WHERE v."productId" = p.id),
+        (SELECT jsonb_agg(jsonb_build_object('id', v.id, 'name', v.name, 'price', v.price::float, 'stock', v.stock) ORDER BY v."sort_order" ASC)
+         FROM "product_variant" v WHERE v."product_id" = p.id),
         '[]'::jsonb
       ) as variants
-    FROM "Product" p
-    LEFT JOIN "Category" c ON p."categoryId" = c.id
-    LEFT JOIN "Brand" b ON p."brandId" = b.id
+    FROM "product" p
+    LEFT JOIN "category" c ON p."category_id" = c.id
+    LEFT JOIN "brand" b ON p."brand_id" = b.id
     WHERE ${whereClause}
     ORDER BY ${orderClause}
     LIMIT ${limit} OFFSET ${skip}`,
@@ -167,14 +167,14 @@ export async function getProductList(params: ProductListParams = {}) {
   const [categoriesResult, brandsResult] = await Promise.all([
     pool.query(
       `SELECT c.id, c.name, c.slug, COUNT(p.id)::int as "productCount"
-       FROM "Category" c
-       LEFT JOIN "Product" p ON p."categoryId" = c.id AND p.published = true
-       GROUP BY c.id, c.name, c.slug ORDER BY c."sortOrder" ASC`,
+       FROM "category" c
+       LEFT JOIN "product" p ON p."category_id" = c.id AND p.published = true
+       GROUP BY c.id, c.name, c.slug ORDER BY c."sort_order" ASC`,
     ),
     pool.query(
       `SELECT b.id, b.name, b.slug, COUNT(p.id)::int as "productCount"
-       FROM "Brand" b
-       LEFT JOIN "Product" p ON p."brandId" = b.id AND p.published = true
+       FROM "brand" b
+       LEFT JOIN "product" p ON p."brand_id" = b.id AND p.published = true
        GROUP BY b.id, b.name, b.slug ORDER BY b.name ASC`,
     ),
   ]);
@@ -215,28 +215,28 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   const result = await pool.query(
     `SELECT
       p.id, p.identifier, p.title, p.slug, p.description, p.content,
-      p."basePrice"::float as "basePrice", p."compareAtPrice"::float as "compareAtPrice",
-      p."costPrice"::float as "costPrice", p.weight::float, p.sku, p.barcode,
-      p."seoTitle", p."seoDescription", p.featured, p."createdAt", p."updatedAt",
+      p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
+      p."cost_price"::float as "costPrice", p.weight::float, p.sku, p.barcode,
+      p."seo_title", p."seo_description", p.featured, p."created_at", p."updated_at",
       CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('id', c.id, 'name', c.name, 'slug', c.slug) ELSE NULL END as category,
       CASE WHEN b.id IS NOT NULL THEN jsonb_build_object('id', b.id, 'name', b.name, 'slug', b.slug, 'logo', b.logo) ELSE NULL END as brand,
       COALESCE(
-        (SELECT jsonb_agg(jsonb_build_object('id', img.id, 'url', img.url, 'alt', img.alt, '"sortOrder"', img."sortOrder") ORDER BY img."sortOrder" ASC)
-         FROM "ProductImage" img WHERE img."productId" = p.id),
+        (SELECT jsonb_agg(jsonb_build_object('id', img.id, 'url', img.url, 'alt', img.alt, '"sort_order"', img."sort_order") ORDER BY img."sort_order" ASC)
+         FROM "product_image" img WHERE img."product_id" = p.id),
         '[]'::jsonb
       ) as images,
       COALESCE(
         (SELECT jsonb_agg(jsonb_build_object(
           'id', v.id, 'name', v.name, 'sku', v.sku, 'price', v.price::float,
-          'stock', v.stock, '"lowStock"', v."lowStock", 'image', v.image,
-          '"sortOrder"', v."sortOrder"
-        ) ORDER BY v."sortOrder" ASC)
-        FROM "ProductVariant" v WHERE v."productId" = p.id),
+          'stock', v.stock, '"low_stock"', v."low_stock", 'image', v.image,
+          '"sort_order"', v."sort_order"
+        ) ORDER BY v."sort_order" ASC)
+        FROM "product_variant" v WHERE v."product_id" = p.id),
         '[]'::jsonb
       ) as variants
-    FROM "Product" p
-    LEFT JOIN "Category" c ON p."categoryId" = c.id
-    LEFT JOIN "Brand" b ON p."brandId" = b.id
+    FROM "product" p
+    LEFT JOIN "category" c ON p."category_id" = c.id
+    LEFT JOIN "brand" b ON p."brand_id" = b.id
     WHERE p.slug = $1 AND p.published = true
     LIMIT 1`,
     [slug],
@@ -265,14 +265,14 @@ export async function getFilterOptions() {
   const [categoriesResult, brandsResult] = await Promise.all([
     pool.query(
       `SELECT c.id, c.name, c.slug, COUNT(p.id)::int as "productCount"
-       FROM "Category" c
-       LEFT JOIN "Product" p ON p."categoryId" = c.id AND p.published = true
-       GROUP BY c.id, c.name, c.slug ORDER BY c."sortOrder" ASC`,
+       FROM "category" c
+       LEFT JOIN "product" p ON p."category_id" = c.id AND p.published = true
+       GROUP BY c.id, c.name, c.slug ORDER BY c."sort_order" ASC`,
     ),
     pool.query(
       `SELECT b.id, b.name, b.slug, COUNT(p.id)::int as "productCount"
-       FROM "Brand" b
-       LEFT JOIN "Product" p ON p."brandId" = b.id AND p.published = true
+       FROM "brand" b
+       LEFT JOIN "product" p ON p."brand_id" = b.id AND p.published = true
        GROUP BY b.id, b.name, b.slug ORDER BY b.name ASC`,
     ),
   ]);

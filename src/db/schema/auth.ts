@@ -8,9 +8,14 @@ import {
   primaryKey,
 } from "drizzle-orm/pg-core";
 
-// ─── Auth (NextAuth.js v5 / Auth.js) ─────────────────────────────
+// ─── Auth (NextAuth.js v5 / Auth.js) — all snake_case ────────────
+//
+// These table definitions are passed to DrizzleAdapter() via the
+// second argument so that the adapter queries the same tables we
+// define here. Must match what @auth/drizzle-adapter expects.
+// See: node_modules/@auth/drizzle-adapter/src/lib/pg.ts
 
-export const users = pgTable("User", {
+export const users = pgTable("user", {
   id: varchar("id", { length: 255 })
     .primaryKey()
     .notNull()
@@ -19,6 +24,7 @@ export const users = pgTable("User", {
   email: varchar("email", { length: 255 }).unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: varchar("image", { length: 255 }),
+  // Custom columns (extend the default adapter schema)
   role: varchar("role", { length: 20 }).default("CUSTOMER").notNull(),
   phone: varchar("phone", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -26,7 +32,7 @@ export const users = pgTable("User", {
 });
 
 export const accounts = pgTable(
-  "Account",
+  "account",
   {
     userId: varchar("userId", { length: 255 })
       .notNull()
@@ -47,7 +53,7 @@ export const accounts = pgTable(
   }),
 );
 
-export const sessions = pgTable("Session", {
+export const sessions = pgTable("session", {
   sessionToken: varchar("sessionToken", { length: 255 }).primaryKey().notNull(),
   userId: varchar("userId", { length: 255 })
     .notNull()
@@ -56,7 +62,7 @@ export const sessions = pgTable("Session", {
 });
 
 export const verificationTokens = pgTable(
-  "VerificationToken",
+  "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),
     token: varchar("token", { length: 255 }).notNull().unique(),

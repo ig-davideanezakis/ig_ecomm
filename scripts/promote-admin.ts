@@ -33,7 +33,7 @@ async function main() {
 
   try {
     const result = await pool.query(
-      `UPDATE "User" SET role = 'ADMIN' WHERE email = $1 RETURNING id, email, role`,
+      `UPDATE "user" SET role = 'ADMIN' WHERE email = $1 RETURNING id, email, role`,
       [email],
     );
 
@@ -41,7 +41,7 @@ async function main() {
       console.error(`✗ User not found: ${email}`);
       console.error("  The user must sign up first via the login page,");
       console.error("  or you can create a user directly in Supabase SQL Editor:");
-      console.error(`  INSERT INTO "User" (email, role) VALUES ('${email}', 'ADMIN');`);
+      console.error(`  INSERT INTO "user" (email, role) VALUES ('${email}', 'ADMIN');`);
       process.exit(1);
     }
 

@@ -46,8 +46,8 @@ ig_ecomm/
 │   ├── db/                      # Database schema & client
 │   │   └── schema/              # Drizzle ORM schema definitions
 │   │       ├── index.ts         # Re-exports all schema files
-│   │       ├── auth.ts          # Auth tables (User, Account, Session, VerificationToken)
-│   │       └── store.ts         # E-commerce tables (Product, Category, Brand, Order, etc.)
+│   │       ├── auth.ts          # Auth tables (user, account, session, verification_token)
+│   │       └── store.ts         # E-commerce tables (product, category, brand, order, etc.)
 │   ├── components/
 │   │   ├── ui/                  # shadcn/ui base components
 │   │   └── shop/                # Storefront components
@@ -56,6 +56,18 @@ ig_ecomm/
 │   │   ├── auth.ts              # NextAuth configuration
 │   │   └── utils.ts             # Shared utilities (cn, formatters)
 ```
+
+## Database Convention
+
+**All table names and column names use `snake_case`.** PostgreSQL folds unquoted identifiers to lowercase, but Drizzle ORM generates quoted identifiers for case-sensitive matching. Using snake_case consistently avoids mismatches between the Drizzle schema, Auth.js adapter, and raw SQL queries.
+
+| PascalCase (old — DO NOT USE) | snake_case (current)          |
+|-------------------------------|------------------------------|
+| `"User"`, `"Account"`         | `"user"`, `"account"`        |
+| `"Product"`, `"ProductVariant"` | `"product"`, `"product_variant"` |
+| `"basePrice"`, `"createdAt"`  | `"base_price"`, `"created_at"`  |
+
+**Always reference table/column names with quotes in raw SQL queries** (e.g. `SELECT * FROM "product" WHERE "base_price" > 10`). Without quotes, PostgreSQL folds to lowercase so `"product"`, `product`, and `PRODUCT` all work; with quotes the casing must match exactly.
 
 ## Coding Conventions
 

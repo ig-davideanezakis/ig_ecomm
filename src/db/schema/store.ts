@@ -14,240 +14,239 @@ import { users } from "./auth";
 
 // ─── Enums ────────────────────────────────────────────────────────
 
-export const userRole = pgEnum("UserRole", ["CUSTOMER", "ADMIN", "WAREHOUSE", "SUPPORT"]);
-export const orderStatus = pgEnum("OrderStatus", [
+export const orderStatusEnum = pgEnum("order_status", [
   "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED",
 ]);
-export const paymentStatus = pgEnum("PaymentStatus", [
+export const paymentStatusEnum = pgEnum("payment_status", [
   "PENDING", "PAID", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED",
 ]);
-export const returnStatus = pgEnum("ReturnStatus", [
+export const returnStatusEnum = pgEnum("return_status", [
   "NONE", "REQUESTED", "APPROVED", "REJECTED", "RECEIVED", "REFUNDED",
 ]);
-export const stockMovementType = pgEnum("StockMovementType", [
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
   "RECEIVED", "SOLD", "ADJUSTMENT", "RETURNED", "DAMAGED", "TRANSFERRED",
 ]);
-export const discountType = pgEnum("DiscountType", ["PERCENTAGE", "FIXED_AMOUNT"]);
+export const discountTypeEnum = pgEnum("discount_type", ["PERCENTAGE", "FIXED_AMOUNT"]);
 
 // ─── Catalog ──────────────────────────────────────────────────────
 
-export const categories = pgTable("Category", {
+export const categories = pgTable("category", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
   image: varchar("image", { length: 255 }),
-  parentId: varchar("parentId", { length: 255 }),
-  sortOrder: integer("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  parentId: varchar("parent_id", { length: 255 }),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const brands = pgTable("Brand", {
+export const brands = pgTable("brand", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   logo: varchar("logo", { length: 255 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const products = pgTable("Product", {
+export const products = pgTable("product", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   identifier: varchar("identifier", { length: 255 }).notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
   content: text("content"),
-  basePrice: decimal("basePrice", { precision: 10, scale: 2 }).notNull(),
-  compareAtPrice: decimal("compareAtPrice", { precision: 10, scale: 2 }),
-  costPrice: decimal("costPrice", { precision: 10, scale: 2 }),
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
+  compareAtPrice: decimal("compare_at_price", { precision: 10, scale: 2 }),
+  costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
   sku: varchar("sku", { length: 255 }),
   barcode: varchar("barcode", { length: 255 }),
   weight: decimal("weight", { precision: 8, scale: 2 }),
-  seoTitle: varchar("seoTitle", { length: 255 }),
-  seoDescription: text("seoDescription"),
+  seoTitle: varchar("seo_title", { length: 255 }),
+  seoDescription: text("seo_description"),
   published: boolean("published").default(false).notNull(),
   featured: boolean("featured").default(false).notNull(),
-  sortOrder: integer("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  categoryId: varchar("categoryId", { length: 255 }).notNull().references(() => categories.id),
-  brandId: varchar("brandId", { length: 255 }).references(() => brands.id),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  categoryId: varchar("category_id", { length: 255 }).notNull().references(() => categories.id),
+  brandId: varchar("brand_id", { length: 255 }).references(() => brands.id),
 });
 
 export const productVariants = pgTable(
-  "ProductVariant",
+  "product_variant",
   {
     id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
     name: varchar("name", { length: 255 }).notNull(),
     sku: varchar("sku", { length: 255 }),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     stock: integer("stock").default(0).notNull(),
-    lowStock: integer("lowStock").default(5).notNull(),
+    lowStock: integer("low_stock").default(5).notNull(),
     image: varchar("image", { length: 255 }),
-    sortOrder: integer("sortOrder").default(0).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-    productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
   },
   (table) => ({ uniqueProductVariant: unique().on(table.productId, table.name) }),
 );
 
-export const productImages = pgTable("ProductImage", {
+export const productImages = pgTable("product_image", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   url: varchar("url", { length: 500 }).notNull(),
   alt: varchar("alt", { length: 255 }),
-  sortOrder: integer("sortOrder").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
 });
 
 // ─── Reviews & Questions ──────────────────────────────────────────
 
-export const reviews = pgTable("Review", {
+export const reviews = pgTable("review", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   rating: integer("rating").notNull(),
   title: varchar("title", { length: 255 }),
   body: text("body"),
   approved: boolean("approved").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  userId: varchar("userId", { length: 255 }).notNull().references(() => users.id),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
 }, (table) => ({ uniqueUserProduct: unique().on(table.userId, table.productId) }));
 
-export const questions = pgTable("Question", {
+export const questions = pgTable("question", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   body: text("body").notNull(),
   answer: text("answer"),
-  answeredAt: timestamp("answeredAt", { mode: "date" }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  userId: varchar("userId", { length: 255 }).notNull().references(() => users.id),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+  answeredAt: timestamp("answered_at", { mode: "date" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
 });
 
 // ─── Orders ───────────────────────────────────────────────────────
 
-export const orders = pgTable("Order", {
+export const orders = pgTable("order", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
-  orderNumber: varchar("orderNumber", { length: 255 }).notNull().unique(),
+  orderNumber: varchar("order_number", { length: 255 }).notNull().unique(),
   status: varchar("status", { length: 50 }).default("PENDING").notNull(),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
-  shippingCost: decimal("shippingCost", { precision: 10, scale: 2 }).default("0").notNull(),
+  shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }).default("0").notNull(),
   discount: decimal("discount", { precision: 10, scale: 2 }).default("0").notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  billingName: varchar("billingName", { length: 255 }).notNull(),
-  billingEmail: varchar("billingEmail", { length: 255 }).notNull(),
-  billingPhone: varchar("billingPhone", { length: 50 }),
-  billingAddress: varchar("billingAddress", { length: 500 }).notNull(),
-  billingCity: varchar("billingCity", { length: 255 }).notNull(),
-  billingProvince: varchar("billingProvince", { length: 255 }),
-  billingZip: varchar("billingZip", { length: 20 }).notNull(),
-  billingCountry: varchar("billingCountry", { length: 10 }).default("IT").notNull(),
-  shippingName: varchar("shippingName", { length: 255 }),
-  shippingEmail: varchar("shippingEmail", { length: 255 }),
-  shippingPhone: varchar("shippingPhone", { length: 50 }),
-  shippingAddress: varchar("shippingAddress", { length: 500 }),
-  shippingCity: varchar("shippingCity", { length: 255 }),
-  shippingProvince: varchar("shippingProvince", { length: 255 }),
-  shippingZip: varchar("shippingZip", { length: 20 }),
-  shippingCountry: varchar("shippingCountry", { length: 10 }),
-  shippingMethod: varchar("shippingMethod", { length: 255 }),
-  trackingNumber: varchar("trackingNumber", { length: 255 }),
-  trackingUrl: varchar("trackingUrl", { length: 500 }),
-  paymentMethod: varchar("paymentMethod", { length: 255 }),
-  paymentId: varchar("paymentId", { length: 255 }),
-  paymentStatus: varchar("paymentStatus", { length: 50 }).default("PENDING").notNull(),
-  paidAt: timestamp("paidAt", { mode: "date" }),
-  invoiceUrl: varchar("invoiceUrl", { length: 500 }),
-  returnRequested: boolean("returnRequested").default(false).notNull(),
-  returnReason: text("returnReason"),
-  returnStatus: varchar("returnStatus", { length: 50 }).default("NONE"),
-  returnedAt: timestamp("returnedAt", { mode: "date" }),
-  userId: varchar("userId", { length: 255 }).notNull().references(() => users.id),
-  couponId: varchar("couponId", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  billingName: varchar("billing_name", { length: 255 }).notNull(),
+  billingEmail: varchar("billing_email", { length: 255 }).notNull(),
+  billingPhone: varchar("billing_phone", { length: 50 }),
+  billingAddress: varchar("billing_address", { length: 500 }).notNull(),
+  billingCity: varchar("billing_city", { length: 255 }).notNull(),
+  billingProvince: varchar("billing_province", { length: 255 }),
+  billingZip: varchar("billing_zip", { length: 20 }).notNull(),
+  billingCountry: varchar("billing_country", { length: 10 }).default("IT").notNull(),
+  shippingName: varchar("shipping_name", { length: 255 }),
+  shippingEmail: varchar("shipping_email", { length: 255 }),
+  shippingPhone: varchar("shipping_phone", { length: 50 }),
+  shippingAddress: varchar("shipping_address", { length: 500 }),
+  shippingCity: varchar("shipping_city", { length: 255 }),
+  shippingProvince: varchar("shipping_province", { length: 255 }),
+  shippingZip: varchar("shipping_zip", { length: 20 }),
+  shippingCountry: varchar("shipping_country", { length: 10 }),
+  shippingMethod: varchar("shipping_method", { length: 255 }),
+  trackingNumber: varchar("tracking_number", { length: 255 }),
+  trackingUrl: varchar("tracking_url", { length: 500 }),
+  paymentMethod: varchar("payment_method", { length: 255 }),
+  paymentId: varchar("payment_id", { length: 255 }),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("PENDING").notNull(),
+  paidAt: timestamp("paid_at", { mode: "date" }),
+  invoiceUrl: varchar("invoice_url", { length: 500 }),
+  returnRequested: boolean("return_requested").default(false).notNull(),
+  returnReason: text("return_reason"),
+  returnStatus: varchar("return_status", { length: 50 }).default("NONE"),
+  returnedAt: timestamp("returned_at", { mode: "date" }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  couponId: varchar("coupon_id", { length: 255 }),
 });
 
-export const orderItems = pgTable("OrderItem", {
+export const orderItems = pgTable("order_item", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   quantity: integer("quantity").notNull(),
-  unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("totalPrice", { precision: 10, scale: 2 }).notNull(),
-  orderId: varchar("orderId", { length: 255 }).notNull().references(() => orders.id, { onDelete: "cascade" }),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id),
-  variantId: varchar("variantId", { length: 255 }).references(() => productVariants.id),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  orderId: varchar("order_id", { length: 255 }).notNull().references(() => orders.id, { onDelete: "cascade" }),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id),
+  variantId: varchar("variant_id", { length: 255 }).references(() => productVariants.id),
 });
 
 // ─── Promotions ───────────────────────────────────────────────────
 
-export const coupons = pgTable("Coupon", {
+export const coupons = pgTable("coupon", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   code: varchar("code", { length: 255 }).notNull().unique(),
   description: text("description"),
-  discountType: varchar("discountType", { length: 50 }).notNull(),
-  discountValue: decimal("discountValue", { precision: 10, scale: 2 }).notNull(),
-  minOrderAmount: decimal("minOrderAmount", { precision: 10, scale: 2 }),
-  maxUses: integer("maxUses"),
-  usedCount: integer("usedCount").default(0).notNull(),
-  startsAt: timestamp("startsAt", { mode: "date" }),
-  expiresAt: timestamp("expiresAt", { mode: "date" }),
-  isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  discountType: varchar("discount_type", { length: 50 }).notNull(),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+  minOrderAmount: decimal("min_order_amount", { precision: 10, scale: 2 }),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").default(0).notNull(),
+  startsAt: timestamp("starts_at", { mode: "date" }),
+  expiresAt: timestamp("expires_at", { mode: "date" }),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const couponProducts = pgTable("CouponProduct", {
-  couponId: varchar("couponId", { length: 255 }).notNull().references(() => coupons.id, { onDelete: "cascade" }),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+export const couponProducts = pgTable("coupon_product", {
+  couponId: varchar("coupon_id", { length: 255 }).notNull().references(() => coupons.id, { onDelete: "cascade" }),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
 }, (table) => ({ compoundKey: unique().on(table.couponId, table.productId) }));
 
 // ─── Newsletter ───────────────────────────────────────────────────
 
-export const newsletterSubscribers = pgTable("NewsletterSubscriber", {
+export const newsletterSubscribers = pgTable("newsletter_subscriber", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   email: varchar("email", { length: 255 }).notNull().unique(),
   active: boolean("active").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ─── Blog ─────────────────────────────────────────────────────────
 
-export const blogPosts = pgTable("BlogPost", {
+export const blogPosts = pgTable("blog_post", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   title: varchar("title", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   excerpt: text("excerpt"),
   content: text("content").notNull(),
-  coverImage: varchar("coverImage", { length: 255 }),
-  seoTitle: varchar("seoTitle", { length: 255 }),
-  seoDescription: text("seoDescription"),
+  coverImage: varchar("cover_image", { length: 255 }),
+  seoTitle: varchar("seo_title", { length: 255 }),
+  seoDescription: text("seo_description"),
   published: boolean("published").default(false).notNull(),
-  publishedAt: timestamp("publishedAt", { mode: "date" }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  authorId: varchar("authorId", { length: 255 }).notNull().references(() => users.id),
+  publishedAt: timestamp("published_at", { mode: "date" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  authorId: varchar("author_id", { length: 255 }).notNull().references(() => users.id),
 });
 
 // ─── Wishlist ─────────────────────────────────────────────────────
 
-export const wishlistItems = pgTable("WishlistItem", {
+export const wishlistItems = pgTable("wishlist_item", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  userId: varchar("userId", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-  productId: varchar("productId", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+  productId: varchar("product_id", { length: 255 }).notNull().references(() => products.id, { onDelete: "cascade" }),
 }, (table) => ({ uniqueUserProduct: unique().on(table.userId, table.productId) }));
 
 // ─── Stock Movements ───────────────────────────────────────────────
 
-export const stockMovements = pgTable("StockMovement", {
+export const stockMovements = pgTable("stock_movement", {
   id: varchar("id", { length: 255 }).primaryKey().notNull().default(sql`gen_random_uuid()`),
   quantity: integer("quantity").notNull(),
   type: varchar("type", { length: 50 }).notNull(),
   note: text("note"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  variantId: varchar("variantId", { length: 255 }).notNull().references(() => productVariants.id, { onDelete: "cascade" }),
-  userId: varchar("userId", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  variantId: varchar("variant_id", { length: 255 }).notNull().references(() => productVariants.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
 });
