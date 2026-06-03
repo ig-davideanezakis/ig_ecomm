@@ -1,16 +1,45 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState("");
 
+  // If already authenticated, redirect based on role
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      if (session.user.needsTotp) {
+        router.replace("/auth/verify-2fa");
+      } else if (session.user.role === "ADMIN") {
+        router.replace("/admin/dashboard");
+      } else if (session.user.role === "STAFF") {
+        router.replace("/staff");
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [status, session, router]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await signIn("resend", { email, redirect: false });
+    // Pass a default callbackUrl so the magic link redirects to a sensible page
+    const callbackUrl = new URL(window.location.href).searchParams.get("callbackUrl") || "/";
+    await signIn("resend", { email, redirect: false, callbackUrl });
     setSent(true);
+  }
+
+  // Show nothing while checking session (avoids flash)
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Caricamento...</p>
+      </div>
+    );
   }
 
   if (sent) {
