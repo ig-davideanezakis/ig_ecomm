@@ -20,7 +20,7 @@ All features listed in [features.md](features.md) with Linear issues IG-5 throug
 | **Bulk import/export products** (CSV) | Manual entry via admin is fine for initial catalog |
 | **Automatic shipping label generation** | Depends on carrier API integration, region-specific |
 | **PWA / mobile app** | Next.js responsive design covers mobile for MVP |
-| **Social login** (Google OAuth already planned for MVP; others deferred) | Magic link covers the rest |
+| **Social login** (Google OAuth) | ✅ **Done** — implemented for CUSTOMER role (others deferred) |
 | **Abandoned cart emails** | Requires additional background job infra |
 | **Gift cards** | Nice-to-have, not critical for launch |
 | **Product comparison tool** | Could be added post-launch based on user demand |

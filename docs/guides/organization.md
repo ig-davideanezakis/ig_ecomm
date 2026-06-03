@@ -15,6 +15,18 @@ ig_ecomm/
 │       └── scope.md             # MVP boundaries
 ├── drizzle/                     # Drizzle Kit migration files
 ├── drizzle.config.ts            # Drizzle Kit configuration
+├── scripts/                     # Utility scripts (seed, migrate, check)
+│   ├── seed-admin.ts            # Create/promote admin user
+│   ├── seed-test-users.ts       # Seed E2E test users
+│   ├── promote-admin.ts         # Promote user to ADMIN role
+│   ├── init-db.ts               # Full DB init + migration
+│   └── check-deployment.js      # Vercel deployment monitor
+├── e2e/                         # Playwright E2E tests
+│   ├── auth.spec.ts             # Auth flows (21 tests)
+│   ├── admin.spec.ts            # Admin redirect tests
+│   ├── smoke.spec.ts            # Core smoke tests
+│   └── theme.spec.ts            # Theme toggle tests
+├── vercel.json                  # Vercel config
 ├── src/
 │   ├── app/
 │   │   ├── (shop)/              # Public storefront routes
@@ -24,37 +36,66 @@ ig_ecomm/
 │   │   │   ├── cart/            # Cart page
 │   │   │   ├── checkout/        # Checkout flow
 │   │   │   ├── account/         # User account (orders, wishlist, returns)
-│   │   │   └── blog/            # Blog / guides
+│   │   │   ├── blog/            # Blog / guides
+│   │   │   ├── auth/            # Auth pages (login, verify-2fa, error)
+│   │   │   └── shop-navbar.tsx  # Client navbar with session + logout
 │   │   ├── admin/               # Admin panel (all protected)
-│   │   │   ├── dashboard/
+│   │   │   ├── dashboard/       # Dashboard + revenue chart
 │   │   │   ├── products/
 │   │   │   ├── orders/
 │   │   │   ├── categories/
 │   │   │   ├── brands/
 │   │   │   ├── coupons/
-│   │   │   ├── customers/
+│   │   │   ├── customers/       # User management (CRUD + roles)
 │   │   │   ├── blog/
-│   │   │   └── stock/
-│   │   ├── api/                 # API routes
-│   │   │   ├── auth/            # NextAuth handlers
+│   │   │   ├── stock/
+│   │   │   ├── security/        # 2FA + password settings
+│   │   │   ├── admin-header.tsx # Header with user info + logout
+│   │   │   └── admin-sidebar.tsx# Sidebar with active route highlight
+│   │   ├── api/
+│   │   │   ├── auth/            # NextAuth + custom auth APIs
+│   │   │   │   ├── [...nextauth]/ # NextAuth route handler
+│   │   │   │   ├── check-email/ # Detect user role by email
+│   │   │   │   ├── set-password/# Set/change password
+│   │   │   │   ├── totp-setup/  # Generate TOTP secret + QR code
+│   │   │   │   └── verify-totp/ # Verify TOTP token
 │   │   │   ├── products/
 │   │   │   ├── orders/
 │   │   │   ├── cart/
 │   │   │   ├── checkout/
 │   │   │   └── admin/
+│   │   │       ├── dashboard/revenue/  # Revenue chart data
+│   │   │       └── users/             # User CRUD (ADMIN only)
 │   │   └── layout.tsx           # Root layout
 │   ├── db/                      # Database schema & client
-│   │   └── schema/              # Drizzle ORM schema definitions
+│   │   ├── queries/
+│   │   │   ├── index.ts         # Re-exports
+│   │   │   ├── products.ts      # Product queries (raw SQL)
+│   │   │   └── dashboard.ts     # Dashboard stats queries
+│   │   └── schema/
 │   │       ├── index.ts         # Re-exports all schema files
 │   │       ├── auth.ts          # Auth tables (user, account, session, verification_token)
 │   │       └── store.ts         # E-commerce tables (product, category, brand, order, etc.)
 │   ├── components/
+│   │   ├── __tests__/           # Component tests
+│   │   │   ├── infograf-logo.test.tsx
+│   │   │   ├── theme-toggle.test.tsx
+│   │   │   ├── password-setup.test.tsx
+│   │   │   └── totp-setup.test.tsx
 │   │   ├── ui/                  # shadcn/ui base components
-│   │   └── shop/                # Storefront components
+│   │   ├── shop/                # Storefront components
+│   │   ├── totp-setup.tsx       # 2FA setup UI
+│   │   ├── password-setup.tsx   # Password setup UI
+│   │   └── providers.tsx        # Theme + Session providers
 │   ├── lib/
 │   │   ├── db.ts                # Drizzle ORM client (drizzle instance + pg Pool)
 │   │   ├── auth.ts              # NextAuth configuration
+│   │   ├── auth-helpers.ts      # authorize() helper for route protection
+│   │   ├── totp.ts              # TOTP secret, QR code, verification
 │   │   └── utils.ts             # Shared utilities (cn, formatters)
+│   ├── proxy.ts                 # Edge middleware (session cookie check)
+│   └── types/
+│       └── next-auth.d.ts       # NextAuth type augmentation
 ```
 
 ## Database Convention
@@ -107,7 +148,14 @@ ig_ecomm/
 
 ## Auth Pattern
 
-- Public pages: no auth check (catalog, product pages, blog)
-- Account pages: redirect to login if not authenticated
-- Admin routes: check `user.role === 'ADMIN'` (or WAREHOUSE/SUPPORT for specific sections)
-- API routes: validate session via NextAuth `getServerSession()`
+- **Public pages:** no auth check (catalog, product pages, blog)
+- **Account pages:** redirect to login if not authenticated
+- **Admin routes:** `authorize("ADMIN")` in layout (checks role + 2FA)
+- **Staff routes:** `authorize("STAFF")` in layout (checks role + 2FA)
+- **API routes:** validate session via `auth()` from `@/lib/auth`
+- **Role hierarchy:** CUSTOMER (0) → STAFF (1) → ADMIN (2). Higher role inherits lower access.
+- **2FA enforcement:** STAFF and ADMIN roles require TOTP if enabled. Checked via `needsTotp` flag in JWT.
+- **Authentication methods:**
+  - CUSTOMER: Google OAuth or Magic Link (email)
+  - STAFF/ADMIN: Password + (optional) TOTP 2FA
+- **Guest access:** GUEST is an implicit role for unauthenticated users (not stored in DB)

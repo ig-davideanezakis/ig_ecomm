@@ -4,6 +4,7 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 ## Layout & Navigation
 **Linear:** IG-5
+**Status:** ✅ Done
 
 - Navbar — logo, categories dropdown, search bar, cart icon, login/account link
 - Footer — contacts, info links, social links, newsletter signup
@@ -13,12 +14,23 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 ## Catalog
 **Linear:** IG-6
+**Status:** ✅ Done (DB schema + queries)
 
 - Product listing with sidebar filters (category, brand, price range)
 - Product detail page with admin-editable rich HTML content
 - Dynamic content sections (specs table, gallery, embedded video, custom HTML blocks)
 - Scroll-triggered animations (parallax, fade-in reveal, slide transitions)
 - Full-text product search
+
+## Authentication & Authorization
+**Status:** ✅ Done
+
+- Magic Link via Resend (all users)
+- Google OAuth (CUSTOMER only)
+- Password login (STAFF/ADMIN only, bcrypt hashed)
+- Selective 2FA (TOTP via otplib, QR code setup)
+- Role-based route protection (GUEST → CUSTOMER → STAFF → ADMIN)
+- User management in admin (list, create, edit roles, delete)
 
 ## PC Configurator
 **Linear:** IG-7

@@ -38,6 +38,7 @@ The AI agent operates with full autonomy within the agreed scope. It does not wa
   2. `npm run test:run` — all tests passing
   3. `npm run build` — clean build
   Only push when all three pass. Never push and hope CI catches it.
+- **CI pipeline:** `lint → test:run → build → E2E → deploy`. The E2E job is mandatory — if it fails, no deployment happens.
 - **Push early, push often** — small commits with clear messages. The PM should be able to see progress on GitHub in real time.
 
 ### Decision-making

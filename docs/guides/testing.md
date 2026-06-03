@@ -1,7 +1,7 @@
 # Testing Guidelines
 
 > Testing strategy and best practices for ig_ecomm.
-> Last updated: 2026-05-26
+> Last updated: 2026-06-03
 
 ## Stack
 
@@ -38,6 +38,7 @@ src/
 │   └── (shop)/
 │       └── __tests__/      # Page-level component tests
 e2e/
+├── auth.spec.ts            # Auth flows (21 tests: login, password, 2FA, logout, API)
 ├── smoke.spec.ts           # Core smoke tests (always pass)
 ├── theme.spec.ts           # Theme toggle tests
 ├── admin.spec.ts           # Admin redirect/access tests
@@ -106,9 +107,23 @@ test("user can browse products", async ({ page }) => {
 ```
 
 **Rules:**
-- Keep E2E tests focused on **critical user journeys** (browse → add to cart → checkout)
+- Keep E2E tests focused on **critical user journeys** (auth, browse → add to cart → checkout)
 - Use `data-testid` attributes sparingly — prefer accessible selectors (text, role, label)
 - Run E2E tests locally with `npm run test:e2e` before pushing
+- **Prerequisite:** run `npm run db:seed-test-users` first (creates admin, staff, customer accounts for E2E)
+- **CI guard:** If E2E tests fail in CI, the deploy job is blocked — the pipeline requires all jobs (lint, test, build, e2e) to pass before deploying to Vercel
+
+### Test Users (for E2E)
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@test.com` | `TestPass123!` | ADMIN |
+| `staff@test.com` | `TestPass123!` | STAFF |
+| `customer@test.com` | `TestPass123!` | CUSTOMER |
+
+```bash
+npm run db:seed-test-users    # Creates the 3 test users above
+```
 
 ## When to Write What
 
