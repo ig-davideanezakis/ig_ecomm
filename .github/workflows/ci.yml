@@ -83,7 +83,7 @@ jobs:
 
   deploy:
     name: Deploy to Vercel
-    needs: [lint, test, build]
+    needs: [lint, test, build, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
