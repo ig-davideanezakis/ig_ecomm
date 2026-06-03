@@ -13,20 +13,24 @@ import {
 import { users } from "./auth";
 
 // ─── Enums ────────────────────────────────────────────────────────
+//
+// PostgreSQL enum type names. These match what's in the database and
+// cannot be renamed without a migration. Use PascalCase here to match
+// the DB (created by the original PascalCase schema migration).
 
-export const orderStatusEnum = pgEnum("order_status", [
+export const orderStatusEnum = pgEnum("OrderStatus", [
   "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED",
 ]);
-export const paymentStatusEnum = pgEnum("payment_status", [
+export const paymentStatusEnum = pgEnum("PaymentStatus", [
   "PENDING", "PAID", "FAILED", "REFUNDED", "PARTIALLY_REFUNDED",
 ]);
-export const returnStatusEnum = pgEnum("return_status", [
+export const returnStatusEnum = pgEnum("ReturnStatus", [
   "NONE", "REQUESTED", "APPROVED", "REJECTED", "RECEIVED", "REFUNDED",
 ]);
-export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
+export const stockMovementTypeEnum = pgEnum("StockMovementType", [
   "RECEIVED", "SOLD", "ADJUSTMENT", "RETURNED", "DAMAGED", "TRANSFERRED",
 ]);
-export const discountTypeEnum = pgEnum("discount_type", ["PERCENTAGE", "FIXED_AMOUNT"]);
+export const discountTypeEnum = pgEnum("DiscountType", ["PERCENTAGE", "FIXED_AMOUNT"]);
 
 // ─── Catalog ──────────────────────────────────────────────────────
 

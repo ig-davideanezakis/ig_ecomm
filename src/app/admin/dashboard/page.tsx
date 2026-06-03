@@ -1,5 +1,4 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { authorize } from "@/lib/auth-helpers";
 import { getDashboardData } from "@/db/queries/dashboard";
 import { DashboardClient } from "./dashboard-client";
 import type { Metadata } from "next";
@@ -11,11 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboardPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/admin/dashboard");
-  }
+  // Authorize: ADMIN role + 2FA check
+  await authorize("ADMIN");
 
   const data = await getDashboardData(7);
 

@@ -5,16 +5,11 @@ import {
   timestamp,
   text,
   integer,
+  boolean,
   primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ─── Auth (NextAuth.js v5 / Auth.js) — all snake_case ────────────
-//
-// These table definitions are passed to DrizzleAdapter() via the
-// second argument so that the adapter queries the same tables we
-// define here. Must match what @auth/drizzle-adapter expects.
-// See: node_modules/@auth/drizzle-adapter/src/lib/pg.ts
-
 export const users = pgTable("user", {
   id: varchar("id", { length: 255 })
     .primaryKey()
@@ -24,9 +19,12 @@ export const users = pgTable("user", {
   email: varchar("email", { length: 255 }).unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: varchar("image", { length: 255 }),
-  // Custom columns (extend the default adapter schema)
+  // Role: CUSTOMER (default), STAFF, ADMIN
   role: varchar("role", { length: 20 }).default("CUSTOMER").notNull(),
   phone: varchar("phone", { length: 50 }),
+  // 2FA / TOTP fields
+  totpSecret: text("totp_secret"),
+  totpEnabled: boolean("totp_enabled").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -73,4 +71,4 @@ export const verificationTokens = pgTable(
   }),
 );
 
-export type UserRole = "CUSTOMER" | "ADMIN" | "WAREHOUSE" | "SUPPORT";
+export type UserRole = "GUEST" | "CUSTOMER" | "STAFF" | "ADMIN";

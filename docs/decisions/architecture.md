@@ -7,7 +7,7 @@
 
 **Decision:** Next.js (App Router) full-stack + Supabase (PostgreSQL) + Drizzle ORM + NextAuth.js + Resend (email) + Vercel (deploy)
 
-**Date:** 2026-05-26 (updated 2026-05-28 — Prisma → Drizzle ORM)
+**Date:** 2026-05-26 (last updated: 2026-05-28)
 
 **Rationale:**
 - Single deploy (Vercel), no separate backend to maintain
@@ -40,38 +40,77 @@
 - Tailwind for rapid development, consistent theming
 - Framer Motion for scroll animations (parallax, reveal) without heavy JS
 
-**TBD:**
-- UI component library (shadcn/ui? Radix?)
-
 ---
 
 ## Database
 
-**Decision:** Supabase (PostgreSQL) + Drizzle ORM
+**Decision:** Supabase (PostgreSQL) + Drizzle ORM — all snake_case naming
 
-**Date:** 2026-05-26 (updated 2026-05-28 — Prisma → Drizzle ORM)
+**Date:** 2026-05-26 (snake_case migration: 2026-05-28)
 
 **Rationale:**
 - Free tier (500MB) sufficient for MVP
-- Drizzle for type safety and light migrations
+- Drizzle for type safety and migrations
 - Supabase Auth / Storage integration
-- Drizzle is lighter than Prisma 7 — no code generation runtime, no adapter issues
-- Future migration: RDS/Aurora PostgreSQL direct
+- All table and column names use snake_case to avoid case-sensitivity issues between Drizzle ORM and Auth.js adapter
+
+**Naming convention:** All tables (`user`, `product`, `order`, etc.) and columns (`base_price`, `created_at`, `billing_name`, etc.) are snake_case. The Auth.js adapter internal columns (`userId`, `emailVerified`, `sessionToken`) are kept PascalCase only where the adapter requires them.
 
 ---
 
-## Authentication
+## Authentication & Authorization
 
-**Decision:** NextAuth.js (Auth.js)
+**Decision:** NextAuth.js v5 (Auth.js) with Magic Link + role-based access + selective 2FA (TOTP)
 
-**Date:** 2026-05-26
+**Date:** 2026-05-28
 
-**Adapter:** `@auth/drizzle-adapter`
+### Role System
 
-**Rationale:**
-- Native Next.js integration
-- Magic link support (passwordless), Google OAuth, email
-- Free, self-hosted
+| Role | Level | Access | 2FA Required |
+|------|-------|--------|-------------|
+| GUEST | 0 | Public pages only | N/A |
+| CUSTOMER | 1 | Account area, shop features | No |
+| STAFF | 2 | `/staff/*` routes | Yes |
+| ADMIN | 3 | `/admin/*` routes | Yes |
+
+Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit role for unauthenticated users (not stored in DB).
+
+### Authentication Flow
+
+1. **Magic Link** — user enters email on `/auth/login`, receives a one-time link via Resend
+2. **Session Creation** — NextAuth creates a JWT session with role and 2FA status
+3. **2FA Check** — if user is STAFF or ADMIN and has TOTP enabled, `needsTotp` flag is set in the JWT
+4. **2FA Verification** — user is redirected to `/auth/verify-2fa`, enters 6-digit code from authenticator app
+5. **Session Update** — on successful verification, `needsTotp` is cleared via NextAuth's `update()` mechanism
+6. **Access Granted** — middleware allows access to protected routes
+
+### 2FA Implementation
+
+- **Library:** `otplib` (RFC 6238 compliant TOTP)
+- **QR Code:** `qrcode` package for setup QR generation
+- **Secret storage:** `totp_secret` column in `user` table (Base32-encoded)
+- **Verification:** `/api/auth/verify-totp` API route with Server Action
+- **Setup:** `/admin/security` page with QR code scan flow
+
+### Route Protection
+
+- **Middleware** (`proxy.ts`): Edge-level check for session cookie, redirects to login if missing
+- **Admin layout**: Server-side `authorize("ADMIN")` call that checks role + 2FA
+- **Auth helpers** (`lib/auth-helpers.ts`): Reusable `authorize()` function for any page/layout
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/auth.ts` | NextAuth configuration with callbacks (signIn, jwt, session) |
+| `src/lib/auth-helpers.ts` | `authorize()` helper for route protection |
+| `src/lib/totp.ts` | TOTP secret generation, QR code, verification |
+| `src/proxy.ts` | Edge middleware (session cookie check) |
+| `src/app/auth/verify-2fa/` | 2FA verification page |
+| `src/app/api/auth/totp-setup/` | API to generate TOTP secret + QR code |
+| `src/app/api/auth/verify-totp/` | API to verify TOTP token |
+| `src/components/totp-setup.tsx` | Client component for 2FA setup UI |
+| `src/app/admin/security/` | Admin security settings page |
 
 ---
 
@@ -86,6 +125,8 @@
 - React Email for template development
 - Simple API
 
+**Note:** Currently using `onboarding@resend.dev` (test sender). Switch to `noreply@infografstore.it` once the domain is verified on Resend.
+
 ---
 
 ## Payments
@@ -94,50 +135,3 @@
 - Zero monthly fee
 - Acceptable per-transaction fees
 - Installment support (Klarna/Scalapay) postponed to post-MVP
-
----
-
-## Testing
-
-**Decision:** Vitest + @testing-library/react + @testing-library/jest-dom + Playwright
-
-**Date:** 2026-05-26
-
-**Rationale:**
-- Vitest: fast ESM-native runner, jsdom environment, path alias support
-- @testing-library: enforces accessible queries (role, label, text) over implementation details
-- Playwright: multi-browser E2E with auto-waiting, parallel execution
-
-**Consequences:**
-- Tests in `src/**/__tests__/` (Vitest) and `e2e/` (Playwright)
-- All tools are free and local (no SaaS)
-
----
-
-## CI/CD & Deployment
-
-**Decision:** Vercel (GitHub integration) + GitHub Actions
-
-**Date:** 2026-05-27
-
-**Rationale:**
-- Vercel Hobby plan ($0/mo) covers automatic Preview Deployments per PR and Production deploy from main
-- GitHub Actions for lint + test + build verification before merge
-- **Repo made public** to enable Preview Deployments (Vercel Hobby requires public repo for collaboration)
-
-**Deploy mechanism:**
-- **Production:** triggered via Vercel Deploy Hook from GitHub Actions CI (bypasses commit author check on Hobby plan)
-- **Preview (per PR):** Vercel Git integration handles this natively now that the repo is public
-- Deploy hook URL stored in `ci.yml` env variable; for extra security, move it to a GitHub Secret
-
-**Database environment strategy (MVP):**
-- Production and Preview deployments share the same Supabase database
-- Rationale: MVP has no real traffic yet; separates after launch
-- **Planned migration (post-MVP):** create a second Supabase project (`ig_ecomm_preview`) for Preview/development environments, keeping Production isolated
-
-**Environment variables required on Vercel:**
-| Variable | Production | Preview |
-|----------|:----------:|:-------:|
-| `DATABASE_URL` | ✅ | ✅ |
-| `AUTH_SECRET` | ✅ | ✅ |
-| `AUTH_RESEND_KEY` | ✅ | ✅ |

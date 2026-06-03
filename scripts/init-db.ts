@@ -8,29 +8,13 @@ config();
 
 const SQL = `
 -- Rename existing PascalCase tables to snake_case (safe if they exist)
-ALTER TABLE IF EXISTS "User"              RENAME TO "user";
-ALTER TABLE IF EXISTS "Account"           RENAME TO "account";
-ALTER TABLE IF EXISTS "Session"           RENAME TO "session";
-ALTER TABLE IF EXISTS "VerificationToken" RENAME TO "verification_token";
-ALTER TABLE IF EXISTS "Category"          RENAME TO "category";
-ALTER TABLE IF EXISTS "Brand"             RENAME TO "brand";
-ALTER TABLE IF EXISTS "Product"           RENAME TO "product";
-ALTER TABLE IF EXISTS "ProductVariant"    RENAME TO "product_variant";
-ALTER TABLE IF EXISTS "ProductImage"      RENAME TO "product_image";
-ALTER TABLE IF EXISTS "Review"            RENAME TO "review";
-ALTER TABLE IF EXISTS "Question"          RENAME TO "question";
-ALTER TABLE IF EXISTS "Order"             RENAME TO "order";
-ALTER TABLE IF EXISTS "OrderItem"         RENAME TO "order_item";
-ALTER TABLE IF EXISTS "Coupon"            RENAME TO "coupon";
-ALTER TABLE IF EXISTS "CouponProduct"     RENAME TO "coupon_product";
-ALTER TABLE IF EXISTS "NewsletterSubscriber" RENAME TO "newsletter_subscriber";
-ALTER TABLE IF EXISTS "BlogPost"          RENAME TO "blog_post";
-ALTER TABLE IF EXISTS "WishlistItem"      RENAME TO "wishlist_item";
-ALTER TABLE IF EXISTS "StockMovement"     RENAME TO "stock_movement";
-
--- Rename columns in "user" table
-ALTER TABLE IF EXISTS "user" RENAME COLUMN "createdAt" TO "created_at";
-ALTER TABLE IF EXISTS "user" RENAME COLUMN "updatedAt" TO "updated_at";
+-- Only renames columns that haven't been renamed yet (idempotent)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user' AND column_name='createdAt') THEN
+    ALTER TABLE "user" RENAME COLUMN "createdAt" TO "created_at";
+    ALTER TABLE "user" RENAME COLUMN "updatedAt" TO "updated_at";
+  END IF;
+END $$;
 
 -- Rename columns in "product" table
 ALTER TABLE IF EXISTS "product" RENAME COLUMN "basePrice" TO "base_price";
@@ -161,6 +145,10 @@ ALTER TABLE IF EXISTS "stock_movement" RENAME COLUMN "userId" TO "user_id";
 -- Restore the admin user if it was lost during migration
 INSERT INTO "user" (email, role) VALUES ('davide.anezakis@infograf.it', 'ADMIN')
 ON CONFLICT (email) DO UPDATE SET role = 'ADMIN';
+
+-- Add 2FA / TOTP columns to user table
+ALTER TABLE IF EXISTS "user" ADD COLUMN IF NOT EXISTS totp_secret text;
+ALTER TABLE IF EXISTS "user" ADD COLUMN IF NOT EXISTS totp_enabled boolean NOT NULL DEFAULT false;
 `;
 
 async function main() {

@@ -1,10 +1,14 @@
+import { authorize } from "@/lib/auth-helpers";
 import { AdminSidebar } from "./admin-sidebar";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Authorize: only ADMIN can access /admin
+  await authorize("ADMIN");
+
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />

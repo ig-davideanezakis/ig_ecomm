@@ -15,6 +15,7 @@ const sidebarLinks = [
   { href: "/admin/coupons", label: "Coupon", icon: "🎫" },
   { href: "/admin/customers", label: "Clienti", icon: "👥" },
   { href: "/admin/blog", label: "Blog", icon: "✍️" },
+  { href: "/admin/security", label: "Sicurezza", icon: "🔐" },
 ];
 
 export function AdminSidebar() {

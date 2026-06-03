@@ -4,12 +4,19 @@ import type { NextRequest } from "next/server";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only run on admin routes
-  if (!pathname.startsWith("/admin")) {
+  // Routes that require authentication
+  const protectedPrefixes = ["/admin", "/staff", "/account"];
+  const isProtected = protectedPrefixes.some((p) => pathname.startsWith(p));
+
+  // Public auth pages — always allowed
+  const authPrefixes = ["/auth/login", "/auth/error", "/auth/verify-2fa"];
+  const isAuthPage = authPrefixes.some((p) => pathname.startsWith(p));
+
+  if (!isProtected || isAuthPage) {
     return NextResponse.next();
   }
 
-  // Check for session token in cookies (Edge-compatible, no Node deps)
+  // Check for session token in cookies (Edge-compatible — no Node deps)
   const sessionToken =
     request.cookies.get("authjs.session-token")?.value ??
     request.cookies.get("__Secure-authjs.session-token")?.value;
@@ -20,11 +27,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Role check is deferred to the page/API level
-  // (middleware runs on Edge; full auth requires Node runtime)
+  // Role & 2FA checks happen in the page/layout components (Node runtime)
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/staff/:path*", "/account/:path*"],
 };
