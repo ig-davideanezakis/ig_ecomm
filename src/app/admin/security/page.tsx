@@ -1,5 +1,6 @@
 import { authorize } from "@/lib/auth-helpers";
 import { TotpSetup } from "@/components/totp-setup";
+import { PasswordSetup } from "@/components/password-setup";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function AdminSecurityPage() {
         </p>
       </div>
 
+      <PasswordSetup />
       <TotpSetup />
     </div>
   );

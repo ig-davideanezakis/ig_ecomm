@@ -39,14 +39,15 @@ export default function AdminUsersPage() {
   const [newRole, setNewRole] = useState("CUSTOMER");
   const [error, setError] = useState("");
 
-  const fetchUsers = useCallback(async () => {
-    const res = await fetch("/api/admin/users");
-    const json = await res.json();
-    if (json.users) setUsers(json.users);
-    setLoading(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    (async () => {
+      const res = await fetch("/api/admin/users");
+      const json = await res.json();
+      if (json.users) setUsers(json.users);
+      setLoading(false);
+    })();
   }, []);
-
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const startEdit = (u: User) => {
     setEditingId(u.id);

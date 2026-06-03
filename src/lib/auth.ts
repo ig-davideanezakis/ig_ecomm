@@ -1,19 +1,19 @@
 import NextAuth from "next-auth";
 import Resend from "next-auth/providers/resend";
+import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
+import { pool } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/db/schema";
 import type { UserRole } from "@/db/schema/auth";
-
-// ─── Helper: roles that require 2FA ───────────────────────────────
 
 const ROLES_REQUIRING_2FA: UserRole[] = ["STAFF", "ADMIN"];
 
 function is2faRequired(role: string): boolean {
   return ROLES_REQUIRING_2FA.includes(role as UserRole);
 }
-
-// ─── NextAuth configuration ───────────────────────────────────────
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
@@ -22,66 +22,97 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   providers: [
+    // ── Google OAuth (CUSTOMER only) ──────────────────────────────
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID ?? "",
+      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
+      allowDangerousEmailAccountLinking: true,
+    }),
+
+    // ── Magic Link (CUSTOMER) ─────────────────────────────────────
     Resend({
       from: "onboarding@resend.dev",
+    }),
+
+    // ── Password + 2FA (STAFF / ADMIN) ────────────────────────────
+    Credentials({
+      id: "credentials",
+      name: "Password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email as string | undefined;
+        const password = credentials?.password as string | undefined;
+
+        if (!email || !password) return null;
+
+        const result = await pool.query(
+          `SELECT id, email, name, role, password_hash, totp_enabled
+           FROM "user" WHERE email = $1`,
+          [email],
+        );
+
+        if (result.rows.length === 0) return null;
+
+        const user = result.rows[0];
+
+        // Only STAFF/ADMIN can use password auth
+        if (user.role !== "STAFF" && user.role !== "ADMIN") return null;
+        if (!user.password_hash) return null;
+
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) return null;
+
+        // Return user object — JWT callback will add needsTotp
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          totpEnabled: user.totp_enabled,
+        };
+      },
     }),
   ],
   pages: {
     signIn: "/auth/login",
     error: "/auth/error",
-    // If 2FA is pending, NextAuth will redirect here after signIn callback
-    // returns a URL. We handle it at the middleware level instead.
   },
   callbacks: {
-    /**
-     * signIn — runs after the provider verifies the user.
-     * If the user requires 2FA, we DON'T block the sign-in here.
-     * Instead we let the session be created, and intercept at the
-     * jwt/middleware level to enforce 2FA verification.
-     */
-    async signIn({}) {
-      // Always allow sign-in. 2FA enforcement happens in jwt + middleware.
+    async signIn({ user, account }) {
+      // Google OAuth: only allow CUSTOMER role
+      if (account?.provider === "google") {
+        // If user exists and is ADMIN/STAFF, reject Google login
+        if (user.role === "ADMIN" || user.role === "STAFF") {
+          return "/auth/error?error=OAuthNotAllowed";
+        }
+        // Ensure role is CUSTOMER for Google-created users
+        if (!user.role || user.role === "CUSTOMER") return true;
+        return "/auth/error?error=AccessDenied";
+      }
       return true;
     },
 
-    /**
-     * jwt — called whenever a JWT is created or updated.
-     * We inject the user's role and 2FA status into the token.
-     * If 2FA is required AND not yet verified this session, we
-     * add a `needsTotp: true` flag so the middleware can redirect.
-     */
     async jwt({ token, user, trigger, session }) {
-      // On initial sign-in, user object is available
       if (user) {
         token.userId = user.id;
-        token.role = (user as { role: string }).role;
+        token.role = (user as { role: string }).role ?? "CUSTOMER";
         token.totpEnabled = (user as { totpEnabled?: boolean }).totpEnabled ?? false;
         token.email = user.email ?? "";
-
-        // If 2FA is required, mark as pending
         if (is2faRequired(token.role as string) && token.totpEnabled) {
           token.needsTotp = true;
         }
       }
-
-      // On session update (e.g., after 2FA verification via API)
       if (trigger === "update" && session) {
-        if (session.totpVerified === true) {
-          token.needsTotp = false;
-        }
+        if (session.totpVerified === true) token.needsTotp = false;
       }
-
       return token;
     },
 
-    /**
-     * session — maps the JWT to the session object sent to the client.
-     */
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.userId as string;

@@ -25,6 +25,8 @@ export const users = pgTable("user", {
   // 2FA / TOTP fields
   totpSecret: text("totp_secret"),
   totpEnabled: boolean("totp_enabled").default(false).notNull(),
+  // Password for STAFF/ADMIN auth (null for CUSTOMER)
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
