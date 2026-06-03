@@ -16,6 +16,13 @@ env:
   VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  # E2E tests need real DB credentials. Set these in GitHub Secrets:
+  # - DATABASE_URL: Supabase connection string
+  # - AUTH_SECRET: NextAuth secret (same as .env)
+  # - AUTH_RESEND_KEY: Resend API key (optional for E2E)
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+  AUTH_RESEND_KEY: ${{ secrets.AUTH_RESEND_KEY }}
 
 jobs:
   lint:
@@ -53,6 +60,26 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run build
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+      - name: Seed test users
+        run: npx tsx scripts/seed-test-users.ts
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          # Override Playwright's webServer to not reuse — CI always starts fresh
+          PLAYWRIGHT_REUSE_SERVER: "0"
 
   deploy:
     name: Deploy to Vercel
