@@ -27,8 +27,8 @@ export const users = pgTable("user", {
   // Custom columns (extend the default adapter schema)
   role: varchar("role", { length: 20 }).default("CUSTOMER").notNull(),
   phone: varchar("phone", { length: 50 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const accounts = pgTable(
