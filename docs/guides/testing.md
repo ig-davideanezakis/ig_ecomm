@@ -22,6 +22,7 @@
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:e2e` | Run all Playwright E2E tests |
 | `npm run test:e2e:ui` | Launch Playwright UI mode |
+| `npm run db:seed-test-users` | Seed test users for E2E (admin, staff, customer) |
 
 ## Project Structure
 
