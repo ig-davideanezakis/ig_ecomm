@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -116,12 +117,13 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           {/* Main image */}
           <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
             {images[selectedImage] ? (
-              <img
+              <Image
                 src={images[selectedImage].url}
                 alt={images[selectedImage].alt ?? product.title}
                 className="h-full w-full object-cover transition-transform duration-500"
                 width={800}
                 height={800}
+                priority
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -161,7 +163,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                       : "border-border hover:border-muted-foreground"
                   }`}
                 >
-                  <img
+                  <Image
                     src={img.url}
                     alt={img.alt ?? `${product.title} ${i + 1}`}
                     className="h-full w-full object-cover"

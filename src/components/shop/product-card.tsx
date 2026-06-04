@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 
 export interface ProductCardData {
@@ -37,12 +38,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-muted">
         {image ? (
-          <img
+          <Image
             src={image.url}
             alt={image.alt ?? product.title}
             width={400}
             height={400}
-            loading={priority ? "eager" : "lazy"}
+            priority={priority}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

@@ -133,28 +133,42 @@ export default function AdminUsersPage() {
         <form onSubmit={createUser} className="rounded-lg border bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold">Nuovo utente</h3>
           <div className="grid gap-3 sm:grid-cols-3">
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="Email *"
-              required
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nome (opzionale)"
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <select
-              value={newRole}
-              onChange={(e) => setNewRole(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+            <div>
+              <label htmlFor="new-email" className="sr-only">Email nuovo utente</label>
+              <input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Email *"
+                required
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoComplete="email"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-name" className="sr-only">Nome nuovo utente</label>
+              <input
+                id="new-name"
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nome (opzionale)"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoComplete="name"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-role" className="sr-only">Ruolo nuovo utente</label>
+              <select
+                id="new-role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
               {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
+          </div>
           </div>
           <button
             type="submit"

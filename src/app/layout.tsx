@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { SkipNav } from "@/components/skip-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <SkipNav />
+        <Providers>
+          <div id="main-content" tabIndex={-1} className="flex flex-col flex-1 outline-none">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

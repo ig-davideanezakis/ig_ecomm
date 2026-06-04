@@ -81,6 +81,21 @@ jobs:
           # Override Playwright's webServer to not reuse — CI always starts fresh
           PLAYWRIGHT_REUSE_SERVER: "0"
 
+  a11y:
+    name: Accessibility (aXe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - run: npm ci
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+      - name: Run aXe accessibility tests
+        run: npx playwright test e2e/accessibility.spec.ts
+
   deploy:
     name: Deploy to Vercel
     needs: [lint, test, build, e2e]

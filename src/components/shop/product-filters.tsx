@@ -183,25 +183,35 @@ export function ProductFilters({
           Fascia prezzo
         </h3>
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="Da"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-            min={0}
-          />
-          <span className="text-muted-foreground">–</span>
-          <input
-            type="number"
-            placeholder="A"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-            min={0}
-          />
+          <div className="flex-1">
+            <label htmlFor="price-min" className="sr-only">Prezzo minimo</label>
+            <input
+              id="price-min"
+              type="number"
+              placeholder="Da"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              min={0}
+              autoComplete="off"
+            />
+          </div>
+          <span className="text-muted-foreground shrink-0">–</span>
+          <div className="flex-1">
+            <label htmlFor="price-max" className="sr-only">Prezzo massimo</label>
+            <input
+              id="price-max"
+              type="number"
+              placeholder="A"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              min={0}
+              autoComplete="off"
+            />
+          </div>
         </div>
         <button
           onClick={handlePriceFilter}
@@ -245,7 +255,7 @@ function SortSelect({
     <select
       value={current}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>

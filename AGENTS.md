@@ -48,7 +48,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Admin — User Management | ✅ Done | List, create, edit roles, delete |
 | DB Schema — snake_case | ✅ Done | All tables & columns |
 | E2E Tests | ✅ Done | 21 auth E2E tests via Playwright |
-| EAA Compliance | 📋 Planned | [docs/guides/accessibility.md](docs/guides/accessibility.md) — guida pronta, da implementare |
+| EAA Compliance | 🚧 In Progress | [docs/guides/accessibility.md](docs/guides/accessibility.md) — jsx-a11y linting, SkipNav, <Image/>, semantic grids, form labels, focus-visible OK; da fare: cart/checkout aria-live, DialogTitle, aXe CI tuning |
 
 ## Quick Commands
 

@@ -92,11 +92,21 @@ export default async function ProductsPage({ searchParams }: PageProps) {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {data.products.map((product, i) => (
-                  <ProductCard key={product.id} product={product as ProductCardData} priority={i < 6} />
-                ))}
-              </div>
+              <section aria-labelledby="products-heading">
+                <h2 id="products-heading" className="sr-only">
+                  Prodotti in vendita
+                </h2>
+                <p className="sr-only" role="status">
+                  {data.pagination.total} prodotti trovati
+                </p>
+                <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {data.products.map((product, i) => (
+                    <li key={product.id}>
+                      <ProductCard key={product.id} product={product as ProductCardData} priority={i < 6} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
               {data.pagination.totalPages > 1 && (
                 <Pagination
@@ -116,13 +126,16 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
 function SearchBar({ initialValue }: { initialValue: string }) {
   return (
-    <form action="/products" method="GET" className="flex w-full sm:w-72">
+    <form action="/products" method="GET" className="flex w-full sm:w-72" role="search">
+      <label htmlFor="search-products" className="sr-only">Cerca prodotti</label>
       <input
+        id="search-products"
         type="search"
         name="search"
         defaultValue={initialValue}
         placeholder="Cerca prodotti..."
-        className="w-full rounded-md border border-border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+        autoComplete="off"
+        className="w-full rounded-md border border-border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
       <button
         type="submit"

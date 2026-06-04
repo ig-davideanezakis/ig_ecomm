@@ -141,8 +141,9 @@ export default function LoginPageContent() {
 
           <form onSubmit={handlePasswordLogin} className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Password</label>
+              <label htmlFor="login-password" className="text-xs font-medium text-muted-foreground mb-1 block">Password</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -214,7 +215,9 @@ export default function LoginPageContent() {
         </div>
 
         <form onSubmit={handleCheckEmail} className="space-y-4">
+          <label htmlFor="login-email" className="sr-only">Indirizzo email</label>
           <input
+            id="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

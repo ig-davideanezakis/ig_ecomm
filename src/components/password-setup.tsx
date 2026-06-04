@@ -70,10 +70,11 @@ export function PasswordSetup() {
 
       <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+          <label htmlFor="current-pw" className="text-xs font-medium text-muted-foreground mb-1 block">
             Password attuale (se già impostata)
           </label>
           <input
+            id="current-pw"
             type="password"
             value={currentPw}
             onChange={(e) => setCurrentPw(e.target.value)}
@@ -82,10 +83,11 @@ export function PasswordSetup() {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+          <label htmlFor="new-pw" className="text-xs font-medium text-muted-foreground mb-1 block">
             Nuova password
           </label>
           <input
+            id="new-pw"
             type="password"
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
@@ -96,10 +98,11 @@ export function PasswordSetup() {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+          <label htmlFor="confirm-pw" className="text-xs font-medium text-muted-foreground mb-1 block">
             Conferma password
           </label>
           <input
+            id="confirm-pw"
             type="password"
             value={confirmPw}
             onChange={(e) => setConfirmPw(e.target.value)}
