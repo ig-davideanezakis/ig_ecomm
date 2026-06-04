@@ -37,6 +37,7 @@ export function AdminHeader() {
             <button
               onClick={() => signOut({ callbackUrl: "/auth/login" })}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Esci"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
