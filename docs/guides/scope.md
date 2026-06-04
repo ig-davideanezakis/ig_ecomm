@@ -25,6 +25,7 @@ All features listed in [features.md](features.md) with Linear issues IG-5 throug
 | **Gift cards** | Nice-to-have, not critical for launch |
 | **Product comparison tool** | Could be added post-launch based on user demand |
 | **API for external integrations** | Not needed until the store connects to external systems |
+| **Advanced accessibility audit** | EAA compliance checklist implementata incrementalmente; i test aXe-core nella CI sono prioritari |
 
 ## Explicitly Out of Scope (not planned)
 

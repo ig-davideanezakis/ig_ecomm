@@ -12,7 +12,8 @@ ig_ecomm/
 │       ├── behaviour.md         # Roles, workflow, operating model
 │       ├── organization.md      # This file — structure & conventions
 │       ├── features.md          # MVP feature list
-│       └── scope.md             # MVP boundaries
+│       ├── scope.md             # MVP boundaries
+│       └── accessibility.md     # EAA compliance & WCAG
 ├── drizzle/                     # Drizzle Kit migration files
 ├── drizzle.config.ts            # Drizzle Kit configuration
 ├── scripts/                     # Utility scripts (seed, migrate, check)

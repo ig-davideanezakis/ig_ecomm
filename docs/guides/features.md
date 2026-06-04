@@ -129,9 +129,23 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 ## SEO & Performance
 **Linear:** IG-20
 
-- Meta tags per page (title, description, OG)
+- Meta tags per pagina (title, description, OG)
 - Breadcrumb navigation
 - SEO-friendly URL slugs
 - SSG for public pages (catalog, product, blog)
 - Sitemap.xml and robots.txt
 - Lighthouse score target: 90+ all categories
+
+## Accessibility (EAA Compliance)
+**Status:** 📋 Planned — [guida](docs/guides/accessibility.md)
+
+- EAA compliance checklist per ogni feature
+- `eslint-plugin-jsx-a11y` per linting accessibilità
+- Immagini con `next/image` + `alt` descrittivi (mai `<img>` nudo)
+- Focus management con SkipNav e reset su cambio pagina
+- `focus-visible:ring` su tutti gli elementi interattivi
+- Dialog/Sheet di shadcn con `DialogTitle` + `DialogDescription`
+- Griglie prodotti semantiche (`<ul>`/`<li>`)
+- Carrello con notifiche `aria-live` / Toast accessibili
+- Form checkout: `htmlFor`, `aria-describedby`, `autoComplete`
+- Test aXe-core nella CI/CD

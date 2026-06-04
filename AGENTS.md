@@ -18,6 +18,7 @@
 | [docs/guides/features.md](docs/guides/features.md) | MVP feature list with Linear references |
 | [docs/guides/scope.md](docs/guides/scope.md) | MVP boundaries, what's postponed |
 | [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
+| [docs/guides/accessibility.md](docs/guides/accessibility.md) | EAA compliance, WCAG, aria, focus, aXe testing |
 | [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
 
 ## ⚠️ CRITICAL: Pre-push Checklist
@@ -47,6 +48,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Admin — User Management | ✅ Done | List, create, edit roles, delete |
 | DB Schema — snake_case | ✅ Done | All tables & columns |
 | E2E Tests | ✅ Done | 21 auth E2E tests via Playwright |
+| EAA Compliance | 📋 Planned | [docs/guides/accessibility.md](docs/guides/accessibility.md) — guida pronta, da implementare |
 
 ## Quick Commands
 
