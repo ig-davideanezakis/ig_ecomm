@@ -1,7 +1,7 @@
 # Testing Guidelines
 
 > Testing strategy and best practices for ig_ecomm.
-> Last updated: 2026-06-04
+> Last updated: 2026-06-06
 
 ## Stack
 
@@ -21,9 +21,10 @@
 | `npm test` | Run Vitest in watch mode (great during development) |
 | `npm run test:run` | Run all Vitest tests once |
 | `npm run test:coverage` | Run tests with coverage report |
-| `npm run test:e2e` | Run all Playwright E2E tests (auth, smoke, theme, aXe, admin) |
+| `npm run test:e2e` | Run all Playwright E2E tests (auth, smoke, theme, admin) |
 | `npm run test:e2e:ui` | Launch Playwright UI mode |
 | `npm run db:seed-test-users` | Seed test users for E2E (admin, staff, customer) |
+| `npm run db:cleanup` | Delete test users created during E2E runs |
 
 ## Project Structure
 
@@ -39,7 +40,7 @@ src/
 │   └── (shop)/
 │       └── __tests__/      # Page-level component tests
 e2e/
-├── auth.spec.ts            # Auth flows (login, password, 2FA, logout, API, roles)
+├── auth.spec.ts            # Auth flows (login, register, forgot-password, logout, API)
 ├── smoke.spec.ts           # Core smoke tests (homepage, login, navigation)
 ├── theme.spec.ts           # Theme toggle, persistence, script injection
 ├── admin.spec.ts           # Admin redirect/access tests
@@ -56,47 +57,6 @@ e2e/
 3. **Keep tests simple** — one `it()` per behavior. If a test has multiple expectations, split it.
 4. **Avoid mocking too much** — mock only what crosses boundaries (API, DB, auth). Prefer real components.
 
-### Component Tests (@testing-library/react)
-
-```tsx
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { MyComponent } from "./MyComponent";
-
-describe("MyComponent", () => {
-  it("renders the title", () => {
-    render(<MyComponent title="Hello" />);
-    expect(screen.getByText("Hello")).toBeInTheDocument();
-  });
-
-  it("calls onClick when clicked", async () => {
-    const onClick = vi.fn();
-    render(<MyComponent onClick={onClick} />);
-    await userEvent.click(screen.getByRole("button"));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-});
-```
-
-### Utility Tests
-
-```tsx
-import { describe, it, expect } from "vitest";
-import { formatPrice } from "./utils";
-
-describe("formatPrice", () => {
-  it("formats integer as EUR", () => {
-    expect(formatPrice(10)).toBe("€10,00");
-  });
-});
-```
-
-### Server Component Tests
-
-Server Components can't be rendered with `render()` from testing-library. Test them in two ways:
-- **For complex logic**: extract the data-fetching and rendering logic into separate utility functions, test those
-- **For simple pass-through**: rely on E2E tests with Playwright instead
-
 ### E2E Tests (Playwright)
 
 ```ts
@@ -112,17 +72,27 @@ test("user can browse products", async ({ page }) => {
 - Keep E2E tests focused on **critical user journeys** (auth, browse → add to cart → checkout)
 - Use `data-testid` attributes sparingly — prefer accessible selectors (text, role, label)
 - Run E2E tests locally with `npm run test:e2e` before pushing
-- **Prerequisite:** run `npm run db:seed-test-users` first (creates admin, staff, customer accounts for E2E)
-- **CI guard:** If E2E tests fail in CI, the deploy job is blocked — the pipeline requires all jobs (lint, test, build, e2e) to pass before deploying to Vercel
+- **Prerequisite:** run `npm run db:seed-test-users` first (creates admin, staff, customer accounts)
+- **Cleanup:** test users are automatically cleaned up in CI via `scripts/cleanup-test-users.ts`
+- **CI guard:** If E2E tests fail in CI, the deploy job is blocked — all jobs must pass
+
+### E2E test flow — authentication
+
+The E2E tests test the following auth flows:
+
+1. **Email entry** — user enters email, check-email API routes to correct form
+2. **Existing user with password** → "Bentornato!" + password form → "Password dimenticata?"
+3. **New user** → registration form (email + password in one step) → auto-login
+4. **Forgot password** → click link → API generates token → dev link extracted → navigate to reset page → new password → auto-login
+5. **Google OAuth** — button visible on login page (click not tested in E2E)
+6. **Wrong password** → error "Email o password non validi."
+7. **Logout** → redirect to login → admin access blocked
 
 ### Accessibility Tests (aXe-core)
 
-Accessibility tests use [@axe-core/playwright](https://www.npmjs.com/package/@axe-core/playwright) to scan pages for WCAG violations:
+Automated scans with [@axe-core/playwright](https://www.npmjs.com/package/@axe-core/playwright):
 
 ```ts
-import { test, expect } from "@playwright/test";
-import AxeBuilder from "@axe-core/playwright";
-
 test("login page should have no violations", async ({ page }) => {
   await page.goto("/auth/login");
   await page.waitForLoadState("networkidle");
@@ -150,31 +120,20 @@ test("login page should have no violations", async ({ page }) => {
 
 ```bash
 npm run db:seed-test-users    # Creates the 3 test users above
+npm run db:cleanup            # Deletes test users created during E2E runs
 ```
 
-## When to Write What
-
-| Scenario | Test Type | Example |
-|----------|-----------|---------|
-| Utility function | **Unit** (Vitest) | Price formatting, slug generation |
-| Dashboard helpers | **Unit** (Vitest) | formatCurrency, formatDate, getStatusColor |
-| Client component interaction | **Component** (Testing Library) | Toggle button, cart quantity update, dashboard widgets |
-| Admin dashboard | **Component + E2E** | DashboardClient rendering, revenue chart, admin redirect |
-| Form validation | **Component** | Login form, checkout form |
-| Server Component rendering | **E2E** (Playwright) | Product page, catalog listing |
-| API route | **Integration** (Vitest + MSW) | Order creation, product search |
-| Critical user flow | **E2E** (Playwright) | Complete purchase flow |
-| WCAG compliance | **aXe** (Playwright) | Homepage, login, products |
+E2E tests create temporary users with the prefix `e2e-*`. The cleanup script deletes all users matching this pattern from the database, keeping the permanent seed users intact.
 
 ## CI Pipeline
 
-The CI workflow (`.github/workflows/ci.yml`) runs these test jobs:
+The CI workflow (`.github/workflows/ci.yml`) runs:
 
 ```
-lint → test (Vitest) → build → e2e (Playwright) → a11y (aXe) → deploy
+lint → test (Vitest) → build → e2e (Playwright) → cleanup test users → a11y (aXe) → deploy
 ```
 
-All test jobs must pass before deployment to Vercel.
+All test jobs must pass before deployment to Vercel. After E2E tests, the cleanup step always runs (even if tests fail) to remove temporary test users.
 
 ## Coverage Targets (MVP)
 
@@ -183,7 +142,7 @@ All test jobs must pass before deployment to Vercel.
 | Utility functions | 90%+ | Pure logic, easy to cover |
 | Storefront components | 70%+ | Focus on interactive ones (cart, search) |
 | Admin components | 50%+ | Forms, CRUD operations |
-| E2E critical paths | All major flows | Homepage, browse, product, checkout, auth |
+| E2E critical paths | All major flows | Homepage, browse, product, auth |
 | aXe a11y scans | 0 critical violations | Homepage, login, products |
 
 ---

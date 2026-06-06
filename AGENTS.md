@@ -39,16 +39,18 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 |---------|--------|-------|
 | Project Scaffolding | ✅ Done | IG-21 |
 | CI/CD & Vercel Deploy | ✅ Done | IG-22 — pipeline: lint → test → build → E2E → deploy |
-| Authentication — Magic Link | ✅ Done | IG-23 — Resend email provider |
 | Authentication — Google OAuth | ✅ Done | For CUSTOMER role only |
-| Authentication — Password + 2FA | ✅ Done | For STAFF/ADMIN roles (TOTP via otplib) |
+| Authentication — Email + Password | ✅ Done | All roles: login, registration, password reset with token |
+| Authentication — Forgot Password | ✅ Done | Secure token-based reset via email (Resend) |
+| Authentication — 2FA (TOTP) | ✅ Done | For STAFF/ADMIN roles only |
 | Theme System & Brand Identity | ✅ Done | IG-24 |
 | Catalog (DB schema + queries) | ✅ Done | IG-6 |
 | Admin — Dashboard & Reports | ✅ Done | IG-14 |
 | Admin — User Management | ✅ Done | List, create, edit roles, delete |
 | DB Schema — snake_case | ✅ Done | All tables & columns |
-| E2E Tests | ✅ Done | 45 Playwright tests (auth, smoke, theme, admin, aXe) |
-| EAA Compliance | ✅ Done | [docs/guides/accessibility.md](docs/guides/accessibility.md) — jsx-a11y linting, SkipNav, <Image/>, semantic grids, form labels, focus-visible, aria-label, aXe CI |
+| E2E Tests | ✅ Done | 43 Playwright tests (auth, smoke, theme, admin) |
+| Accessibility (aXe) | ✅ Done | 3 aXe scans (homepage, login, products) |
+| EAA Compliance | ✅ Done | jsx-a11y, SkipNav, next/image, semantic grids, form labels, focus-visible |
 
 ## Quick Commands
 
@@ -59,11 +61,10 @@ npm run lint             # ESLint
 npm run test:run         # Vitest (unit + component)
 npm run test:e2e         # Playwright E2E (requires running DB)
 npm run db:check         # Test DB connection
-npm run db:migrate       # Apply snake_case migration
-npm run db:init          # Full DB init (tables + seed)
 npm run db:seed-test-users  # Seed E2E test users
 npm run db:seed-admin    # Create/promote admin user
 npm run db:promote-admin # Promote user to ADMIN role
+npm run db:cleanup       # Delete E2E test users from DB
 ```
 
 ## Required Environment Variables
@@ -74,6 +75,7 @@ npm run db:promote-admin # Promote user to ADMIN role
 | `AUTH_SECRET` | .env + GitHub Secrets + Vercel | ✅ |
 | `AUTH_GOOGLE_ID` | .env + Vercel | ✅ for Google OAuth |
 | `AUTH_GOOGLE_SECRET` | .env + Vercel | ✅ for Google OAuth |
+| `AUTH_RESEND_KEY` | .env | ✅ for password reset emails |
 | `VERCEL_DEPLOY_HOOK` | GitHub Secrets | ✅ for deploy |
 | `VERCEL_TOKEN` | GitHub Secrets | ✅ for deploy monitoring |
 | `VERCEL_PROJECT_ID` | GitHub Secrets | ✅ for deploy monitoring |
@@ -84,3 +86,5 @@ npm run db:promote-admin # Promote user to ADMIN role
 - **Middleware file** (`middleware.ts`) is deprecated in Next.js 16 in favor of `proxy.ts`.
 - **Pre-push checklist** is the single most important rule — never skip it.
 - **E2E tests require a running DB** — run `npm run db:seed-test-users` before `npm run test:e2e`.
+- **Supabase free tier** pauses the DB after ~1 week of inactivity. Restart from Supabase Dashboard.
+- **Resend test sender** (`onboarding@resend.dev`) can only send to the account owner's email. In CI/dev, the forgot-password API logs the reset link to console instead.

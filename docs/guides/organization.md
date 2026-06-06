@@ -19,14 +19,17 @@ ig_ecomm/
 ├── scripts/                     # Utility scripts (seed, migrate, check)
 │   ├── seed-admin.ts            # Create/promote admin user
 │   ├── seed-test-users.ts       # Seed E2E test users
+│   ├── cleanup-test-users.ts    # Delete E2E test users created during runs
 │   ├── promote-admin.ts         # Promote user to ADMIN role
 │   ├── init-db.ts               # Full DB init + migration
 │   └── check-deployment.js      # Vercel deployment monitor
 ├── e2e/                         # Playwright E2E tests
-│   ├── auth.spec.ts             # Auth flows (21 tests)
+│   ├── auth.spec.ts             # Auth flows (login, register, forgot-password, logout, roles, API)
 │   ├── admin.spec.ts            # Admin redirect tests
 │   ├── smoke.spec.ts            # Core smoke tests
-│   └── theme.spec.ts            # Theme toggle tests
+│   ├── theme.spec.ts            # Theme toggle tests
+│   ├── accessibility.spec.ts    # aXe-core WCAG scans
+│   └── catalog.spec.ts         # Catalog browsing tests
 ├── vercel.json                  # Vercel config
 ├── src/
 │   ├── app/
@@ -57,7 +60,10 @@ ig_ecomm/
 │   │   │   ├── auth/            # NextAuth + custom auth APIs
 │   │   │   │   ├── [...nextauth]/ # NextAuth route handler
 │   │   │   │   ├── check-email/ # Detect user role by email
-│   │   │   │   ├── set-password/# Set/change password
+│   │   │   │   ├── register/    # Create CUSTOMER account (email + password)
+│   │   │   │   ├── forgot-password/ # Generate reset token, send email
+│   │   │   │   ├── reset-password/  # Verify token, update password
+│   │   │   │   ├── set-password/# Set/change password (authenticated)
 │   │   │   │   ├── totp-setup/  # Generate TOTP secret + QR code
 │   │   │   │   └── verify-totp/ # Verify TOTP token
 │   │   │   ├── products/
@@ -157,6 +163,9 @@ ig_ecomm/
 - **Role hierarchy:** CUSTOMER (0) → STAFF (1) → ADMIN (2). Higher role inherits lower access.
 - **2FA enforcement:** STAFF and ADMIN roles require TOTP if enabled. Checked via `needsTotp` flag in JWT.
 - **Authentication methods:**
-  - CUSTOMER: Google OAuth or Magic Link (email)
-  - STAFF/ADMIN: Password + (optional) TOTP 2FA
+  - CUSTOMER: Google OAuth or Email + Password (self-registration)
+  - STAFF/ADMIN: Password + TOTP 2FA (created via DB only, not via registration)
+- **Password reset:** All roles can reset password via email-based token flow.
+  Token (crypto.randomBytes(32)) stored in `verification_token` table, 1h expiry.
+- **Registration flow:** Enter email → if not found → one-step form (password only) → auto-login
 - **Guest access:** GUEST is an implicit role for unauthenticated users (not stored in DB)

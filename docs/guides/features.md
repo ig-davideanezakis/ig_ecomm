@@ -27,8 +27,11 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 - Google OAuth (CUSTOMER)
 - Email + Password login (all roles)
-- Self-registration (CUSTOMER: email + name + password)
-- Selective 2FA (TOTP via otplib, QR code setup)
+- Self-registration (CUSTOMER: email + password in one step)
+- Forgot password with secure token-based reset (1h expiry, email via Resend)
+- Selective 2FA (TOTP via otplib, QR code setup — STAFF/ADMIN only)
+- Password reset available to all roles (CUSTOMER, STAFF, ADMIN)
+- Admin creation only via database (not via registration API)
 - Role-based route protection (GUEST → CUSTOMER → STAFF → ADMIN)
 - User management in admin (list, create, edit roles, delete)
 

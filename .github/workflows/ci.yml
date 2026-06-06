@@ -78,6 +78,9 @@ jobs:
         env:
           # Override Playwright's webServer to not reuse — CI always starts fresh
           PLAYWRIGHT_REUSE_SERVER: "0"
+      - name: Cleanup test users
+        if: always()
+        run: npx tsx scripts/cleanup-test-users.ts
 
   a11y:
     name: Accessibility (aXe)
