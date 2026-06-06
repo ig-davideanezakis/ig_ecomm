@@ -3,10 +3,36 @@ import { test, expect } from "@playwright/test";
 test.describe("Login Page", () => {
   test("should display login page with Google button and email form", async ({ page }) => {
     await page.goto("/auth/login");
-    await expect(page.getByText("Accedi")).toBeVisible();
+    await expect(page.getByText("Accedi o registrati")).toBeVisible();
     await expect(page.getByText("Continua con Google")).toBeVisible();
     await expect(page.getByPlaceholder("tua@email.it")).toBeVisible();
     await expect(page.getByRole("button", { name: "Continua", exact: true })).toBeVisible();
+  });
+
+  test("should create account and redirect to set password for unknown email", async ({ page }) => {
+    const testEmail = `new-${Date.now()}@test.com`;
+    await page.goto("/auth/login");
+    await page.getByPlaceholder("tua@email.it").fill(testEmail);
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
+
+    // Account created, should show set-password form
+    await expect(page.getByText("Account creato!")).toBeVisible();
+    await expect(page.getByPlaceholder("Minimo 6 caratteri")).toBeVisible();
+  });
+
+  test("should register, set password, and auto-login as CUSTOMER", async ({ page }) => {
+    const testEmail = `full-${Date.now()}@test.com`;
+    await page.goto("/auth/login");
+    await page.getByPlaceholder("tua@email.it").fill(testEmail);
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
+
+    await expect(page.getByText("Account creato!")).toBeVisible();
+
+    await page.getByPlaceholder("Minimo 6 caratteri").fill("TestPass123!");
+    await page.getByText("Imposta password e accedi").click();
+
+    // Should redirect to homepage (CUSTOMER role)
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test("should redirect authenticated admin to dashboard", async ({ page }) => {
@@ -38,29 +64,44 @@ test.describe("Login Page", () => {
     await expect(page.getByText("Email o password non validi.")).toBeVisible();
   });
 
-  test("should show registration form for unknown email", async ({ page }) => {
+  test("should allow back navigation from password form", async ({ page }) => {
     await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill("nuovo-utente@test.com");
+    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
 
-    await expect(page.getByText("Crea il tuo account")).toBeVisible();
-    await expect(page.getByText("nuovo-utente@test.com")).toBeVisible();
-    await expect(page.getByPlaceholder("Il tuo nome")).toBeVisible();
+    await expect(page.getByText("Bentornato")).toBeVisible();
+
+    await page.getByText("Usa un altro account").click();
+
+    await expect(page.getByText("Accedi o registrati")).toBeVisible();
+    await expect(page.getByText("Continua con Google")).toBeVisible();
   });
 
-  test("should register a new customer account", async ({ page }) => {
-    const testEmail = `test-${Date.now()}@example.com`;
+  test("should show forgot password link on password form", async ({ page }) => {
     await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill(testEmail);
+    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
 
-    await expect(page.getByText("Crea il tuo account")).toBeVisible();
+    await expect(page.getByText("Password dimenticata?")).toBeVisible();
+  });
 
-    await page.getByPlaceholder("Il tuo nome").fill("Test User");
-    await page.getByPlaceholder("Minimo 6 caratteri").fill("MyPassword123!");
-    await page.getByText("Crea account e accedi").click();
+  test("should show forgot password form and allow reset", async ({ page }) => {
+    await page.goto("/auth/login");
+    await page.getByPlaceholder("tua@email.it").fill("customer@test.com");
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
-    // Should redirect to homepage (CUSTOMER role)
+    await expect(page.getByText("Bentornato")).toBeVisible();
+
+    // Click forgot password
+    await page.getByText("Password dimenticata?").click();
+
+    await expect(page.getByText("Reimposta password")).toBeVisible();
+
+    // Set new password
+    await page.getByPlaceholder("Minimo 6 caratteri").fill("NewPass789!");
+    await page.getByText("Reimposta e accedi").click();
+
+    // Should login successfully with new password
     await expect(page).toHaveURL(/\/$/);
   });
 
@@ -72,19 +113,6 @@ test.describe("Login Page", () => {
     await expect(page.getByText("Bentornato")).toBeVisible();
     await expect(page.getByText("customer@test.com")).toBeVisible();
     await expect(page.getByPlaceholder("••••••••")).toBeVisible();
-  });
-
-  test("should allow back navigation from password form", async ({ page }) => {
-    await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByRole("button", { name: "Continua", exact: true }).click();
-
-    await expect(page.getByText("Bentornato")).toBeVisible();
-
-    await page.getByText("Usa un altro account").click();
-
-    await expect(page.getByText("Accedi")).toBeVisible();
-    await expect(page.getByText("Continua con Google")).toBeVisible();
   });
 
   test("should redirect unauthenticated admin access to login", async ({ page }) => {
@@ -135,7 +163,6 @@ test.describe("Admin Dashboard", () => {
 
 test.describe("Logout", () => {
   test("should logout and redirect to login, block admin access", async ({ page }) => {
-    // Login first
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
@@ -144,13 +171,10 @@ test.describe("Logout", () => {
 
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
-    // Click logout in admin header
     await page.getByTitle("Esci").click();
 
-    // Should redirect to login page
     await expect(page).toHaveURL(/\/auth\/login/);
 
-    // Try to access admin — should redirect to login again
     await page.goto("/admin/dashboard", { waitUntil: "load" });
     await expect(page).toHaveURL(/\/auth\/login/);
   });
@@ -185,7 +209,6 @@ test.describe("Role-based Access", () => {
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     await page.goto("/");
-    // Wait for session to load
     await expect(page.getByText("admin@test.com")).toBeVisible({ timeout: 15000 });
     await page.getByLabel("Account").click();
     await expect(page).toHaveURL(/\/admin\/dashboard/);

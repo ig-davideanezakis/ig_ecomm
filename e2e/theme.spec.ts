@@ -118,6 +118,8 @@ test.describe("Theme persistence", () => {
     await toggle.click();
     await expect(page.locator("html")).not.toHaveClass(/dark/);
 
+    // Wait for localStorage to be set before reload
+    await page.waitForTimeout(300);
     // Reload and check theme persists
     await page.reload();
     await page.waitForLoadState("networkidle");

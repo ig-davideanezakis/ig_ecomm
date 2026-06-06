@@ -22,16 +22,18 @@ test.describe("Homepage", () => {
 test.describe("Login page", () => {
   test("should display login form", async ({ page }) => {
     await page.goto("/auth/login");
-    await expect(page.getByText("Accedi")).toBeVisible();
+    await expect(page.getByText("Accedi o registrati")).toBeVisible();
     await expect(page.getByPlaceholder("tua@email.it")).toBeVisible();
     await expect(page.getByText("Continua con Google")).toBeVisible();
   });
 
-  test("should show registration form for unknown email", async ({ page }) => {
+  test("should create account and show set-password for unknown email", async ({ page }) => {
+    const testEmail = `smoke-${Date.now()}@example.com`;
     await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill("test@example.com");
+    await page.getByPlaceholder("tua@email.it").fill(testEmail);
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-    await expect(page.getByText("Crea il tuo account")).toBeVisible();
+    await expect(page.getByText("Account creato!")).toBeVisible();
+    await expect(page.getByPlaceholder("Minimo 6 caratteri")).toBeVisible();
   });
 });
 

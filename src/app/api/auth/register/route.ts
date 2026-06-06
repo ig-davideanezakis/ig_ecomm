@@ -1,39 +1,32 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import bcrypt from "bcryptjs";
 
 /**
  * POST /api/auth/register
- * Creates a new CUSTOMER account with email, name, and password.
+ * Creates a new CUSTOMER account with just an email (no password).
+ * The user sets a password on first login.
+ * STAFF/ADMIN roles cannot be created here — only via DB.
  */
 export async function POST(request: Request) {
-  const { email, name, password } = await request.json();
+  const { email } = await request.json();
 
-  if (!email || typeof email !== "string") {
-    return NextResponse.json({ error: "Email richiesta." }, { status: 400 });
-  }
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return NextResponse.json({ error: "Nome richiesto." }, { status: 400 });
-  }
-  if (!password || typeof password !== "string" || password.length < 6) {
-    return NextResponse.json({ error: "Password: minimo 6 caratteri." }, { status: 400 });
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    return NextResponse.json({ error: "Email valida richiesta." }, { status: 400 });
   }
 
   // Check if email already exists
   const existing = await pool.query(
-    `SELECT id FROM "user" WHERE email = $1 LIMIT 1`,
+    `SELECT id, role, password_hash FROM "user" WHERE email = $1 LIMIT 1`,
     [email],
   );
   if (existing.rows.length > 0) {
     return NextResponse.json({ error: "Email già registrata." }, { status: 409 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
   const result = await pool.query(
-    `INSERT INTO "user" (email, name, role, password_hash) VALUES ($1, $2, $3, $4)
-     RETURNING id, email, name, role`,
-    [email, name.trim(), "CUSTOMER", passwordHash],
+    `INSERT INTO "user" (email, role) VALUES ($1, 'CUSTOMER')
+     RETURNING id, email, role`,
+    [email],
   );
 
   const user = result.rows[0];
@@ -43,7 +36,6 @@ export async function POST(request: Request) {
     user: {
       id: user.id,
       email: user.email,
-      name: user.name,
       role: user.role,
     },
   });
