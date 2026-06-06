@@ -171,7 +171,7 @@ export const orders = pgTable("order", {
   returnReason: text("return_reason"),
   returnStatus: varchar("return_status", { length: 50 }).default("NONE"),
   returnedAt: timestamp("returned_at", { mode: "date" }),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
   couponId: varchar("coupon_id", { length: 255 }),
 });
 

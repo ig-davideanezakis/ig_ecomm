@@ -19,6 +19,7 @@
 | [docs/guides/scope.md](docs/guides/scope.md) | MVP boundaries, what's postponed |
 | [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
 | [docs/guides/accessibility.md](docs/guides/accessibility.md) | EAA compliance, WCAG, aria, focus, aXe testing |
+| [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) | Guest checkout flow, cart, post-purchase registration |
 | [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
 
 ## ⚠️ CRITICAL: Pre-push Checklist
@@ -51,6 +52,8 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | E2E Tests | ✅ Done | 43 Playwright tests (auth, smoke, theme, admin) |
 | Accessibility (aXe) | ✅ Done | 3 aXe scans (homepage, login, products) |
 | EAA Compliance | ✅ Done | jsx-a11y, SkipNav, next/image, semantic grids, form labels, focus-visible |
+| Guest Checkout | ✅ Done | [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) — localStorage cart, 3-opzione checkout, thank-you page, post-purchase account |
+| Cart & Checkout | 🚧 MVP Done | Checkout con guest, login e Google OAuth. Payments TBD |
 
 ## Quick Commands
 

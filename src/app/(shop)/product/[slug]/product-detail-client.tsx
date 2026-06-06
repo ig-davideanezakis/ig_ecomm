@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
+import { useCart } from "@/lib/cart-store";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -57,6 +58,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   );
   const [selectedImage, setSelectedImage] = useState(0);
 
+  const { addItem } = useCart();
+
   const currentPrice = selectedVariant?.price ?? product.basePrice;
   const hasDiscount =
     product.compareAtPrice && product.compareAtPrice > currentPrice;
@@ -71,9 +74,19 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     : [];
 
   const handleAddToCart = useCallback(() => {
-    // TODO: integrate with cart
-    alert("Aggiunto al carrello!");
-  }, []);
+    addItem({
+      productId: product.id,
+      variantId: selectedVariant?.id ?? product.id,
+      slug: product.slug,
+      title: product.title,
+      image: images[0]?.url ?? "",
+      price: currentPrice,
+      quantity: 1,
+      variantName: selectedVariant?.name ?? "Default",
+    });
+    // Visual feedback — will be replaced with a toast later
+    alert(`${product.title} aggiunto al carrello!`);
+  }, [addItem, product, selectedVariant, images, currentPrice]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
