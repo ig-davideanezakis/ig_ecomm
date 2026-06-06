@@ -3,10 +3,11 @@ import { pool } from "@/lib/db";
 
 /**
  * POST /api/auth/check-email
- * Given an email, returns whether the user exists and their role.
- * The login page uses this to decide which auth flow to show:
- *   - Not found / CUSTOMER → Magic Link
- *   - STAFF / ADMIN → Password form
+ * Given an email, returns whether the user exists and their auth status.
+ * The login page uses this to decide which form to show:
+ *   - Not found → Registration (name + password)
+ *   - Found, has password → Password form
+ *   - Found, no password → Force password setup
  */
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   const result = await pool.query(
-    `SELECT id, email, role, totp_enabled FROM "user" WHERE email = $1 LIMIT 1`,
+    `SELECT id, email, name, role, password_hash, totp_enabled FROM "user" WHERE email = $1 LIMIT 1`,
     [email],
   );
 
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
       exists: false,
       role: null,
       totpEnabled: false,
+      hasPassword: false,
     });
   }
 
@@ -33,7 +35,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     exists: true,
     role: user.role,
+    name: user.name,
     totpEnabled: user.totp_enabled,
-    hasPassword: user.role === "STAFF" || user.role === "ADMIN",
+    hasPassword: !!user.password_hash,
   });
 }

@@ -25,9 +25,9 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 ## Authentication & Authorization
 **Status:** ✅ Done
 
-- Magic Link via Resend (all users)
-- Google OAuth (CUSTOMER only)
-- Password login (STAFF/ADMIN only, bcrypt hashed)
+- Google OAuth (CUSTOMER)
+- Email + Password login (all roles)
+- Self-registration (CUSTOMER: email + name + password)
 - Selective 2FA (TOTP via otplib, QR code setup)
 - Role-based route protection (GUEST → CUSTOMER → STAFF → ADMIN)
 - User management in admin (list, create, edit roles, delete)

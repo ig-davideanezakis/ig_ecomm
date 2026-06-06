@@ -8,8 +8,7 @@ test.describe("Homepage", () => {
 
   test("should display the Infograf logo in navbar", async ({ page }) => {
     await page.goto("/");
-    // The logo is an SVG inside a link — check the SVG element exists
-    const logo = page.locator("header nav a svg, header a svg").first();
+    const logo = page.locator("header svg").first();
     await expect(logo).toBeVisible();
   });
 
@@ -28,12 +27,11 @@ test.describe("Login page", () => {
     await expect(page.getByText("Continua con Google")).toBeVisible();
   });
 
-  test("should submit the email form for unknown email", async ({ page }) => {
+  test("should show registration form for unknown email", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("test@example.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-    // The app always shows "Link inviato!" for security (prevents email enumeration)
-    await expect(page.getByText("Link inviato!")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Crea il tuo account")).toBeVisible();
   });
 });
 
@@ -46,7 +44,6 @@ test.describe("Navigation", () => {
 
   test("should navigate to admin and redirect to login", async ({ page }) => {
     await page.goto("/admin/dashboard");
-    // Should redirect to login since not authenticated
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 });

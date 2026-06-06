@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import Resend from "next-auth/providers/resend";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -31,12 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       allowDangerousEmailAccountLinking: true,
     }),
 
-    // ── Magic Link (CUSTOMER) ─────────────────────────────────────
-    Resend({
-      from: "onboarding@resend.dev",
-    }),
-
-    // ── Password + 2FA (STAFF / ADMIN) ────────────────────────────
+    // ── Password (all roles) ───────────────────────────────────────
     Credentials({
       id: "credentials",
       name: "Password",
@@ -57,17 +51,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         if (result.rows.length === 0) return null;
+        if (!result.rows[0].password_hash) return null;
 
         const user = result.rows[0];
-
-        // Only STAFF/ADMIN can use password auth
-        if (user.role !== "STAFF" && user.role !== "ADMIN") return null;
-        if (!user.password_hash) return null;
 
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) return null;
 
-        // Return user object — JWT callback will add needsTotp
         return {
           id: user.id,
           email: user.email,
@@ -86,11 +76,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       // Google OAuth: only allow CUSTOMER role
       if (account?.provider === "google") {
-        // If user exists and is ADMIN/STAFF, reject Google login
         if (user.role === "ADMIN" || user.role === "STAFF") {
           return "/auth/error?error=OAuthNotAllowed";
         }
-        // Ensure role is CUSTOMER for Google-created users
         if (!user.role || user.role === "CUSTOMER") return true;
         return "/auth/error?error=AccessDenied";
       }

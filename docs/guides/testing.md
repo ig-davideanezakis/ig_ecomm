@@ -152,16 +152,6 @@ test("login page should have no violations", async ({ page }) => {
 npm run db:seed-test-users    # Creates the 3 test users above
 ```
 
-### Magic Link behavior in tests
-
-The Resend test sender (`onboarding@resend.dev`) can only send to the account owner
-(`davide.anezakis@infograf.it`). In CI and local dev, sending to test emails
-(e.g. `customer@test.com`, `test@example.com`) will fail with a 403 error.
-
-The login page handles this gracefully: it always shows "Link inviato!" regardless
-of whether Resend actually delivered the email (prevents email enumeration).
-E2E tests verify this behavior.
-
 ## When to Write What
 
 | Scenario | Test Type | Example |

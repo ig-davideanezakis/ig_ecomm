@@ -4,7 +4,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type Step = "idle" | "sent" | "password";
+type Step = "idle" | "password" | "register";
 
 export default function LoginPageContent() {
   const { data: session, status } = useSession();
@@ -14,6 +14,7 @@ export default function LoginPageContent() {
 
   const [step, setStep] = useState<Step>("idle");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,19 +42,17 @@ export default function LoginPageContent() {
       });
       const json = await res.json();
 
-      if (json.role === "STAFF" || json.role === "ADMIN") {
+      if (json.exists && json.hasPassword) {
         setUserRole(json.role);
+        setName(json.name ?? "");
         setStep("password");
+      } else if (json.exists && !json.hasPassword) {
+        // User exists but has no password (Google OAuth account).
+        // Tell them to use Google OAuth to sign in.
+        setError("Questo account è collegato a Google. Accedi con Google per continuare.");
       } else {
-        // Always show "Link inviato!" even if Resend fails, to prevent email enumeration.
-        // The Resend test sender (onboarding@resend.dev) can only send to davide.anezakis@infograf.it,
-        // but we still show the success message. In production with a verified domain all emails work.
-        try {
-          await signIn("resend", { email, redirect: false, callbackUrl });
-        } catch {
-          // Resend may fail in test/dev — still show success to prevent email enumeration
-        }
-        setStep("sent");
+        // New user — show registration form
+        setStep("register");
       }
     } catch {
       setError("Errore di connessione. Riprova.");
@@ -81,6 +80,45 @@ export default function LoginPageContent() {
     router.refresh();
   }
 
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      // Create new account
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, password }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setError(json.error ?? "Errore durante la registrazione.");
+        setLoading(false);
+        return;
+      }
+
+      // Auto-login after registration
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (result?.error) {
+        setError("Account creato, ma errore durante l'accesso automatico. Prova ad accedere.");
+        setLoading(false);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError("Errore di connessione. Riprova.");
+      setLoading(false);
+    }
+  }
+
   if (status === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -89,33 +127,7 @@ export default function LoginPageContent() {
     );
   }
 
-  // ── Magic Link sent ────────────────────────────────────────────
-  if (step === "sent") {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-8 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold">Link inviato!</h1>
-          <p className="text-sm text-muted-foreground">
-            Controlla la tua casella <strong>{email}</strong> per il link di accesso.
-          </p>
-          <button
-            onClick={() => { setStep("idle"); setEmail(""); }}
-            className="text-xs text-muted-foreground hover:text-foreground underline"
-          >
-            Usa un&apos;altra email
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Password form (STAFF / ADMIN) ──────────────────────────────
+  // ── Password form (all roles) ──────────────────────────────────
   if (step === "password") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
@@ -127,10 +139,8 @@ export default function LoginPageContent() {
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold">Accesso riservato</h1>
-            <p className="text-sm text-muted-foreground">
-              {email} — {userRole === "ADMIN" ? "Amministratore" : "Staff"}
-            </p>
+            <h1 className="text-xl font-bold">Bentornato{name ? `, ${name}` : ""}!</h1>
+            <p className="text-sm text-muted-foreground">{email}</p>
           </div>
 
           <form onSubmit={handlePasswordLogin} className="space-y-4">
@@ -166,10 +176,88 @@ export default function LoginPageContent() {
 
           <div className="text-center">
             <button
-              onClick={() => { setStep("idle"); setEmail(""); setPassword(""); setUserRole(null); }}
+              onClick={() => { setStep("idle"); setEmail(""); setPassword(""); setUserRole(null); setName(""); }}
               className="text-xs text-muted-foreground hover:text-foreground underline"
             >
               Usa un altro account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Registration form ─────────────────────────────────────────
+  if (step === "register") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-8">
+          <div className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold">Crea il tuo account</h1>
+            <p className="text-sm text-muted-foreground">{email}</p>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label htmlFor="register-name" className="text-xs font-medium text-muted-foreground mb-1 block">Nome</label>
+              <input
+                id="register-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Il tuo nome"
+                required
+                minLength={2}
+                autoFocus
+                className="w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoComplete="name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="register-password" className="text-xs font-medium text-muted-foreground mb-1 block">Scegli una password</label>
+              <input
+                id="register-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimo 6 caratteri"
+                required
+                minLength={6}
+                className="w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoComplete="new-password"
+              />
+            </div>
+
+            {error && (
+              <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400 text-center">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !password || !name}
+              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? "Registrazione in corso..." : "Crea account e accedi"}
+            </button>
+          </form>
+
+          <div className="text-center">
+            <button
+              onClick={() => { setStep("idle"); setEmail(""); setPassword(""); setName(""); setUserRole(null); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Hai già un account? Accedi
             </button>
           </div>
         </div>
@@ -236,8 +324,8 @@ export default function LoginPageContent() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          I clienti riceveranno un link magico via email.<br />
-          Lo staff e gli amministratori accedono con password.
+          Se non hai ancora un account, inserisci la tua email<br />
+          e creane uno in pochi secondi.
         </p>
       </div>
     </div>

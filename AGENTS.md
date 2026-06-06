@@ -72,7 +72,6 @@ npm run db:promote-admin # Promote user to ADMIN role
 |----------|-------|----------|
 | `DATABASE_URL` | .env + GitHub Secrets + Vercel | ✅ |
 | `AUTH_SECRET` | .env + GitHub Secrets + Vercel | ✅ |
-| `AUTH_RESEND_KEY` | .env + Vercel | ✅ for magic links |
 | `AUTH_GOOGLE_ID` | .env + Vercel | ✅ for Google OAuth |
 | `AUTH_GOOGLE_SECRET` | .env + Vercel | ✅ for Google OAuth |
 | `VERCEL_DEPLOY_HOOK` | GitHub Secrets | ✅ for deploy |

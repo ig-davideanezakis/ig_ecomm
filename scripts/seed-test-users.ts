@@ -15,7 +15,7 @@ config();
 const USERS = [
   { email: "admin@test.com", name: "Test Admin", role: "ADMIN", password: "TestPass123!" },
   { email: "staff@test.com", name: "Test Staff", role: "STAFF", password: "TestPass123!" },
-  { email: "customer@test.com", name: "Test Customer", role: "CUSTOMER", password: null },
+  { email: "customer@test.com", name: "Test Customer", role: "CUSTOMER", password: "TestPass123!" },
 ];
 
 async function main() {

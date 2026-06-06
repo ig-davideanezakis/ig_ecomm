@@ -19,10 +19,8 @@ env:
   # E2E tests need real DB credentials. Set these in GitHub Secrets:
   # - DATABASE_URL: Supabase connection string
   # - AUTH_SECRET: NextAuth secret (same as .env)
-  # - AUTH_RESEND_KEY: Resend API key (optional for E2E)
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-  AUTH_RESEND_KEY: ${{ secrets.AUTH_RESEND_KEY }}
 
 jobs:
   lint:
