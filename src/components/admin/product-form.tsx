@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import RichTextEditor from "@/components/admin/rich-text-editor";
 
 interface Props {
   productId?: string; // undefined = new product
@@ -221,10 +222,16 @@ export default function ProductForm({ productId }: Props) {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
             <div>
-              <label htmlFor="prod-content" className="block text-sm font-medium mb-1">Descrizione dettagliata (HTML)</label>
-              <textarea id="prod-content" value={content} onChange={(e) => setContent(e.target.value)} rows={8}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus-visible:ring-2 focus-visible:ring-ring" />
-              <p className="mt-1 text-xs text-muted-foreground">Puoi usare HTML per formattare il contenuto (grassetti, tabelle, immagini).</p>
+              <p className="block text-sm font-medium mb-1">Descrizione dettagliata</p>
+              <RichTextEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Scrivi qui la descrizione dettagliata del prodotto..."
+                minHeight={350}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Formatta il contenuto con grassetti, elenchi, tabelle, immagini e link. Il font rimane sempre quello del sito.
+              </p>
             </div>
           </section>
 
@@ -261,8 +268,35 @@ export default function ProductForm({ productId }: Props) {
               </div>
               <div>
                 <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / Codice a barre</label>
-                <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                <div className="flex gap-2">
+                  <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <button type="button" onClick={async () => {
+                    if (!barcode || barcode.length < 8) return;
+                    setLoading(true);
+                    try {
+                      const res = await fetch(`/api/products/lookup-ean?ean=${barcode}`);
+                      if (!res.ok) { setError("Prodotto non trovato per questo EAN."); setLoading(false); return; }
+                      const data = await res.json();
+                      if (data.found) {
+                        updateTitle(data.title);
+                        setDescription(data.description || "");
+                        if (data.specs?.length) {
+                          const specsHtml = data.specs.map((s: Record<string, string>) =>
+                            `<tr><td class="font-medium px-4 py-2 border">${s.label}</td><td class="px-4 py-2 border">${s.value}</td></tr>`
+                          ).join("");
+                          setContent(`<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${specsHtml}</table>`);
+                        }
+                        setError("");
+                      }
+                    } catch { setError("Errore di connessione."); }
+                    setLoading(false);
+                  }} disabled={loading || !barcode || barcode.length < 8}
+                    className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0">
+                    {loading ? "..." : "Cerca EAN"}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Inserisci un codice EAN a 13 cifre per auto-compilare titolo, descrizione e specifiche. Prezzo e stock rimangono manuali.</p>
               </div>
               <div>
                 <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>
