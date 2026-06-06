@@ -26,15 +26,6 @@ test.describe("Login page", () => {
     await expect(page.getByPlaceholder("tua@email.it")).toBeVisible();
     await expect(page.getByText("Continua con Google")).toBeVisible();
   });
-
-  test("should create account and show set-password for unknown email", async ({ page }) => {
-    const testEmail = `smoke-${Date.now()}@example.com`;
-    await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill(testEmail);
-    await page.getByRole("button", { name: "Continua", exact: true }).click();
-    await expect(page.getByText("Account creato!")).toBeVisible();
-    await expect(page.getByPlaceholder("Minimo 6 caratteri")).toBeVisible();
-  });
 });
 
 test.describe("Navigation", () => {

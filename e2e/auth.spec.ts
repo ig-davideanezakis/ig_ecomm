@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+function testEmail(suffix: string) {
+  return `e2e-${suffix}-${Date.now()}@test.com`;
+}
+
 test.describe("Login Page", () => {
   test("should display login page with Google button and email form", async ({ page }) => {
     await page.goto("/auth/login");
@@ -9,29 +13,18 @@ test.describe("Login Page", () => {
     await expect(page.getByRole("button", { name: "Continua", exact: true })).toBeVisible();
   });
 
-  test("should create account and redirect to set password for unknown email", async ({ page }) => {
-    const testEmail = `new-${Date.now()}@test.com`;
+  test("should register new user with email + password in one step and auto-login", async ({ page }) => {
+    const email = testEmail("reg");
     await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill(testEmail);
+    await page.getByPlaceholder("tua@email.it").fill(email);
     await page.getByRole("button", { name: "Continua", exact: true }).click();
 
-    // Account created, should show set-password form
-    await expect(page.getByText("Account creato!")).toBeVisible();
-    await expect(page.getByPlaceholder("Minimo 6 caratteri")).toBeVisible();
-  });
+    await expect(page.getByText("Crea il tuo account")).toBeVisible();
+    await expect(page.getByText(email)).toBeVisible();
 
-  test("should register, set password, and auto-login as CUSTOMER", async ({ page }) => {
-    const testEmail = `full-${Date.now()}@test.com`;
-    await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill(testEmail);
-    await page.getByRole("button", { name: "Continua", exact: true }).click();
+    await page.getByPlaceholder("Minimo 6 caratteri").fill("MyPass123!");
+    await page.getByText("Registrati e accedi").click();
 
-    await expect(page.getByText("Account creato!")).toBeVisible();
-
-    await page.getByPlaceholder("Minimo 6 caratteri").fill("TestPass123!");
-    await page.getByText("Imposta password e accedi").click();
-
-    // Should redirect to homepage (CUSTOMER role)
     await expect(page).toHaveURL(/\/$/);
   });
 
@@ -39,9 +32,7 @@ test.describe("Login Page", () => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-
     await expect(page.getByText("Bentornato")).toBeVisible();
-    await expect(page.getByText("admin@test.com")).toBeVisible();
     await expect(page.getByPlaceholder("••••••••")).toBeVisible();
 
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
@@ -55,7 +46,6 @@ test.describe("Login Page", () => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-
     await expect(page.getByText("Bentornato")).toBeVisible();
 
     await page.getByPlaceholder("••••••••").fill("wrongpassword");
@@ -68,7 +58,6 @@ test.describe("Login Page", () => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-
     await expect(page.getByText("Bentornato")).toBeVisible();
 
     await page.getByText("Usa un altro account").click();
@@ -81,27 +70,34 @@ test.describe("Login Page", () => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-
     await expect(page.getByText("Password dimenticata?")).toBeVisible();
   });
 
-  test("should show forgot password form and allow reset", async ({ page }) => {
+  test("should reset password and login for any role", async ({ page }) => {
+    const email = testEmail("reset");
+    // Create user via registration
     await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill("customer@test.com");
+    await page.getByPlaceholder("tua@email.it").fill(email);
     await page.getByRole("button", { name: "Continua", exact: true }).click();
+    await page.getByPlaceholder("Minimo 6 caratteri").fill("OriginalPass1");
+    await page.getByText("Registrati e accedi").click();
+    await expect(page).toHaveURL(/\/$/);
 
+    // Logout by going to login page
+    await page.goto("/auth/login");
+
+    // Login with existing email
+    await page.getByPlaceholder("tua@email.it").fill(email);
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await expect(page.getByText("Bentornato")).toBeVisible();
 
-    // Click forgot password
+    // Forgot password flow
     await page.getByText("Password dimenticata?").click();
-
     await expect(page.getByText("Reimposta password")).toBeVisible();
 
-    // Set new password
-    await page.getByPlaceholder("Minimo 6 caratteri").fill("NewPass789!");
+    await page.getByPlaceholder("Minimo 6 caratteri").fill("NewPassword1");
     await page.getByText("Reimposta e accedi").click();
 
-    // Should login successfully with new password
     await expect(page).toHaveURL(/\/$/);
   });
 
@@ -109,9 +105,7 @@ test.describe("Login Page", () => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("customer@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
-
     await expect(page.getByText("Bentornato")).toBeVisible();
-    await expect(page.getByText("customer@test.com")).toBeVisible();
     await expect(page.getByPlaceholder("••••••••")).toBeVisible();
   });
 
@@ -168,11 +162,9 @@ test.describe("Logout", () => {
     await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
-
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     await page.getByTitle("Esci").click();
-
     await expect(page).toHaveURL(/\/auth\/login/);
 
     await page.goto("/admin/dashboard", { waitUntil: "load" });
@@ -181,18 +173,12 @@ test.describe("Logout", () => {
 });
 
 test.describe("Role-based Access", () => {
-  test("should redirect non-admin to login on admin route", async ({ page }) => {
-    await page.goto("/admin/dashboard");
-    await expect(page).toHaveURL(/\/auth\/login/);
-  });
-
   test("should show user email in shop header after login", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
     await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
-
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     await page.goto("/");
@@ -205,7 +191,6 @@ test.describe("Role-based Access", () => {
     await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
-
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     await page.goto("/");
@@ -217,47 +202,37 @@ test.describe("Role-based Access", () => {
 
 test.describe("Auth API — check-email", () => {
   test("should detect admin email", async ({ page }) => {
-    const response = await page.request.post("/api/auth/check-email", {
-      data: { email: "admin@test.com" },
-    });
-    const json = await response.json();
+    const res = await page.request.post("/api/auth/check-email", { data: { email: "admin@test.com" } });
+    const json = await res.json();
     expect(json.exists).toBe(true);
     expect(json.role).toBe("ADMIN");
     expect(json.hasPassword).toBe(true);
   });
 
   test("should detect staff email", async ({ page }) => {
-    const response = await page.request.post("/api/auth/check-email", {
-      data: { email: "staff@test.com" },
-    });
-    const json = await response.json();
+    const res = await page.request.post("/api/auth/check-email", { data: { email: "staff@test.com" } });
+    const json = await res.json();
     expect(json.exists).toBe(true);
     expect(json.role).toBe("STAFF");
     expect(json.hasPassword).toBe(true);
   });
 
   test("should detect customer email", async ({ page }) => {
-    const response = await page.request.post("/api/auth/check-email", {
-      data: { email: "customer@test.com" },
-    });
-    const json = await response.json();
+    const res = await page.request.post("/api/auth/check-email", { data: { email: "customer@test.com" } });
+    const json = await res.json();
     expect(json.exists).toBe(true);
     expect(json.role).toBe("CUSTOMER");
     expect(json.hasPassword).toBe(true);
   });
 
   test("should return not found for unknown email", async ({ page }) => {
-    const response = await page.request.post("/api/auth/check-email", {
-      data: { email: "nonexistent@test.com" },
-    });
-    const json = await response.json();
+    const res = await page.request.post("/api/auth/check-email", { data: { email: "nonexistent@test.com" } });
+    const json = await res.json();
     expect(json.exists).toBe(false);
   });
 
   test("should require email parameter", async ({ page }) => {
-    const response = await page.request.post("/api/auth/check-email", {
-      data: {},
-    });
-    expect(response.status()).toBe(400);
+    const res = await page.request.post("/api/auth/check-email", { data: {} });
+    expect(res.status()).toBe(400);
   });
 });

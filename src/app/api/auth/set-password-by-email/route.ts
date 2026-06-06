@@ -4,11 +4,12 @@ import bcrypt from "bcryptjs";
 
 /**
  * POST /api/auth/set-password-by-email
- * Sets a password for a CUSTOMER account identified by email.
- * Used for:
- *   - First-time password setup (account created without password)
- *   - Forgot password reset
- * Only works for CUSTOMER role. STAFF/ADMIN must use the admin panel.
+ * Resets the password for any user identified by email.
+ * Available to all roles (CUSTOMER, STAFF, ADMIN).
+ * The user must already exist in the database.
+ *
+ * Security note (MVP): this allows password reset by knowing the email.
+ * In production, add email-based token verification.
  */
 export async function POST(request: Request) {
   const { email, password } = await request.json();
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const result = await pool.query(
-    `SELECT id, role FROM "user" WHERE email = $1 LIMIT 1`,
+    `SELECT id FROM "user" WHERE email = $1 LIMIT 1`,
     [email],
   );
 
@@ -29,21 +30,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Account non trovato." }, { status: 404 });
   }
 
-  const user = result.rows[0];
-
-  // STAFF/ADMIN cannot set password via this endpoint
-  if (user.role !== "CUSTOMER") {
-    return NextResponse.json(
-      { error: "Gli account STAFF e ADMIN gestiscono la password dal pannello di sicurezza." },
-      { status: 403 },
-    );
-  }
-
   const hash = await bcrypt.hash(password, 12);
 
   await pool.query(
     `UPDATE "user" SET password_hash = $1 WHERE id = $2`,
-    [hash, user.id],
+    [hash, result.rows[0].id],
   );
 
   return NextResponse.json({ success: true });
