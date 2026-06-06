@@ -73,9 +73,9 @@ test.describe("Login Page", () => {
     await expect(page.getByText("Password dimenticata?")).toBeVisible();
   });
 
-  test("should reset password and login for any role", async ({ page }) => {
-    const email = testEmail("reset");
-    // Create user via registration
+  test("should send password reset email and reset via token link", async ({ page }) => {
+    const email = `e2e-reset-${Date.now()}@test.com`;
+    // Create user
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill(email);
     await page.getByRole("button", { name: "Continua", exact: true }).click();
@@ -83,23 +83,40 @@ test.describe("Login Page", () => {
     await page.getByText("Registrati e accedi").click();
     await expect(page).toHaveURL(/\/$/);
 
-    // Logout by clearing session cookie
+    // Logout
     await page.context().clearCookies();
     await page.goto("/auth/login");
 
-    // Login with existing email
+    // Login and trigger forgot password
     await page.getByPlaceholder("tua@email.it").fill(email);
     await page.getByRole("button", { name: "Continua", exact: true }).click();
     await expect(page.getByText("Bentornato")).toBeVisible();
 
-    // Forgot password flow
-    await page.getByText("Password dimenticata?").click();
-    await expect(page.getByText("Reimposta password")).toBeVisible();
+    // Intercept the forgot-password API to get the dev link
+    const resetLink = await page.evaluate(async (e) => {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: e }),
+      });
+      const json = await res.json();
+      return json.devLink || null;
+    }, email);
 
+    expect(resetLink).toBeTruthy();
+
+    // Navigate to the reset link
+    await page.goto(resetLink);
+    // Verify we're on the reset page and it contains the form
+    await expect(page).toHaveURL(/\/auth\/reset-password/);
+    await expect(page.getByRole("heading", { name: "Reimposta password" })).toBeVisible();
+
+    // Set new password
     await page.getByPlaceholder("Minimo 6 caratteri").fill("NewPassword1");
-    await page.getByText("Reimposta e accedi").click();
+    await page.getByRole("button", { name: "Reimposta password" }).click();
 
-    await expect(page).toHaveURL(/\/$/);
+    // Should auto-login after successful reset
+    await expect(page.getByText("Password reimpostata!")).toBeVisible();
   });
 
   test("should show password form for existing customer email", async ({ page }) => {

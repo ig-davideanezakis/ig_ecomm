@@ -4,7 +4,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type Step = "idle" | "password" | "set-password" | "register";
+type Step = "idle" | "password" | "forgot-sent" | "register";
 
 export default function LoginPageContent() {
   const { data: session, status } = useSession();
@@ -19,7 +19,6 @@ export default function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -50,7 +49,6 @@ export default function LoginPageContent() {
       } else if (json.exists && !json.hasPassword) {
         setError("Questo account è collegato a Google. Accedi con Google per continuare.");
       } else {
-        // New user: register with email + password in one step
         setStep("register");
       }
     } catch {
@@ -97,7 +95,6 @@ export default function LoginPageContent() {
         return;
       }
 
-      // Auto-login after registration
       const result = await signIn("credentials", {
         email,
         password,
@@ -117,40 +114,21 @@ export default function LoginPageContent() {
     }
   }
 
-  async function handleSetPassword(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleForgotPassword() {
     setError("");
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/set-password-by-email", {
+      await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
-      const json = await res.json();
-
-      if (!json.success) {
-        setError(json.error ?? "Errore durante l'impostazione della password.");
-        setLoading(false);
-        return;
-      }
-
-      const login = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl,
-      });
-
-      if (login?.error) {
-        setError("Password reimpostata. Ora puoi accedere.");
-        setLoading(false);
-        return;
-      }
-      router.refresh();
+      // Always show success regardless of whether email exists (prevents enumeration)
+      setStep("forgot-sent");
     } catch {
       setError("Errore di connessione. Riprova.");
+    } finally {
       setLoading(false);
     }
   }
@@ -159,6 +137,36 @@ export default function LoginPageContent() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-sm text-muted-foreground">Caricamento...</p>
+      </div>
+    );
+  }
+
+  // ── Forgot password — email sent confirmation ──────────────────
+  if (step === "forgot-sent") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold">Controlla la tua email</h1>
+          <p className="text-sm text-muted-foreground">
+            Se esiste un account per <strong>{email}</strong>,
+            riceverai un link per reimpostare la password.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Il link scade dopo 1 ora.
+          </p>
+          <button
+            onClick={() => { setStep("idle"); setEmail(""); }}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Torna al login
+          </button>
+        </div>
       </div>
     );
   }
@@ -226,67 +234,6 @@ export default function LoginPageContent() {
     );
   }
 
-  // ── Set password (forgot password) ─────────────────────────────
-  if (step === "set-password") {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-sm space-y-6 rounded-lg border bg-card p-8">
-          <div className="text-center space-y-2">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold">Reimposta password</h1>
-            <p className="text-sm text-muted-foreground">{email}</p>
-          </div>
-
-          <form onSubmit={handleSetPassword} className="space-y-4">
-            <div>
-              <label htmlFor="reset-password" className="text-xs font-medium text-muted-foreground mb-1 block">Nuova password</label>
-              <input
-                id="reset-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimo 6 caratteri"
-                required
-                minLength={6}
-                autoFocus
-                className="w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                autoComplete="new-password"
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400 text-center">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? "Reimpostazione..." : "Reimposta e accedi"}
-            </button>
-          </form>
-
-          <div className="text-center">
-            <button
-              onClick={() => { setStep("idle"); setEmail(""); setPassword(""); setIsForgotPassword(false); }}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              Annulla
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // ── Password form (existing user with password) ────────────────
   if (step === "password") {
     return (
@@ -322,7 +269,8 @@ export default function LoginPageContent() {
             <div className="text-right">
               <button
                 type="button"
-                onClick={() => { setIsForgotPassword(true); setStep("set-password"); }}
+                onClick={handleForgotPassword}
+                disabled={loading}
                 className="text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 Password dimenticata?
