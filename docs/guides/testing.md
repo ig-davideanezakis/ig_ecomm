@@ -123,7 +123,10 @@ npm run db:seed-test-users    # Creates the 3 test users above
 npm run db:cleanup            # Deletes test users created during E2E runs
 ```
 
-E2E tests create temporary users with the prefix `e2e-*`. The cleanup script deletes all users matching this pattern from the database, keeping the permanent seed users intact.
+E2E tests create temporary users with the prefix `e2e-*`. The cleanup script deletes:
+- All users matching the `e2e-*` pattern
+- The 3 seed test users (`admin@test.com`, `staff@test.com`, `customer@test.com`)
+- Their linked accounts, sessions, and verification tokens
 
 ## CI Pipeline
 
