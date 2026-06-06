@@ -67,6 +67,9 @@ test.describe("Theme toggle dark/light", () => {
     // Should start dark
     await expect(page.locator("html")).toHaveClass(/dark/);
 
+    // Wait for hydration to complete
+    await page.waitForTimeout(500);
+
     // Click the theme toggle button — use the shared locator
     const toggle = page.locator(THEME_TOGGLE).first();
     await toggle.click();

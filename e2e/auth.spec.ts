@@ -83,7 +83,8 @@ test.describe("Login Page", () => {
     await page.getByText("Registrati e accedi").click();
     await expect(page).toHaveURL(/\/$/);
 
-    // Logout by going to login page
+    // Logout by clearing session cookie
+    await page.context().clearCookies();
     await page.goto("/auth/login");
 
     // Login with existing email
