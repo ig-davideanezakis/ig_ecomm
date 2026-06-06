@@ -31,7 +31,7 @@ test.describe("Login page", () => {
   test("should submit the email form for unknown email", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("test@example.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     // The app always shows "Link inviato!" for security (prevents email enumeration)
     await expect(page.getByText("Link inviato!")).toBeVisible({ timeout: 10000 });
   });

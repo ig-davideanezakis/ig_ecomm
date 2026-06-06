@@ -6,14 +6,14 @@ test.describe("Login Page", () => {
     await expect(page.getByText("Accedi")).toBeVisible();
     await expect(page.getByText("Continua con Google")).toBeVisible();
     await expect(page.getByPlaceholder("tua@email.it")).toBeVisible();
-    await expect(page.getByText("Continua")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continua", exact: true })).toBeVisible();
   });
 
   test("should redirect authenticated admin to dashboard", async ({ page }) => {
     // First login as admin
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     // Should show password form
     await expect(page.getByText("Accesso riservato")).toBeVisible();
@@ -25,13 +25,13 @@ test.describe("Login Page", () => {
 
     // Should redirect to admin dashboard
     await expect(page).toHaveURL(/\/admin\/dashboard/);
-    await expect(page.getByText("Dashboard")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });
 
   test("should reject wrong password", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     await expect(page.getByText("Accesso riservato")).toBeVisible();
 
@@ -45,7 +45,7 @@ test.describe("Login Page", () => {
   test("should send magic link for customer email", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("customer@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     // Should show magic link sent confirmation
     await expect(page.getByText("Link inviato!")).toBeVisible();
@@ -55,7 +55,7 @@ test.describe("Login Page", () => {
   test("should send magic link for unknown email", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("unknown@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     // Should show magic link sent confirmation
     await expect(page.getByText("Link inviato!")).toBeVisible();
@@ -65,7 +65,7 @@ test.describe("Login Page", () => {
   test("should show password form for staff email", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("staff@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     await expect(page.getByText("Accesso riservato")).toBeVisible();
     await expect(page.getByText(/Staff/)).toBeVisible();
@@ -75,7 +75,7 @@ test.describe("Login Page", () => {
   test("should allow back navigation from password form", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     // Should show password form
     await expect(page.getByText("Accesso riservato")).toBeVisible();
@@ -91,7 +91,7 @@ test.describe("Login Page", () => {
   test("should allow back from magic link sent", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("customer@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
 
     await expect(page.getByText("Link inviato!")).toBeVisible();
 
@@ -113,34 +113,34 @@ test.describe("Admin Dashboard", () => {
     // Login as admin
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
     await expect(page).toHaveURL(/\/admin\/dashboard/);
-    await expect(page.getByText("Dashboard")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     await expect(page.getByText("admin@test.com")).toBeVisible();
   });
 
   test("should display admin sidebar with all links", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
-    await expect(page.getByText("Prodotti")).toBeVisible();
-    await expect(page.getByText("Categorie")).toBeVisible();
-    await expect(page.getByText("Ordini")).toBeVisible();
-    await expect(page.getByText("Utenti")).toBeVisible();
-    await expect(page.getByText("Sicurezza")).toBeVisible();
-    await expect(page.getByText("Blog")).toBeVisible();
+    await expect(page.getByRole("link", { name: /Prodotti/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Categorie/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Ordini/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Utenti/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Sicurezza/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Blog/ })).toBeVisible();
   });
 
   test("should display user email and ADMIN badge in header", async ({ page }) => {
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
@@ -154,7 +154,7 @@ test.describe("Logout", () => {
     // Login first
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
@@ -163,23 +163,11 @@ test.describe("Logout", () => {
     // Click logout in admin header
     await page.getByTitle("Esci").click();
 
-    // Should redirect to homepage or login
-    await expect(page).toHaveURL(/\/auth\/login|\//);
-  });
+    // Should redirect to login page
+    await expect(page).toHaveURL(/\/auth\/login/);
 
-  test("should block admin access after logout", async ({ page }) => {
-    // Login
-    await page.goto("/auth/login");
-    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
-    await page.getByPlaceholder("••••••••").fill("TestPass123!");
-    await page.getByText("Accedi").click();
-
-    // Logout
-    await page.getByTitle("Esci").click();
-
-    // Try to access admin — should redirect to login
-    await page.goto("/admin/dashboard");
+    // Try to access admin — should redirect to login again
+    await page.goto("/admin/dashboard", { waitUntil: "load" });
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 });
@@ -196,11 +184,14 @@ test.describe("Role-based Access", () => {
     // Login as admin
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
-    // After redirect to admin, go to homepage
+    // After redirect to admin, wait for dashboard
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    
+    // Go to homepage
     await page.goto("/");
     await expect(page.getByText("admin@test.com")).toBeVisible();
   });
@@ -209,13 +200,18 @@ test.describe("Role-based Access", () => {
     // Login as admin
     await page.goto("/auth/login");
     await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
-    await page.getByText("Continua").click();
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
     await page.getByPlaceholder("••••••••").fill("TestPass123!");
     await page.getByText("Accedi").click();
 
+    // Wait for dashboard
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+
     // Go to homepage
     await page.goto("/");
-    // Click account icon
+    // Wait for session to load (email visible in navbar)
+    await expect(page.getByText("admin@test.com")).toBeVisible({ timeout: 15000 });
+    // Click account icon — now the href should point to /admin/dashboard
     await page.getByLabel("Account").click();
     // Admin should go to admin dashboard
     await expect(page).toHaveURL(/\/admin\/dashboard/);

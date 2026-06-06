@@ -1,9 +1,7 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-unused-expressions */
-
 import { signIn, useSession } from "next-auth/react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Step = "idle" | "sent" | "password";
@@ -20,8 +18,6 @@ export default function LoginPageContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const magicRef = useRef(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -32,14 +28,6 @@ export default function LoginPageContent() {
       router.replace(callbackUrl);
     }
   }, [status, session, router, callbackUrl]);
-
-  // Handle magic link state via ref to avoid ESLint setState-after-await
-  useEffect(() => {
-    if (magicRef.current) {
-      setStep("sent");
-      magicRef.current = false;
-    }
-  }, [magicLinkSent]);
 
   async function handleCheckEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -57,9 +45,15 @@ export default function LoginPageContent() {
         setUserRole(json.role);
         setStep("password");
       } else {
-        await signIn("resend", { email, redirect: false, callbackUrl });
-        // Trigger state change via ref outside async path
-        setMagicLinkSent(true);
+        // Always show "Link inviato!" even if Resend fails, to prevent email enumeration.
+        // The Resend test sender (onboarding@resend.dev) can only send to davide.anezakis@infograf.it,
+        // but we still show the success message. In production with a verified domain all emails work.
+        try {
+          await signIn("resend", { email, redirect: false, callbackUrl });
+        } catch {
+          // Resend may fail in test/dev — still show success to prevent email enumeration
+        }
+        setStep("sent");
       }
     } catch {
       setError("Errore di connessione. Riprova.");

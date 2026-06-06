@@ -139,6 +139,7 @@ function SearchBar({ initialValue }: { initialValue: string }) {
       />
       <button
         type="submit"
+        aria-label="Cerca"
         className="ml-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
