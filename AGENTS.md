@@ -20,6 +20,7 @@
 | [docs/guides/testing.md](docs/guides/testing.md) | Testing stack, guidelines, best practices |
 | [docs/guides/accessibility.md](docs/guides/accessibility.md) | EAA compliance, WCAG, aria, focus, aXe testing |
 | [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) | Guest checkout flow, cart, post-purchase registration |
+| [docs/guides/admin-products.md](docs/guides/admin-products.md) | Admin products CRUD, form, API reference |
 | [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
 
 ## ⚠️ CRITICAL: Pre-push Checklist

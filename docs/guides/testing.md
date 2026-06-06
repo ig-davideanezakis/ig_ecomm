@@ -41,9 +41,10 @@ src/
 │       └── __tests__/      # Page-level component tests
 e2e/
 ├── auth.spec.ts            # Auth flows (login, register, forgot-password, logout, API)
+├── admin.spec.ts           # Admin redirect/access tests
+├── admin-products.spec.ts  # Admin products CRUD (create, edit, duplicate, delete, list)
 ├── smoke.spec.ts           # Core smoke tests (homepage, login, navigation)
 ├── theme.spec.ts           # Theme toggle, persistence, script injection
-├── admin.spec.ts           # Admin redirect/access tests
 ├── accessibility.spec.ts   # aXe-core WCAG scans (homepage, login, products)
 └── catalog.spec.ts         # Catalog browsing tests
 ```
