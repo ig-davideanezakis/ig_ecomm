@@ -48,6 +48,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Catalog (DB schema + queries) | ✅ Done | IG-6 |
 | Admin — Dashboard & Reports | ✅ Done | IG-14 |
 | Admin — User Management | ✅ Done | List, create, edit roles, delete |
+| Admin — Products (CRUD) | ✅ Done | List with search/filter, create/edit form with variants, images, SEO, pricing, inventory, duplicate, bulk delete |
 | DB Schema — snake_case | ✅ Done | All tables & columns |
 | E2E Tests | ✅ Done | 43 Playwright tests (auth, smoke, theme, admin) |
 | Accessibility (aXe) | ✅ Done | 3 aXe scans (homepage, login, products) |

@@ -94,11 +94,18 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 ## Admin — Products
 **Linear:** IG-15
+**Status:** ✅ Done
 
 - CRUD: create, edit, delete products
-- Categories, brands, image gallery, variants
-- Rich-text HTML editor for product content (description + custom sections)
-- SEO fields (meta title, description, slug)
+- List with search, category/brand/status filters, sort, pagination, bulk delete
+- Create/edit form with: title, slug (auto-generated), description, rich HTML content
+- Pricing: base price, sale price, cost price (admin-only margin view)
+- Inventory: SKU, EAN/barcode, weight
+- Categories, brands, image gallery with alt text
+- Variants management (add/remove/update name, price, stock, SKU)
+- SEO fields (meta title, description)
+- Status: draft/published + featured flag
+- Duplicate product button
 
 ## Admin — Warehouse / Stock
 **Linear:** IG-16
