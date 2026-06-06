@@ -47,8 +47,8 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Admin — Dashboard & Reports | ✅ Done | IG-14 |
 | Admin — User Management | ✅ Done | List, create, edit roles, delete |
 | DB Schema — snake_case | ✅ Done | All tables & columns |
-| E2E Tests | ✅ Done | 21 auth E2E tests via Playwright |
-| EAA Compliance | 🚧 In Progress | [docs/guides/accessibility.md](docs/guides/accessibility.md) — jsx-a11y linting, SkipNav, <Image/>, semantic grids, form labels, focus-visible OK; da fare: cart/checkout aria-live, DialogTitle, aXe CI tuning |
+| E2E Tests | ✅ Done | 45 Playwright tests (auth, smoke, theme, admin, aXe) |
+| EAA Compliance | ✅ Done | [docs/guides/accessibility.md](docs/guides/accessibility.md) — jsx-a11y linting, SkipNav, <Image/>, semantic grids, form labels, focus-visible, aria-label, aXe CI |
 
 ## Quick Commands
 

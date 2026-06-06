@@ -137,7 +137,7 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 - Lighthouse score target: 90+ all categories
 
 ## Accessibility (EAA Compliance)
-**Status:** 📋 Planned — [guida](docs/guides/accessibility.md)
+**Status:** ✅ Done — [guida](docs/guides/accessibility.md)
 
 - EAA compliance checklist per ogni feature
 - `eslint-plugin-jsx-a11y` per linting accessibilità

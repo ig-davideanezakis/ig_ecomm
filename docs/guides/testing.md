@@ -1,7 +1,7 @@
 # Testing Guidelines
 
 > Testing strategy and best practices for ig_ecomm.
-> Last updated: 2026-06-03
+> Last updated: 2026-06-04
 
 ## Stack
 
@@ -12,6 +12,7 @@
 | **@testing-library/jest-dom** | DOM Matchers | Custom matchers: `toBeInTheDocument()`, `toHaveClass()`, etc. |
 | **@testing-library/user-event** | User Interaction | Realistic event simulation (clicks, typing) |
 | **Playwright** | E2E Tests | Multi-browser end-to-end testing on a real Next.js server |
+| **@axe-core/playwright** | Accessibility (E2E) | Automated WCAG compliance scanning in Playwright tests |
 
 ## Scripts
 
@@ -20,7 +21,7 @@
 | `npm test` | Run Vitest in watch mode (great during development) |
 | `npm run test:run` | Run all Vitest tests once |
 | `npm run test:coverage` | Run tests with coverage report |
-| `npm run test:e2e` | Run all Playwright E2E tests |
+| `npm run test:e2e` | Run all Playwright E2E tests (auth, smoke, theme, aXe, admin) |
 | `npm run test:e2e:ui` | Launch Playwright UI mode |
 | `npm run db:seed-test-users` | Seed test users for E2E (admin, staff, customer) |
 
@@ -38,10 +39,11 @@ src/
 │   └── (shop)/
 │       └── __tests__/      # Page-level component tests
 e2e/
-├── auth.spec.ts            # Auth flows (21 tests: login, password, 2FA, logout, API)
-├── smoke.spec.ts           # Core smoke tests (always pass)
-├── theme.spec.ts           # Theme toggle tests
+├── auth.spec.ts            # Auth flows (login, password, 2FA, logout, API, roles)
+├── smoke.spec.ts           # Core smoke tests (homepage, login, navigation)
+├── theme.spec.ts           # Theme toggle, persistence, script injection
 ├── admin.spec.ts           # Admin redirect/access tests
+├── accessibility.spec.ts   # aXe-core WCAG scans (homepage, login, products)
 └── catalog.spec.ts         # Catalog browsing tests
 ```
 
@@ -113,6 +115,31 @@ test("user can browse products", async ({ page }) => {
 - **Prerequisite:** run `npm run db:seed-test-users` first (creates admin, staff, customer accounts for E2E)
 - **CI guard:** If E2E tests fail in CI, the deploy job is blocked — the pipeline requires all jobs (lint, test, build, e2e) to pass before deploying to Vercel
 
+### Accessibility Tests (aXe-core)
+
+Accessibility tests use [@axe-core/playwright](https://www.npmjs.com/package/@axe-core/playwright) to scan pages for WCAG violations:
+
+```ts
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("login page should have no violations", async ({ page }) => {
+  await page.goto("/auth/login");
+  await page.waitForLoadState("networkidle");
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+```
+
+**Test targets:**
+| Page | Target |
+|------|--------|
+| Homepage | 0 critical violations |
+| Login | 0 violations (all) |
+| Products catalog | 0 critical violations |
+
 ### Test Users (for E2E)
 
 | Email | Password | Role |
@@ -124,6 +151,16 @@ test("user can browse products", async ({ page }) => {
 ```bash
 npm run db:seed-test-users    # Creates the 3 test users above
 ```
+
+### Magic Link behavior in tests
+
+The Resend test sender (`onboarding@resend.dev`) can only send to the account owner
+(`davide.anezakis@infograf.it`). In CI and local dev, sending to test emails
+(e.g. `customer@test.com`, `test@example.com`) will fail with a 403 error.
+
+The login page handles this gracefully: it always shows "Link inviato!" regardless
+of whether Resend actually delivered the email (prevents email enumeration).
+E2E tests verify this behavior.
 
 ## When to Write What
 
@@ -137,10 +174,17 @@ npm run db:seed-test-users    # Creates the 3 test users above
 | Server Component rendering | **E2E** (Playwright) | Product page, catalog listing |
 | API route | **Integration** (Vitest + MSW) | Order creation, product search |
 | Critical user flow | **E2E** (Playwright) | Complete purchase flow |
+| WCAG compliance | **aXe** (Playwright) | Homepage, login, products |
 
-## MSW (Future)
+## CI Pipeline
 
-For API route testing, we'll add [MSW](https://mswjs.io/) when API routes are ready. It intercepts network requests at the service worker level, so our tests don't need a real server.
+The CI workflow (`.github/workflows/ci.yml`) runs these test jobs:
+
+```
+lint → test (Vitest) → build → e2e (Playwright) → a11y (aXe) → deploy
+```
+
+All test jobs must pass before deployment to Vercel.
 
 ## Coverage Targets (MVP)
 
@@ -149,7 +193,8 @@ For API route testing, we'll add [MSW](https://mswjs.io/) when API routes are re
 | Utility functions | 90%+ | Pure logic, easy to cover |
 | Storefront components | 70%+ | Focus on interactive ones (cart, search) |
 | Admin components | 50%+ | Forms, CRUD operations |
-| E2E critical paths | All major flows | Homepage, browse, product, checkout |
+| E2E critical paths | All major flows | Homepage, browse, product, checkout, auth |
+| aXe a11y scans | 0 critical violations | Homepage, login, products |
 
 ---
 
