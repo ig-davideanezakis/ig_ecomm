@@ -40,10 +40,9 @@ export async function POST(request: Request) {
     [email, token, expires],
   );
 
-  // Build reset link — use request origin for local dev, AUTH_URL for production
-  const baseUrl = process.env.NODE_ENV === "production"
-    ? (process.env.AUTH_URL ?? `https://${process.env.VERCEL_URL ?? "ig-ecomm.vercel.app"}`)
-    : "http://localhost:3000";
+  // Build reset link from the request's origin (reflects the actual domain the user is on)
+  // This correctly handles Vercel production domains vs preview deployment domains.
+  const baseUrl = request.headers.get("origin") || process.env.AUTH_URL || "http://localhost:3000";
   const resetUrl = `${baseUrl}/auth/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
 
   // Try to send email via Resend
