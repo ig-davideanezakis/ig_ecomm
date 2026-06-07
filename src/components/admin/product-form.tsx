@@ -46,6 +46,23 @@ export default function ProductForm({ productId }: Props) {
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
 
+  const uploadFile = async (file: File) => {
+    if (!productId) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("productId", productId);
+    formData.append("alt", imageAlt || file.name);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (json.success) {
+        setImages(prev => [...prev, json.image]);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(false);
@@ -282,31 +299,74 @@ export default function ProductForm({ productId }: Props) {
           {/* Images */}
           <section className="rounded-lg border bg-card p-6 space-y-4">
             <h2 className="font-semibold">Immagini</h2>
-            {/* Add image form */}
-            <div className="flex gap-2">
-              <input type="text" placeholder="URL immagine" value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              <input type="text" placeholder="Testo alternativo (alt)" value={imageAlt}
-                onChange={(e) => setImageAlt(e.target.value)}
-                className="w-48 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              <button type="button" onClick={async () => {
-                if (!imageUrl || !productId) return;
-                const res = await fetch("/api/admin/upload", {
-                  method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
-                });
-                const json = await res.json();
-                if (json.success) {
-                  setImages(prev => [...prev, json.image]);
-                  setImageUrl(""); setImageAlt("");
-                }
-              }} disabled={!imageUrl || isNew}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                Aggiungi
-              </button>
+
+            {/* Drop zone + URL fallback */}
+            <div className="space-y-3">
+              {/* File upload via drag & drop */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
+                onDragLeave={(e) => { e.currentTarget.classList.remove('border-primary'); }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-primary');
+                  const file = e.dataTransfer.files[0];
+                  if (!file || !productId) return;
+                  await uploadFile(file);
+                }}
+                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground mb-2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p className="text-sm font-medium">Trascina un&apos;immagine qui</p>
+                <p className="text-xs text-muted-foreground mt-1">o clicca per selezionare (JPG, PNG, WebP, AVIF — max 5MB)</p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  className="hidden"
+                  id="file-upload"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !productId) return;
+                    await uploadFile(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {/* URL fallback */}
+              <div className="flex gap-2">
+                <input type="text" placeholder="o incolla URL immagine..." value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                <input type="text" placeholder="Testo alt" value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                <button type="button" onClick={async () => {
+                  if (!imageUrl || !productId) return;
+                  const res = await fetch("/api/admin/upload", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
+                  });
+                  const json = await res.json();
+                  if (json.success) {
+                    setImages(prev => [...prev, json.image]);
+                    setImageUrl(""); setImageAlt("");
+                  }
+                }} disabled={!imageUrl || isNew}
+                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                  Aggiungi
+                </button>
+              </div>
             </div>
+
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Carica dal computer
+            </label>
+
             {isNew && <p className="text-xs text-muted-foreground">Salva prima il prodotto per poter aggiungere immagini.</p>}
+
             {/* Image list */}
             {images.length > 0 && (
               <div className="flex flex-wrap gap-3">
