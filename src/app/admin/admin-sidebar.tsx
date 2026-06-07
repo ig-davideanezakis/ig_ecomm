@@ -14,7 +14,9 @@ const sidebarLinks = [
   { href: "/admin/stock", label: "Magazzino", icon: "📦" },
   { href: "/admin/coupons", label: "Coupon", icon: "🎫" },
   { href: "/admin/customers", label: "Utenti", icon: "👥" },
+  { href: "/admin/pages", label: "Pagine", icon: "📄" },
   { href: "/admin/blog", label: "Blog", icon: "✍️" },
+  { href: "/admin/settings", label: "Impostazioni", icon: "⚙️" },
   { href: "/admin/security", label: "Sicurezza", icon: "🔐" },
 ];
 

@@ -3,13 +3,25 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { InfografLogo } from "@/components/infograf-logo";
+
+interface NavPage {
+  id: string; title: string; slug: string; nav_order: number;
+}
 
 export function ShopNavbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const user = session?.user;
+  const [navPages, setNavPages] = useState<NavPage[]>([]);
+
+  useEffect(() => {
+    fetch("/api/pages").then(r => r.json()).then(pages => {
+      setNavPages(pages.filter((p: NavPage) => p.nav_order >= 0));
+    }).catch(() => {});
+  }, []);
 
   const accountHref = user?.role === "ADMIN" || user?.role === "STAFF"
     ? "/admin/dashboard"
@@ -35,12 +47,15 @@ export function ShopNavbar() {
           >
             Blog
           </Link>
-          <Link
-            href="/#contact"
-            className="hover:text-primary transition-colors"
-          >
-            Contatti
-          </Link>
+          {navPages.map((p) => (
+            <Link
+              key={p.id}
+              href={`/page/${p.slug}`}
+              className={`hover:text-primary transition-colors ${pathname === `/page/${p.slug}` ? "text-primary" : ""}`}
+            >
+              {p.title}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">

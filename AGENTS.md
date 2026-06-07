@@ -56,6 +56,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | EAA Compliance | ✅ Done | jsx-a11y, SkipNav, next/image, semantic grids, form labels, focus-visible |
 | Guest Checkout | ✅ Done | [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) — localStorage cart, 3-opzione checkout, thank-you page, post-purchase account |
 | Cart & Checkout | 🚧 MVP Done | Checkout con guest, login e Google OAuth. Payments TBD |
+| CMS — Pages & Settings | ✅ Done | Custom footer data, static pages (chi siamo, privacy, faq), rich text editor, nav/footer visibility |
 
 ## Quick Commands
 
