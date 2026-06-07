@@ -24,8 +24,16 @@ export default function ShopFooter() {
   useEffect(() => {
     fetch("/api/settings").then(r => r.json()).then(setSettings).catch(() => {});
     fetch("/api/pages").then(r => r.json()).then(setPages).catch(() => {});
-    fetch("/api/admin/products?limit=100").then(r => r.json()).then(d => {
-      if (d.filters?.categories) setCategories(d.filters.categories);
+    fetch("/api/products?limit=100").then(r => r.json()).then(d => {
+      if (d.products) {
+        const cats: { name: string; slug: string }[] = [];
+        for (const p of d.products) {
+          if (p.category && !cats.find(c => c.slug === p.category.slug)) {
+            cats.push({ name: p.category.name, slug: p.category.slug });
+          }
+        }
+        setCategories(cats);
+      }
     }).catch(() => {});
   }, []);
 
