@@ -303,12 +303,26 @@ export default function ProductForm({ productId }: Props) {
                     const data = await res.json();
                     if (data.found) {
                       updateTitle(data.title);
-                      setDescription(data.description || "");
+                      setDescription(data.shortDesc || data.longDesc || "");
+                      if (data.longDesc && data.longDesc !== data.shortDesc) {
+                        setContent(data.longDesc);
+                      }
+                      if (data.weight) setWeight(String(data.weight));
+                      if (data.bulletPoints) {
+                        const html = data.bulletPoints
+                          .split("\n").filter(Boolean)
+                          .map((b: string) => `<li>${b}</li>`).join("");
+                        setContent(prev => prev
+                          ? `${prev}\n<ul>${html}</ul>`
+                          : `<ul>${html}</ul>`);
+                      }
                       if (data.specs?.length) {
                         const rows = data.specs.map((s: {label:string;value:string}) =>
                           `<tr><td class="font-medium px-4 py-2 border">${s.label}</td><td class="px-4 py-2 border">${s.value}</td></tr>`
                         ).join("");
-                        setContent(`<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`);
+                        setContent(prev => prev
+                          ? `${prev}\n<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`
+                          : `<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`);
                       }
                     }
                   } catch { setError("Errore di connessione."); }
