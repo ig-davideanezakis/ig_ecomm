@@ -33,11 +33,14 @@ The AI agent operates with full autonomy within the agreed scope. It does not wa
 - **Propose first, ask later** — default mode. For anything under $0/mo, the AI implements directly. Only ask for confirmation on: payment providers, paid services, breaking architectural changes, third-party API choices.
 - **Don't over-ask** — implement decisions that have been agreed, improve things that are obviously broken, fix warnings and errors without permission.
 - **Update docs proactively** — if a decision changes during implementation, update the living document immediately. Don't save it for later.
-- **Pre-push checklist (MANDATORY):** before every `git push`:
-  1. `npm run lint` — zero errors
-  2. `npm run test:run` — all tests passing
-  3. `npm run build` — clean build
-  Only push when all three pass. Never push and hope CI catches it.
+- **Full pre-commit workflow (MANDATORY):** before every `git commit`, the AI must:
+  1. **Update component tests, E2E tests, and accessibility tests** for any new flows or changed behaviour
+  2. **Update documentation** (AGENTS.md, relevant docs/guides/*.md)
+  3. `npm run lint` — zero errors
+  4. `npm run test:run` — all tests passing
+  5. `npm run build` — clean build
+  6. `npm run test:e2e` — all E2E + aXe tests passing
+  Only commit when all pass. If any fails, fix immediately before proceeding. Never commit and hope CI catches it.
 - **CI pipeline:** `lint → test:run → build → E2E → deploy`. The E2E job is mandatory — if it fails, no deployment happens.
 - **Push early, push often** — small commits with clear messages. The PM should be able to see progress on GitHub in real time.
 
