@@ -208,14 +208,19 @@ export default function CategoryForm({ categoryId }: Props) {
                 const res = await fetch("/api/admin/seo/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "category", id: categoryId }),
+                  body: JSON.stringify({
+                    type: "category",
+                    title: name,
+                    description,
+                    parentName: categories.find(c => c.id === parentId)?.name,
+                  }),
                 });
                 const json = await res.json();
                 if (json.seoTitle) setSeoTitle(json.seoTitle);
                 if (json.seoDescription) setSeoDescription(json.seoDescription);
               }} disabled={!categoryId}
                 className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline">
-                ✨ Genera automaticamente
+                ✨ Genera con AI
               </button>
             </div>
             <div>

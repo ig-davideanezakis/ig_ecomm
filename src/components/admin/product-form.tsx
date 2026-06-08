@@ -466,14 +466,18 @@ export default function ProductForm({ productId }: Props) {
                 const res = await fetch("/api/admin/seo/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "product", id: productId }),
+                  body: JSON.stringify({
+                    type: "product",
+                    title,
+                    description: description || content,
+                  }),
                 });
                 const json = await res.json();
                 if (json.seoTitle) setSeoTitle(json.seoTitle);
                 if (json.seoDescription) setSeoDescription(json.seoDescription);
               }} disabled={!productId}
                 className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline">
-                ✨ Genera automaticamente
+                ✨ Genera con AI
               </button>
             </div>
             <div>

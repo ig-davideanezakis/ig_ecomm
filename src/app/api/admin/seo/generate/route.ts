@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db";
 import { authorize } from "@/lib/auth-helpers";
-import { generateProductSeo, generateCategorySeo } from "@/lib/seo-generator";
+
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const MODEL = "deepseek-v4-flash";
 
 /**
  * POST /api/admin/seo/generate
- * Auto-generates SEO fields (meta title, meta description) for a product or category.
+ * Uses DeepSeek AI to generate SEO fields from form data.
  *
- * Body: { type: "product" | "category", id: string }
+ * Body: { type: "product" | "category", title, description, parentName? }
  * Response: { seoTitle, seoDescription }
  */
 export async function POST(request: Request) {
@@ -15,41 +16,83 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Non autorizzato." }, { status: 401 });
   }
 
+  if (!DEEPSEEK_API_KEY) {
+    return NextResponse.json(
+      { error: "DEEPSEEK_API_KEY non configurata. Aggiungila a .env" },
+      { status: 500 },
+    );
+  }
+
   try {
-    const { type, id } = await request.json();
+    const { type, title, description, parentName } = await request.json();
 
-    if (type === "product") {
-      const result = await pool.query(
-        `SELECT p.title, p.description, c.name as category
-         FROM "product" p
-         LEFT JOIN "category" c ON p."category_id" = c.id
-         WHERE p.id = $1 LIMIT 1`,
-        [id],
-      );
-      if (result.rows.length === 0) {
-        return NextResponse.json({ error: "Prodotto non trovato." }, { status: 404 });
-      }
-      const { title, description, category } = result.rows[0];
-      return NextResponse.json(generateProductSeo(title, description, category));
+    if (!title) {
+      return NextResponse.json({ error: "Titolo richiesto." }, { status: 400 });
     }
 
-    if (type === "category") {
-      const result = await pool.query(
-        `SELECT c.name, c.description, p.name as parent
-         FROM "category" c
-         LEFT JOIN "category" p ON c.parent_id = p.id
-         WHERE c.id = $1 LIMIT 1`,
-        [id],
+    const storeName = "Infograf Store";
+    const context =
+      type === "category"
+        ? `Categoria: ${title}${parentName ? ` (sottocategoria di ${parentName})` : ""}`
+        : `Prodotto: ${title}`;
+
+    const descText = description
+      ? `\nDescrizione: ${description.replace(/<[^>]*>/g, "").slice(0, 300)}`
+      : "";
+
+    const prompt = `Sei un esperto SEO per e-commerce italiano. Genera meta title e meta description per:
+${context}${descText}
+
+Requisiti:
+- Meta title: max 60 caratteri, includi "${storeName}" alla fine separato da " | "
+- Meta description: max 160 caratteri, naturale e invitante per il click, in italiano
+- Non usare virgolette nel testo
+- Rispondi SOLO con JSON: { "seoTitle": "...", "seoDescription": "..." }`;
+
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[SEO GENERATE] DeepSeek error:", response.status, errText);
+      return NextResponse.json(
+        { error: `DeepSeek API error: ${response.status}` },
+        { status: 502 },
       );
-      if (result.rows.length === 0) {
-        return NextResponse.json({ error: "Categoria non trovata." }, { status: 404 });
-      }
-      const { name, description, parent } = result.rows[0];
-      return NextResponse.json(generateCategorySeo(name, description, parent));
     }
 
-    return NextResponse.json({ error: 'Tipo non valido. Usa "product" o "category".' }, { status: 400 });
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return NextResponse.json({ error: "Risposta vuota da DeepSeek." }, { status: 502 });
+    }
+
+    // Parse JSON from response (handle possible markdown fences)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return NextResponse.json({ error: "Formato risposta non valido." }, { status: 502 });
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return NextResponse.json({
+      seoTitle: (parsed.seoTitle || "").slice(0, 60),
+      seoDescription: (parsed.seoDescription || "").slice(0, 160),
+    });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Errore." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : "Errore sconosciuto.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
