@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authorize } from "@/lib/auth-helpers";
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const MODEL = "deepseek-v4-flash";
+const MODEL = "deepseek-chat";
 
 /**
  * POST /api/admin/seo/generate
@@ -65,14 +65,15 @@ Requisiti:
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[SEO GENERATE] DeepSeek error:", response.status, errText);
+      console.error("[SEO GENERATE] DeepSeek error:", response.status, errText.slice(0, 500));
       return NextResponse.json(
-        { error: `DeepSeek API error: ${response.status}` },
+        { error: `DeepSeek API error: ${response.status} — ${errText.slice(0, 200)}` },
         { status: 502 },
       );
     }
 
     const data = await response.json();
+    console.log("[SEO GENERATE] DeepSeek raw response:", JSON.stringify(data).slice(0, 500));
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
