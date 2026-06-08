@@ -46,16 +46,17 @@ export async function GET(request: Request) {
 
       // Try different response paths that Icecat might use
       let product: Record<string, unknown> | null = null;
+      let generalInfo: Record<string, unknown> | null = null;
 
       if (data?.data?.product) {
         product = data.data.product;
+      } else if (data?.data?.GeneralInfo) {
+        generalInfo = data.data.GeneralInfo as Record<string, unknown>;
       } else if (data?.product) {
         product = data.product;
-      } else if (Array.isArray(data?.data)) {
-        product = data.data[0]?.product || null;
       }
 
-      if (!product) {
+      if (!product && !generalInfo) {
         console.log("[ICECAT] Full response preview:", JSON.stringify(data).slice(0, 1000));
         return NextResponse.json({
           found: false,
@@ -64,26 +65,38 @@ export async function GET(request: Request) {
         }, { status: 502 });
       }
 
-      const title = String(product.Title || product.ProductTitle || product.title || "");
-      const brand = product.Brand
-        ? String((product.Brand as Record<string, unknown>).Name || product.Brand as string || "")
-        : "";
+      const info = product || generalInfo!;
+      const title = String(info.Title || info.title || info.ProductTitle || "");
+      const brand = typeof info.Brand === "string"
+        ? String(info.Brand)
+        : String((info.Brand as Record<string, unknown>)?.Name || info.brand || "");
       const description = String(
-        (product as Record<string, unknown>).SummaryDescription
-          ? ((product as Record<string, unknown>).SummaryDescription as Record<string, unknown>).ShortSummaryDescription || ""
-          : (product as Record<string, unknown>).Description
-            ? ((product as Record<string, unknown>).Description as Record<string, unknown>).LongDesc || ""
-            : product.description || "",
+        (info as Record<string, unknown>).SummaryDescription
+          ? ((info as Record<string, unknown>).SummaryDescription as Record<string, unknown>).ShortSummaryDescription || ""
+          : (info as Record<string, unknown>).Description
+            ? String((info as Record<string, unknown>).Description as string)
+            : info.description || "",
       );
-      const images: { url: string; alt: string }[] = [];
-      if (product.ImgHighRes) images.push({ url: String(product.ImgHighRes), alt: `${title} - ${brand}` });
-      if (product.ImgLowRes) images.push({ url: String(product.ImgLowRes), alt: `${title} - ${brand}` });
 
-      // Parse specs from ProductFeature
+      // Images — try different Icecat paths
+      const images: { url: string; alt: string }[] = [];
+      const dataObj: Record<string, unknown> = (data?.data as Record<string, unknown>) || {};
+      const infoObj = info as Record<string, unknown>;
+      const gallery = dataObj.Gallery as Record<string, unknown> || {};
+      const highRes = String(infoObj.ImgHighRes || infoObj.HighResImage || gallery.HighResImage || "");
+      const lowRes = String(infoObj.ImgLowRes || infoObj.LowResImage || gallery.LowResImage || "");
+      if (highRes) images.push({ url: String(highRes), alt: `${title} - ${brand}` });
+      if (lowRes) images.push({ url: String(lowRes), alt: `${title} - ${brand}` });
+
+      // Specs — try FeatureGroups or ProductFeature
       const specs: { label: string; value: string }[] = [];
       try {
-        const featureGroups = (product.ProductFeature as Record<string, unknown>)?.FeatureGroup
-          || (product as Record<string, unknown>).FeatureGroups
+        const allData = data?.data as Record<string, unknown> || {};
+        const infoAny = info as Record<string, unknown>;
+        const featureGroups = (infoAny.ProductFeature as Record<string, unknown>)?.FeatureGroup
+          || infoAny.FeatureGroups
+          || allData.FeatureGroups
+          || (allData.ProductFeature as Record<string, unknown>)?.FeatureGroup
           || [];
         if (Array.isArray(featureGroups)) {
           for (const group of featureGroups) {
