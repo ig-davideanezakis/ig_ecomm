@@ -47,6 +47,31 @@ export async function GET(request: Request) {
           { label: "Connettività", value: "USB-C, HDMI, DisplayPort" },
         ],
       },
+      "8806090545931": {
+        title: "ASUS ROG Strix GeForce RTX 4090 OC Edition 24GB",
+        brand: "ASUS",
+        description: "Scheda video ASUS ROG Strix GeForce RTX 4090 con 24GB GDDR6X, overclock di fabbrica, tripla ventola Axial-tech e RGB Aura Sync.",
+        specs: [
+          { label: "GPU", value: "NVIDIA GeForce RTX 4090" },
+          { label: "VRAM", value: "24GB GDDR6X" },
+          { label: "CUDA Core", value: "16384" },
+          { label: "Clock Boost", value: "2610 MHz (OC mode)" },
+          { label: "Connettori", value: "3x DP 1.4a, 2x HDMI 2.1" },
+          { label: "Alimentazione", value: "1000W consigliato" },
+        ],
+      },
+      "4711387336977": {
+        title: "Samsung SSD 990 Pro 2TB NVMe PCIe 4.0",
+        brand: "Samsung",
+        description: "SSD NVMe M.2 PCIe Gen 4.0 x4. Lettura fino a 7.450 MB/s, ideale per gaming e workstation.",
+        specs: [
+          { label: "Capacità", value: "2TB" },
+          { label: "Interfaccia", value: "M.2 NVMe PCIe 4.0" },
+          { label: "Lettura seq.", value: "Fino a 7.450 MB/s" },
+          { label: "NAND", value: "Samsung V-NAND" },
+          { label: "Durata", value: "1.200 TBW" },
+        ],
+      },
     };
 
     const mock = mockDatabase[ean];
