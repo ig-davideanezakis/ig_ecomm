@@ -45,6 +45,7 @@ export default function ProductForm({ productId }: Props) {
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [seoLoading, setSeoLoading] = useState(false);
+  const [eanLoading, setEanLoading] = useState(false);
 
   const uploadFile = async (file: File) => {
     if (!productId) return;
@@ -284,8 +285,35 @@ export default function ProductForm({ productId }: Props) {
               </div>
               <div>
                 <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / Codice a barre</label>
-                <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                <div className="flex gap-2">
+                  <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <button type="button" onClick={async () => {
+                    if (!barcode || eanLoading) return;
+                    setEanLoading(true); setError("");
+                    try {
+                      const res = await fetch(`/api/products/lookup-ean?ean=${encodeURIComponent(barcode)}`);
+                      if (!res.ok) { const e = await res.json(); setError(e.error || "Prodotto non trovato."); setEanLoading(false); return; }
+                      const data = await res.json();
+                      if (data.found) {
+                        updateTitle(data.title);
+                        setDescription(data.description || "");
+                        if (data.specs?.length) {
+                          const rows = data.specs.map((s: {label:string;value:string}) =>
+                            `<tr><td class="font-medium px-4 py-2 border">${s.label}</td><td class="px-4 py-2 border">${s.value}</td></tr>`
+                          ).join("");
+                          setContent(`<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`);
+                        }
+                      }
+                    } catch { setError("Errore di connessione."); }
+                    setEanLoading(false);
+                  }} disabled={!barcode || barcode.length < 8 || eanLoading}
+                    className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 flex items-center gap-1">
+                    {eanLoading ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
+                    {eanLoading ? "Caricamento..." : "Cerca EAN"}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Inserisci un EAN per auto-compilare titolo, descrizione e specifiche tecniche via Icecat. Prezzo e stock rimangono manuali.</p>
               </div>
               <div>
                 <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>

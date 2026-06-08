@@ -86,6 +86,8 @@ npm run db:cleanup       # Delete E2E test users from DB
 | `VERCEL_TOKEN` | GitHub Secrets | ✅ for deploy monitoring |
 | `VERCEL_PROJECT_ID` | GitHub Secrets | ✅ for deploy monitoring |
 | `DEEPSEEK_API_KEY` | .env + Vercel | ✅ for AI SEO generation |
+| `ICECAT_USERNAME` | .env | Optional — for Icecat product data |
+| `ICECAT_KEY` | .env | Optional — for Icecat product data |
 
 ## ⚠️ Known Pitfalls
 
