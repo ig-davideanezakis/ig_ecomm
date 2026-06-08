@@ -28,6 +28,7 @@ export default function CategoryForm({ categoryId }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
+  const [categories, setCategories] = useState<TreeNode[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/categories").then(async r => {
@@ -56,7 +57,6 @@ export default function CategoryForm({ categoryId }: Props) {
     if (autoSlug) setSlug(v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
   };
 
-  const [categories, setCategories] = useState<TreeNode[]>([]);
   const flattenOptions = (nodes: TreeNode[], depth = 0): { id: string; name: string; depth: number }[] => {
     const result: { id: string; name: string; depth: number }[] = [];
     for (const n of nodes) {
