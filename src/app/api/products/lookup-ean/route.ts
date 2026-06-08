@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { lookupProductByEan } from "@/lib/icecat";
 
-const ICECAT_API = "https://live.icecat.biz/api";
 const ICECAT_USER = process.env.ICECAT_USERNAME || "";
 const ICECAT_KEY = process.env.ICECAT_KEY || "";
 const HAS_CREDENTIALS = Boolean(ICECAT_USER && ICECAT_KEY);
@@ -13,176 +13,88 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "EAN non valido (minimo 8 cifre)." }, { status: 400 });
   }
 
-  if (HAS_CREDENTIALS) {
-    try {
-      const url = `${ICECAT_API}?lang=it&ean_upc=${ean}&UserName=${ICECAT_USER}&ContentReader=${ICECAT_KEY}`;
-      console.log(`[ICECAT] Fetching EAN ${ean}`);
+  if (!HAS_CREDENTIALS) {
+    return NextResponse.json({ found: false, error: "Icecat credentials not configured." }, { status: 503 });
+  }
 
-      const response = await fetch(url, {
+  // ── RESTful v3 API (multi-call) ──────────────────────────────────
+  try {
+    console.log(`[ICECAT] Looking up EAN ${ean} via RESTful v3...`);
+    const result = await lookupProductByEan(ean);
+    return NextResponse.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[ICECAT] RESTful v3 failed: ${msg}`);
+
+    // ── Fallback: live.icecat.biz/api ──────────────────────────────
+    try {
+      console.log("[ICECAT] Falling back to live.icecat.biz/api...");
+      const url = `https://live.icecat.biz/api?lang=it&ean_upc=${ean}&UserName=${ICECAT_USER}&ContentReader=${ICECAT_KEY}`;
+      const res = await fetch(url, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
       });
 
-      if (!response.ok) {
-        if (response.status === 404) return NextResponse.json({ found: false, error: "Prodotto non trovato su Icecat." }, { status: 404 });
-        const err = await response.text();
-        return NextResponse.json({ error: `Icecat: ${response.status} — ${err.slice(0, 200)}` }, { status: 502 });
+      if (!res.ok) {
+        return NextResponse.json({
+          found: false,
+          error: `Icecat error: ${res.status}. ${msg}`,
+        }, { status: 502 });
       }
 
-      const data = await response.json();
-      console.log("[ICECAT] Full response keys:", Object.keys(data));
-      const dataObj = data?.data as Record<string, unknown> | undefined;
-      if (!dataObj) {
-        return NextResponse.json({ found: false, error: "Risposta Icecat vuota." }, { status: 404 });
-      }
-
-      // Log entire structure for debugging
-      const topKeys = Object.keys(dataObj);
-      console.log(`[ICECAT] data keys (${Object.keys(dataObj).length}): ${topKeys.join(", ")}`);
-      for (const k of topKeys) {
-        const val = dataObj[k];
-        if (val && typeof val === "object" && !Array.isArray(val)) {
-          console.log(`[ICECAT]   ${k} -> ${Object.keys(val as Record<string, unknown>).slice(0, 10).join(", ")}`);
-        } else if (Array.isArray(val)) {
-          console.log(`[ICECAT]   ${k} -> Array(${val.length})`);
-        } else {
-          console.log(`[ICECAT]   ${k} -> ${String(val).slice(0, 80)}`);
-        }
-      }
-
-      const d = dataObj as Record<string, unknown>;
-      const gi = (d.GeneralInfo || d.product || {}) as Record<string, unknown>;
-      const descObj = (d.Description || d.SummaryDescription || {}) as Record<string, unknown>;
-
-      console.log(`[ICECAT] gi keys: ${Object.keys(gi).join(", ")}`);
-      console.log(`[ICECAT] Description keys: ${Object.keys(descObj).join(", ")}`);
-      console.log(`[ICECAT] Has Logistics: ${!!d.Logistics}`);
-      console.log(`[ICECAT] Has Gallery: ${!!d.Gallery}`);
-      console.log(`[ICECAT] Has ProductFeature: ${!!d.ProductFeature}`);
-      console.log(`[ICECAT] Has BulletPoints: ${!!d.BulletPoints}`);
-      const logi = (d.Logistics || {}) as Record<string, unknown>;
+      const data = await res.json();
+      const d = data?.data as Record<string, unknown> || {};
+      const gi = (d.GeneralInfo || {}) as Record<string, unknown>;
+      const description = (d.Description || {}) as Record<string, unknown>;
+      const logistics = (d.Logistics || {}) as Record<string, unknown>;
       const gallery = (d.Gallery || {}) as Record<string, unknown>;
-      const bulletData = (d.BulletPoints || {}) as Record<string, unknown>;
 
-      // ── Title ─────────────────────────────────────────────────────
-      const title = String(gi.Title || gi.title || "");
-
-      // ── Brand ─────────────────────────────────────────────────────
+      const title = String(gi.Title || "");
       const brandName = typeof gi.Brand === "string" ? String(gi.Brand) : "";
-      const brandLogo = String(gi.BrandLogo || "");
 
-      // ── Description ────────────────────────────────────────────────
-      const shortDesc = String(
-        descObj.ShortSummaryDescription || descObj.ShortDesc || descObj.shortDesc || "",
-      );
-      const longDesc = String(
-        descObj.LongDesc || descObj.LongDescription || descObj.longDesc || descObj.LongSummaryDescription || "",
-      );
+      const shortDesc = String(description.ShortSummaryDescription || description.ShortDesc || "");
+      const longDesc = String(description.LongDesc || description.LongDescription || "");
 
-      // ── Weight ────────────────────────────────────────────────────
       let weight: number | null = null;
-      const rawWeight = String(logi.Weight || logi.weight || "");
-      const weightMatch = rawWeight.match(/[\d.]+/);
-      if (weightMatch) weight = parseFloat(weightMatch[0]);
+      const wm = String(logistics.Weight || "").match(/[\d.]+/);
+      if (wm) weight = parseFloat(wm[0]);
 
-      // ── Dimensions ────────────────────────────────────────────────
-      const width = String(logi.Width || logi.width || "");
-      const height = String(logi.Height || logi.height || "");
-      const depth = String(logi.Depth || logi.depth || "");
-
-      // ── Images ───────────────────────────────────────────────────
       const images: { url: string; alt: string }[] = [];
-      const highImg = String(gi.ImgHighRes || gi.HighResImage || gallery.HighResImage || gallery.HighRes || "");
-      const lowImg = String(gi.ImgLowRes || gi.LowResImage || gallery.LowResImage || gallery.LowRes || "");
+      const highImg = String(gi.ImgHighRes || gallery.HighResImage || "");
+      const lowImg = String(gi.ImgLowRes || gallery.LowResImage || "");
       if (highImg) images.push({ url: highImg, alt: `${title} - ${brandName}` });
       if (lowImg && lowImg !== highImg) images.push({ url: lowImg, alt: `${title} - ${brandName}` });
 
-      // Try product images array from gallery
-      try {
-        const prodImgs = gallery.ProductImages || gallery.Images || [];
-        if (Array.isArray(prodImgs)) {
-          for (const img of prodImgs) {
-            const imgUrl = String(img.ImgHighRes || img.HighRes || img.Img || img.url || "");
-            if (imgUrl && !images.find(i => i.url === imgUrl)) {
-              images.push({ url: imgUrl, alt: `${title} - ${brandName}` });
-            }
-          }
-        }
-      } catch { /* optional */ }
-
-      // ── Specs (FeatureGroups) ─────────────────────────────────────
       const specs: { label: string; value: string }[] = [];
       try {
-        const allFeatureData = (d.ProductFeature || gi.ProductFeature || {}) as Record<string, unknown>;
-        const groups = allFeatureData.FeatureGroup || d.FeatureGroups || [];
-        if (Array.isArray(groups)) {
-          for (const g of groups) {
-            const features = (g as Record<string, unknown>).ProductFeature || [];
-            if (Array.isArray(features)) {
-              for (const f of features) {
-                const label = String(f.Name || f.name || "");
-                const value = String(f.PresentationValue || f.Value || f.value || "");
-                if (label && value) specs.push({ label, value });
-              }
-            }
+        const featureData = (d.ProductFeature || {}) as Record<string, unknown>;
+        const groups = (featureData.FeatureGroup || []) as Array<Record<string, unknown>>;
+        for (const g of groups) {
+          const features = (g.ProductFeature || []) as Array<Record<string, unknown>>;
+          for (const f of features) {
+            const label = String(f.Name || f.name || "");
+            const value = String(f.PresentationValue || f.Value || f.value || "");
+            if (label && value) specs.push({ label, value });
           }
         }
-      } catch { /* optional */ }
-
-      // ── Bullet points (marketing) ─────────────────────────────────
-      let bulletPoints = "";
-      try {
-        const bullets = bulletData.BulletPoint || [];
-        if (Array.isArray(bullets)) {
-          bulletPoints = bullets
-            .map((b: unknown) => String((b as Record<string, unknown>).BulletPoint || b as string || ""))
-            .filter(Boolean)
-            .join("\n");
-        }
-      } catch { /* optional */ }
-
-      // ── Category hint ─────────────────────────────────────────────
-      let categoryHint = "";
-      try {
-        const family = d.ProductFamily as Record<string, unknown> || {};
-        const name = family.Name || family.name || "";
-        if (name) categoryHint = String(name);
       } catch { /* optional */ }
 
       return NextResponse.json({
         found: true,
-        title,
-        brand: brandName,
-        brandLogo,
-        shortDesc,
-        longDesc,
+        title, brand: brandName, brandLogo: String(gi.BrandLogo || ""),
+        shortDesc, longDesc,
         weight,
-        dimensions: { width, height, depth },
-        images,
-        specs,
-        bulletPoints,
-        categoryHint,
+        dimensions: {
+          width: String(logistics.Width || ""),
+          height: String(logistics.Height || ""),
+          depth: String(logistics.Depth || ""),
+        },
+        images, specs, bulletPoints: "", categoryHint: String((d.ProductFamily as Record<string, unknown>)?.Name || ""),
         ean,
       });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Errore sconosciuto";
-      console.error("[ICECAT] Exception:", msg);
-      return NextResponse.json({ error: `Icecat: ${msg}` }, { status: 500 });
+    } catch (fallbackErr) {
+      const fbMsg = fallbackErr instanceof Error ? fallbackErr.message : "Fallback failed";
+      return NextResponse.json({ error: `RESTful v3: ${msg}. Fallback: ${fbMsg}` }, { status: 502 });
     }
   }
-
-  // ── Mock data (fallback when no credentials) ──────────────────────
-  const mockDB: Record<string, Record<string, unknown>> = {
-    "8806090545931": {
-      title: "ASUS ROG Strix GeForce RTX 4090 OC 24GB", brand: "ASUS",
-      shortDesc: "Scheda video con 24GB GDDR6X, tripla ventola Axial-tech.",
-      specs: [
-        { label: "GPU", value: "NVIDIA RTX 4090" },
-        { label: "VRAM", value: "24GB GDDR6X" },
-      ],
-    },
-  };
-  const mock = mockDB[ean];
-  if (!mock) return NextResponse.json({ found: false, error: "EAN non trovato. Credenziali Icecat non configurate." }, { status: 404 });
-  return NextResponse.json({ found: true, ...mock, images: [], ean });
 }
