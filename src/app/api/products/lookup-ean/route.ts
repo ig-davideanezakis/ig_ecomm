@@ -30,13 +30,36 @@ export async function GET(request: Request) {
       }
 
       const data = await response.json();
-      if (!data?.data) {
+      console.log("[ICECAT] Full response keys:", Object.keys(data));
+      const dataObj = data?.data as Record<string, unknown> | undefined;
+      if (!dataObj) {
         return NextResponse.json({ found: false, error: "Risposta Icecat vuota." }, { status: 404 });
       }
 
-      const d: Record<string, unknown> = data.data as Record<string, unknown>;
+      // Log entire structure for debugging
+      const topKeys = Object.keys(dataObj);
+      console.log(`[ICECAT] data keys (${Object.keys(dataObj).length}): ${topKeys.join(", ")}`);
+      for (const k of topKeys) {
+        const val = dataObj[k];
+        if (val && typeof val === "object" && !Array.isArray(val)) {
+          console.log(`[ICECAT]   ${k} -> ${Object.keys(val as Record<string, unknown>).slice(0, 10).join(", ")}`);
+        } else if (Array.isArray(val)) {
+          console.log(`[ICECAT]   ${k} -> Array(${val.length})`);
+        } else {
+          console.log(`[ICECAT]   ${k} -> ${String(val).slice(0, 80)}`);
+        }
+      }
+
+      const d = dataObj as Record<string, unknown>;
       const gi = (d.GeneralInfo || d.product || {}) as Record<string, unknown>;
-      const desc = (d.Description || d.SummaryDescription || {}) as Record<string, unknown>;
+      const descObj = (d.Description || d.SummaryDescription || {}) as Record<string, unknown>;
+
+      console.log(`[ICECAT] gi keys: ${Object.keys(gi).join(", ")}`);
+      console.log(`[ICECAT] Description keys: ${Object.keys(descObj).join(", ")}`);
+      console.log(`[ICECAT] Has Logistics: ${!!d.Logistics}`);
+      console.log(`[ICECAT] Has Gallery: ${!!d.Gallery}`);
+      console.log(`[ICECAT] Has ProductFeature: ${!!d.ProductFeature}`);
+      console.log(`[ICECAT] Has BulletPoints: ${!!d.BulletPoints}`);
       const logi = (d.Logistics || {}) as Record<string, unknown>;
       const gallery = (d.Gallery || {}) as Record<string, unknown>;
       const bulletData = (d.BulletPoints || {}) as Record<string, unknown>;
@@ -50,10 +73,10 @@ export async function GET(request: Request) {
 
       // ── Description ────────────────────────────────────────────────
       const shortDesc = String(
-        desc.ShortSummaryDescription || desc.ShortDesc || desc.shortDesc || "",
+        descObj.ShortSummaryDescription || descObj.ShortDesc || descObj.shortDesc || "",
       );
       const longDesc = String(
-        desc.LongDesc || desc.LongDescription || desc.longDesc || desc.LongSummaryDescription || "",
+        descObj.LongDesc || descObj.LongDescription || descObj.longDesc || descObj.LongSummaryDescription || "",
       );
 
       // ── Weight ────────────────────────────────────────────────────
