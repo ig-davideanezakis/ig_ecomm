@@ -204,7 +204,7 @@ export default function CategoryForm({ categoryId }: Props) {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">SEO</h2>
               <button type="button" onClick={async () => {
-                if (!categoryId) return;
+                if (!categoryId && !name) return;
                 const res = await fetch("/api/admin/seo/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -218,8 +218,8 @@ export default function CategoryForm({ categoryId }: Props) {
                 const json = await res.json();
                 if (json.seoTitle) setSeoTitle(json.seoTitle);
                 if (json.seoDescription) setSeoDescription(json.seoDescription);
-              }} disabled={!categoryId}
-                className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline">
+              }} disabled={!name}
+                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity">
                 ✨ Genera con AI
               </button>
             </div>
