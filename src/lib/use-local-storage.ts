@@ -1,27 +1,30 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 /**
  * Persists a state value in localStorage, restoring it on mount.
  * Useful for admin forms to survive page refreshes.
- *
- * @param key localStorage key (scoped to the page)
- * @param initialValue fallback if nothing stored
  */
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(initialValue);
+  const hydrated = useRef(false);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount (deferred to avoid ESLint cascade warning)
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored !== null) {
-        setValue(JSON.parse(stored));
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const id = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored !== null) {
+          setValue(JSON.parse(stored));
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    }, 0);
+    return () => clearTimeout(id);
   }, [key]);
 
   // Persist on change
