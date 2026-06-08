@@ -201,7 +201,23 @@ export default function CategoryForm({ categoryId }: Props) {
           </section>
 
           <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">SEO</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">SEO</h2>
+              <button type="button" onClick={async () => {
+                if (!categoryId) return;
+                const res = await fetch("/api/admin/seo/generate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "category", id: categoryId }),
+                });
+                const json = await res.json();
+                if (json.seoTitle) setSeoTitle(json.seoTitle);
+                if (json.seoDescription) setSeoDescription(json.seoDescription);
+              }} disabled={!categoryId}
+                className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline">
+                ✨ Genera automaticamente
+              </button>
+            </div>
             <div>
               <label htmlFor="cat-seo-title" className="block text-sm font-medium mb-1">Meta Title</label>
               <input id="cat-seo-title" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)}

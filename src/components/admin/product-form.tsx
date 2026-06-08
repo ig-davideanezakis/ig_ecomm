@@ -459,7 +459,23 @@ export default function ProductForm({ productId }: Props) {
 
           {/* SEO */}
           <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">SEO</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">SEO</h2>
+              <button type="button" onClick={async () => {
+                if (!productId) return;
+                const res = await fetch("/api/admin/seo/generate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "product", id: productId }),
+                });
+                const json = await res.json();
+                if (json.seoTitle) setSeoTitle(json.seoTitle);
+                if (json.seoDescription) setSeoDescription(json.seoDescription);
+              }} disabled={!productId}
+                className="text-xs text-primary hover:underline disabled:opacity-50 disabled:no-underline">
+                ✨ Genera automaticamente
+              </button>
+            </div>
             <div>
               <label htmlFor="prod-seo-title" className="block text-sm font-medium mb-1">Meta Title</label>
               <input id="prod-seo-title" type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)}
