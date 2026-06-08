@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { authorize } from "@/lib/auth-helpers";
-import { categorySchema } from "@/lib/schemas";
+import { categorySchema, type CategoryInput } from "@/lib/schemas";
 import { validateOrThrow } from "@/lib/validation";
+import type { FlatCategory, TreeNode } from "@/lib/schemas";
 
-// ─── GET /api/admin/categories ────────────────────────────────────
 export async function GET() {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
 
@@ -18,18 +18,17 @@ export async function GET() {
      ORDER BY c.sort_order ASC, c.name ASC`,
   );
 
-  // Build tree
-  const cats = result.rows;
-  const map = new Map<string, any>();
-  const roots: any[] = [];
+  const cats: FlatCategory[] = result.rows;
+  const map = new Map<string, TreeNode>();
+  const roots: TreeNode[] = [];
 
   for (const c of cats) {
     map.set(c.id, { ...c, children: [] });
   }
   for (const c of cats) {
-    const node = map.get(c.id);
+    const node = map.get(c.id)!;
     if (c.parent_id && map.has(c.parent_id)) {
-      map.get(c.parent_id).children.push(node);
+      map.get(c.parent_id)!.children.push(node);
     } else {
       roots.push(node);
     }
@@ -37,14 +36,13 @@ export async function GET() {
 
   return NextResponse.json({ tree: roots, flat: cats });
 }
-
 // ─── POST /api/admin/categories ───────────────────────────────────
 export async function POST(request: Request) {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
 
   try {
     const body = await request.json();
-    const data = await validateOrThrow(categorySchema, body);
+    const data: CategoryInput = await validateOrThrow(categorySchema, body);
 
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "categoria";
 

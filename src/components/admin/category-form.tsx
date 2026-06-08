@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/admin/rich-text-editor";
+import type { TreeNode } from "@/lib/schemas";
 
 interface Props { categoryId?: string }
 
@@ -23,7 +24,6 @@ export default function CategoryForm({ categoryId }: Props) {
   const [isActive, setIsActive] = useState(true);
   const [activeFrom, setActiveFrom] = useState("");
   const [activeUntil, setActiveUntil] = useState("");
-  const [categories, setCategories] = useState<{ id: string; name: string; children: any[] }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -56,17 +56,17 @@ export default function CategoryForm({ categoryId }: Props) {
     if (autoSlug) setSlug(v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
   };
 
-  // Flatten tree for parent select (excluding self and children)
-  const flattenOptions = (nodes: any[], depth = 0, excludeId?: string): { id: string; name: string; depth: number }[] => {
+  const [categories, setCategories] = useState<TreeNode[]>([]);
+  const flattenOptions = (nodes: TreeNode[], depth = 0): { id: string; name: string; depth: number }[] => {
     const result: { id: string; name: string; depth: number }[] = [];
     for (const n of nodes) {
-      if (n.id === excludeId) continue;
+      if (n.id === categoryId) continue;
       result.push({ id: n.id, name: n.name, depth });
-      result.push(...flattenOptions(n.children || [], depth + 1, excludeId));
+      result.push(...flattenOptions(n.children || [], depth + 1));
     }
     return result;
   };
-  const parentOptions = flattenOptions(categories, 0, categoryId);
+  const parentOptions = flattenOptions(categories, 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,7 +150,7 @@ export default function CategoryForm({ categoryId }: Props) {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Descrizione (per SEO)</label>
+              <p className="block text-sm font-medium mb-1">Descrizione (per SEO)</p>
               <RichTextEditor value={description} onChange={setDescription} minHeight={200} placeholder="Descrizione della categoria..." />
             </div>
           </section>

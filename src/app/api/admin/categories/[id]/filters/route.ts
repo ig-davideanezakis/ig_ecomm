@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       [id, filterKey, filterLabel || filterKey]);
     return NextResponse.json({ success: true, filter: result.rows[0] });
   } catch (err) {
-    if ((err as any)?.code === '23505') return NextResponse.json({ error: "Filtro già presente." }, { status: 409 });
+    if ((err as { code?: string })?.code === '23505') return NextResponse.json({ error: "Filtro già presente." }, { status: 409 });
     return NextResponse.json({ error: err instanceof Error ? err.message : "Errore." }, { status: 500 });
   }
 }

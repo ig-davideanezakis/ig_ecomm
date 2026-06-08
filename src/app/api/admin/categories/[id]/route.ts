@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { authorize } from "@/lib/auth-helpers";
-import { categorySchema } from "@/lib/schemas";
+import { categorySchema, type CategoryInput } from "@/lib/schemas";
 import { validateOrThrow } from "@/lib/validation";
 
-// ─── GET /api/admin/categories/[id] ───────────────────────────────
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -22,7 +21,6 @@ export async function GET(
   return NextResponse.json(result.rows[0]);
 }
 
-// ─── PUT /api/admin/categories/[id] ───────────────────────────────
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -33,14 +31,13 @@ export async function PUT(
   try {
     const body = await request.json();
 
-    // Support both full update and partial (reorder only)
     if (body._reorder) {
       await pool.query(`UPDATE "category" SET parent_id=$1, sort_order=$2, updated_at=NOW() WHERE id=$3`,
         [body.parentId || null, body.sortOrder ?? 0, id]);
       return NextResponse.json({ success: true });
     }
 
-    const data = await validateOrThrow(categorySchema, body);
+    const data: CategoryInput = await validateOrThrow(categorySchema, body);
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
     await pool.query(
@@ -62,7 +59,6 @@ export async function PUT(
   }
 }
 
-// ─── DELETE /api/admin/categories/[id] ────────────────────────────
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -70,7 +66,6 @@ export async function DELETE(
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   const { id } = await params;
 
-  // Move children up to parent before deleting
   const cat = await pool.query(`SELECT parent_id FROM "category" WHERE id = $1 LIMIT 1`, [id]);
   if (cat.rows.length > 0) {
     const parentId = cat.rows[0].parent_id;

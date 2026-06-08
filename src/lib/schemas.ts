@@ -18,3 +18,25 @@ export const categorySchema = z.object({
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;
+
+interface FlatCategory {
+  id: string; name: string; slug: string; description: string | null;
+  image: string | null; icon: string | null;
+  parent_id: string | null; sort_order: number;
+  seo_title: string | null; seo_description: string | null;
+  noindex: boolean; is_active: boolean;
+  active_from: string | null; active_until: string | null;
+  created_at: string; updated_at: string;
+  product_count: number;
+}
+
+interface TreeNode {
+  id: string; name: string; slug: string; parent_id: string | null;
+  sort_order: number; is_active: boolean; noindex: boolean;
+  image: string | null; icon: string | null;
+  active_from: string | null; active_until: string | null;
+  product_count: number;
+  children: TreeNode[];
+}
+
+export type { FlatCategory, TreeNode };
