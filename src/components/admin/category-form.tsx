@@ -29,6 +29,7 @@ export default function CategoryForm({ categoryId }: Props) {
   const [success, setSuccess] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
   const [categories, setCategories] = useState<TreeNode[]>([]);
+  const [seoLoading, setSeoLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/categories").then(async r => {
@@ -204,23 +205,21 @@ export default function CategoryForm({ categoryId }: Props) {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">SEO</h2>
               <button type="button" onClick={async () => {
-                if (!categoryId && !name) return;
+                if (!name || seoLoading) return;
+                setSeoLoading(true);
                 const res = await fetch("/api/admin/seo/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    type: "category",
-                    title: name,
-                    description,
-                    parentName: categories.find(c => c.id === parentId)?.name,
-                  }),
+                  body: JSON.stringify({ type: "category", title: name, description, parentName: categories.find(c => c.id === parentId)?.name }),
                 });
                 const json = await res.json();
                 if (json.seoTitle) setSeoTitle(json.seoTitle);
                 if (json.seoDescription) setSeoDescription(json.seoDescription);
-              }} disabled={!name}
-                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity">
-                ✨ Genera con AI
+                setSeoLoading(false);
+              }} disabled={!name || seoLoading}
+                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity flex items-center gap-1">
+                {seoLoading ? <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : "✨"}
+                {seoLoading ? "Generazione..." : "Genera con AI"}
               </button>
             </div>
             <div>

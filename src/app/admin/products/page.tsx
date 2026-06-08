@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -47,9 +47,7 @@ export default function AdminProductsPage() {
     setLoading(false);
   }, [page, sort, search, catFilter, brandFilter, statusFilter]);
 
-  const fetchRef = useRef(false);
   useEffect(() => {
-    if (!fetchRef.current) { fetchRef.current = true; return; }
     fetchProducts();
   }, [fetchProducts]);
 

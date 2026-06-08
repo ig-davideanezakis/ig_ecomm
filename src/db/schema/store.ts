@@ -75,7 +75,7 @@ export const products = pgTable("product", {
   sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  categoryId: varchar("category_id", { length: 255 }).notNull().references(() => categories.id),
+  categoryId: varchar("category_id", { length: 255 }).references(() => categories.id),
   brandId: varchar("brand_id", { length: 255 }).references(() => brands.id),
 });
 

@@ -44,6 +44,7 @@ export default function ProductForm({ productId }: Props) {
   const [images, setImages] = useState<Image[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
+  const [seoLoading, setSeoLoading] = useState(false);
 
   const uploadFile = async (file: File) => {
     if (!productId) return;
@@ -462,22 +463,21 @@ export default function ProductForm({ productId }: Props) {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">SEO</h2>
               <button type="button" onClick={async () => {
-                if (!productId && !title) return;
+                if (!title || seoLoading) return;
+                setSeoLoading(true);
                 const res = await fetch("/api/admin/seo/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    type: "product",
-                    title,
-                    description: description || content,
-                  }),
+                  body: JSON.stringify({ type: "product", title, description: description || content }),
                 });
                 const json = await res.json();
                 if (json.seoTitle) setSeoTitle(json.seoTitle);
                 if (json.seoDescription) setSeoDescription(json.seoDescription);
-              }} disabled={!title}
-                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity">
-                ✨ Genera con AI
+                setSeoLoading(false);
+              }} disabled={!title || seoLoading}
+                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity flex items-center gap-1">
+                {seoLoading ? <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : "✨"}
+                {seoLoading ? "Generazione..." : "Genera con AI"}
               </button>
             </div>
             <div>
