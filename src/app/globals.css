@@ -138,6 +138,12 @@
     @apply bg-background text-foreground;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
   /* Neon glow — dark mode only */
   .dark .neon-glow {
     box-shadow: 0 0 6px color-mix(in srgb, var(--neon-glow) 60%, transparent),

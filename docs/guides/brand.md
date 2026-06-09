@@ -41,9 +41,21 @@
 
 ## Typography
 
-- **Heading font:** TBD (Inter is the default shadcn font — good for modern tech)
-- **Body font:** TBD (Inter recommended for consistency)
-- **Monospace font:** TBD (JetBrains Mono or Fira Code for specs/code)
+| Usage | Font | Style |
+|-------|------|-------|
+| **Headings** (H1-H6) | **Space Grotesk** | Geometric, slightly condensed, tech-forward. Applied globally via CSS. Google Fonts. |
+| **Body text** | **Inter** | Clean, highly readable, modern. Standard for tech dashboards and e-commerce. Google Fonts. |
+| **Monospace** (specs, code) | `Geist Mono` | Clean monospace for technical specs and code blocks. |
+
+**CSS variables defined:**
+- `--font-sans` → Inter (via Next.js font loader)
+- `--font-heading` → Space Grotesk (via Next.js font loader)
+
+**Implementation notes:**
+- Headings auto-apply Space Grotesk with `font-weight: 600` and `letter-spacing: -0.02em`
+- Body defaults to Inter via Tailwind's `font-sans`
+- Shadcn/ui components already use `font-sans` by default
+- To override specific elements: `font-heading` or `font-sans` utility classes
 
 ## Style Direction
 
