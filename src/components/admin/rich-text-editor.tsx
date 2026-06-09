@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExtension from "@tiptap/extension-link";
@@ -49,6 +49,59 @@ function ToolbarButton({
 
 function ToolbarDivider() {
   return <div className="mx-0.5 h-5 w-px bg-border" />;
+}
+
+function SeoFormatButton({ editor }: { editor: Editor }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleFormat = useCallback(async () => {
+    setLoading(true);
+    try {
+      const content = editor.getHTML();
+      const res = await fetch("/api/ai/seo-format", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Errore" }));
+        throw new Error(err.error || `Errore ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.formatted) {
+        editor.commands.setContent(data.formatted);
+      }
+    } catch (err) {
+      console.error("SEO format error:", err);
+      alert(err instanceof Error ? err.message : "Errore formattazione SEO");
+    } finally {
+      setLoading(false);
+    }
+  }, [editor]);
+
+  return (
+    <button
+      type="button"
+      onClick={handleFormat}
+      disabled={loading}
+      className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-primary to-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
+    >
+      {loading ? (
+        <>
+          <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+            <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" />
+          </svg>
+          Formattazione...
+        </>
+      ) : (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Formatta SEO
+        </>
+      )}
+    </button>
+  );
 }
 
 function MenuBar({ editor }: { editor: Editor }) {
@@ -166,6 +219,10 @@ function MenuBar({ editor }: { editor: Editor }) {
       <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title="Ripeti (Ctrl+Shift+Z)">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
       </ToolbarButton>
+
+      {/* Spacer + SEO Format */}
+      <div className="flex-1" />
+      <SeoFormatButton editor={editor} />
     </div>
   );
 }

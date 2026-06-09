@@ -16,6 +16,7 @@ const SETTING_FIELDS = [
   { key: "social_instagram", label: "Instagram URL", type: "text" },
   { key: "social_youtube", label: "YouTube URL", type: "text" },
   { key: "copyright_text", label: "Testo copyright", type: "text" },
+  { key: "seo_format_prompt", label: "✨ Prompt AI formattazione SEO", type: "seo-prompt" },
 ];
 
 export default function AdminSettingsPage() {
@@ -64,9 +65,19 @@ export default function AdminSettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {SETTING_FIELDS.map(({ key, label, type }) => (
-          <div key={key}>
+          <div key={key} className={type === "seo-prompt" ? "md:col-span-2" : ""}>
             <label htmlFor={`s-${key}`} className="block text-sm font-medium mb-1">{label}</label>
-            {type === "textarea" ? (
+            {type === "seo-prompt" ? (
+              <div className="space-y-2">
+                <textarea id={`s-${key}`} value={settings[key] || ""} onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+                  rows={12}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono focus-visible:ring-2 focus-visible:ring-ring" />
+                <p className="text-xs text-muted-foreground">
+                  Questo prompt viene inviato a DeepSeek AI per formattare il contenuto. Modificalo per personalizzare lo stile, il tono e le regole SEO.
+                  Lascia vuoto per usare il prompt predefinito.
+                </p>
+              </div>
+            ) : type === "textarea" ? (
               <textarea id={`s-${key}`} value={settings[key] || ""} onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
                 rows={3} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             ) : (
