@@ -57,7 +57,11 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Guest Checkout | ✅ Done | [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) — localStorage cart, 3-opzione checkout, thank-you page, post-purchase account |
 | Cart & Checkout | 🚧 MVP Done | Checkout con guest, login e Google OAuth. Payments TBD |
 | CMS — Pages & Settings | ✅ Done | Custom footer data, static pages (chi siamo, privacy, faq), rich text editor, nav/footer visibility |
-
+| Typography — Inter + Space Grotesk | ✅ Done | Body: Inter, Headings: Space Grotesk |
+| AI SEO Formatting (RichTextEditor) | ✅ Done | DeepSeek-powered "Formatta SEO" button in Tiptap editor, editable prompt in settings |
+| Dynamic Product Filters | ✅ Done | IG-6 — filter DB, admin CRUD, category assignment with inheritance, system filters (price/stock/brand), ProductFilters frontend with checkbox/select/range/color |
+| Test Coverage | ✅ Done | 129 tests across 11 test files (utils, validation, SEO, cart, dashboard, theme) |
+|
 ## Quick Commands
 
 ```bash
