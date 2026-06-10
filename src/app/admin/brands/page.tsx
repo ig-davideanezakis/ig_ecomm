@@ -34,11 +34,11 @@ export default function AdminBrandsPage() {
     setError(""); setSaving(true);
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `/api/admin/brands/${editingId}` : "/api/admin/brands";
-    const body: Record<string, string> = { name: form.name, slug: form.slug };
+    const body: Record<string, string | undefined> = { name: form.name, slug: form.slug };
     if (form.logo) body.logo = form.logo;
     if (form.description) body.description = form.description;
     if (form.website) body.website = form.website;
-    if (editingId) (body as any).newSlug = form.slug;
+    if (editingId) body.newSlug = form.slug;
 
     const res = await fetch(url, {
       method, headers: { "Content-Type": "application/json" },
