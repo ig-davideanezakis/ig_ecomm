@@ -25,10 +25,19 @@ export default function AdminBrandsPage() {
   const [error, setError] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
 
+  // Global widget visibility settings
+  const [widgetHomeEnabled, setWidgetHomeEnabled] = useState(true);
+  const [widgetFooterEnabled, setWidgetFooterEnabled] = useState(true);
+  const [widgetSaved, setWidgetSaved] = useState(false);
+
   const fetchBrands = () => fetch("/api/admin/brands").then(r => r.json()).then(setBrands);
 
   useEffect(() => {
     fetch("/api/admin/brands").then(r => r.json()).then(d => { setBrands(d); setLoading(false); });
+    fetch("/api/admin/settings").then(r => r.json()).then(s => {
+      if (s.show_brand_widget_home !== undefined) setWidgetHomeEnabled(s.show_brand_widget_home === "true");
+      if (s.show_brand_widget_footer !== undefined) setWidgetFooterEnabled(s.show_brand_widget_footer === "true");
+    }).catch(() => {});
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -145,6 +154,40 @@ export default function AdminBrandsPage() {
           </button>
         </form>
       )}
+
+      {/* Widget visibility toggles */}
+      <section className="rounded-lg border bg-card p-6 space-y-4">
+        <h2 className="font-semibold">Widget brand</h2>
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={widgetHomeEnabled}
+              onChange={e => setWidgetHomeEnabled(e.target.checked)}
+              className="rounded border-border text-primary" />
+            Mostra widget brand in homepage
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={widgetFooterEnabled}
+              onChange={e => setWidgetFooterEnabled(e.target.checked)}
+              className="rounded border-border text-primary" />
+            Mostra widget brand nel footer
+          </label>
+          <button onClick={async () => {
+            setWidgetSaved(false);
+            await fetch("/api/admin/settings", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                show_brand_widget_home: String(widgetHomeEnabled),
+                show_brand_widget_footer: String(widgetFooterEnabled),
+              }),
+            });
+            setWidgetSaved(true);
+            setTimeout(() => setWidgetSaved(false), 2000);
+          }} className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90">
+            {widgetSaved ? "Salvato!" : "Salva"}
+          </button>
+        </div>
+      </section>
 
       {/* Brands grid */}
       {brands.length === 0 ? (

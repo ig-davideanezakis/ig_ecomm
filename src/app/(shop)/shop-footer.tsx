@@ -15,6 +15,7 @@ interface Settings {
   footer_info_title?: string; footer_contacts_title?: string;
   footer_about_text?: string; social_facebook?: string;
   social_instagram?: string; social_youtube?: string; copyright_text?: string;
+  show_brand_widget_footer?: string;
 }
 
 export default function ShopFooter() {
@@ -40,9 +41,11 @@ export default function ShopFooter() {
 
   const footerPages = pages.filter(p => p.footer_order >= 0);
 
+  const widgetFooterEnabled = settings.show_brand_widget_footer !== "false";
+
   return (
     <footer className="border-t bg-muted/50">
-      <BrandLogoWidget variant="carousel" title="" limit={8} location="footer" />
+      {widgetFooterEnabled && <BrandLogoWidget variant="carousel" title="" limit={8} location="footer" />}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* About */}

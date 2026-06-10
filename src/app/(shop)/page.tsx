@@ -1,8 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { BrandLogoWidget } from "@/components/shop/brand-logo-widget";
 
 export default function Home() {
+  const [widgetEnabled, setWidgetEnabled] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(r => r.json())
+      .then(s => {
+        if (s.show_brand_widget_home !== undefined) {
+          setWidgetEnabled(s.show_brand_widget_home === "true");
+        }
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
   return (
     <>
       {/* Hero Section */}
@@ -32,7 +48,9 @@ export default function Home() {
       </div>
 
       {/* Brand Logos */}
-      <BrandLogoWidget variant="carousel" title="I nostri brand" limit={10} location="home" />
+      {loaded && widgetEnabled && (
+        <BrandLogoWidget variant="carousel" title="I nostri brand" limit={10} location="home" />
+      )}
     </>
   );
 }
