@@ -60,6 +60,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | Typography — Inter + Space Grotesk | ✅ Done | Body: Inter, Headings: Space Grotesk |
 | AI SEO Formatting (RichTextEditor) | ✅ Done | DeepSeek-powered "Formatta SEO" button in Tiptap editor, editable prompt in settings |
 | Dynamic Product Filters | ✅ Done | IG-6 — filter DB, admin CRUD, category assignment with inheritance, system filters (price/stock/brand), ProductFilters frontend with checkbox/select/range/color |
+| Brand Management | ✅ Done | Admin CRUD with logo preview, brand detail page /brand/[slug], BrandLogoWidget (grid/carousel) for homepage/footer |
 | Test Coverage | ✅ Done | 129 tests across 11 test files (utils, validation, SEO, cart, dashboard, theme) |
 |
 ## Quick Commands
