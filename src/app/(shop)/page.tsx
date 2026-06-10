@@ -32,7 +32,7 @@ export default function Home() {
       </div>
 
       {/* Brand Logos */}
-      <BrandLogoWidget variant="carousel" title="I nostri brand" limit={10} />
+      <BrandLogoWidget variant="carousel" title="I nostri brand" limit={10} location="home" />
     </>
   );
 }

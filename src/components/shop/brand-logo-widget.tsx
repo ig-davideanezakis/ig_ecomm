@@ -15,19 +15,24 @@ interface BrandLogoWidgetProps {
   variant?: "grid" | "carousel";
   title?: string;
   limit?: number;
+  location?: "home" | "footer";
 }
 
 export function BrandLogoWidget({
   variant = "grid",
   title = "I nostri brand",
   limit = 12,
+  location,
 }: BrandLogoWidgetProps) {
   const [brands, setBrands] = useState<BrandLogo[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/brands")
+    const params = new URLSearchParams();
+    params.set("limit", String(limit));
+    if (location) params.set("location", location);
+    fetch(`/api/brands?${params}`)
       .then(r => r.json())
       .then(d => { setBrands(d.slice(0, limit)); setLoading(false); })
       .catch(() => setLoading(false));

@@ -22,14 +22,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   try {
-    const { name, slug, logo, description, website } = await request.json();
+    const { name, slug, logo, description, website, showInHome, showInFooter } = await request.json();
     if (!name || !slug) {
       return NextResponse.json({ error: "name e slug sono obbligatori." }, { status: 400 });
     }
     const result = await pool.query(
-      `INSERT INTO "brand" (name, slug, logo, description, website)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, slug, logo || null, description || null, website || null]
+      `INSERT INTO "brand" (name, slug, logo, description, website, show_in_home, show_in_footer)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, slug, logo || null, description || null, website || null, showInHome || false, showInFooter || false]
     );
     return NextResponse.json({ success: true, brand: result.rows[0] });
   } catch (e: unknown) {

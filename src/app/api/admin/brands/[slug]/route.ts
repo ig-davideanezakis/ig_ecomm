@@ -20,13 +20,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   const { slug } = await params;
   try {
-    const { name, newSlug, logo, description, website } = await request.json();
+    const { name, newSlug, logo, description, website, showInHome, showInFooter } = await request.json();
     const result = await pool.query(
       `UPDATE "brand" SET name = COALESCE($1, name), slug = COALESCE($2, slug),
        logo = COALESCE($3, logo), description = COALESCE($4, description),
-       website = COALESCE($5, website), updated_at = NOW()
-       WHERE slug = $6 OR id = $6 RETURNING *`,
-      [name, newSlug, logo, description, website, slug]
+       website = COALESCE($5, website),
+       show_in_home = COALESCE($6, show_in_home),
+       show_in_footer = COALESCE($7, show_in_footer),
+       updated_at = NOW()
+       WHERE slug = $8 OR id = $8 RETURNING *`,
+      [name, newSlug, logo, description, website, showInHome, showInFooter, slug]
     );
     if (result.rows.length === 0) return NextResponse.json({ error: "Brand non trovato." }, { status: 404 });
     return NextResponse.json({ success: true, brand: result.rows[0] });

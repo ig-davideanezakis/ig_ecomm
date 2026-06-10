@@ -9,6 +9,8 @@ interface Brand {
   logo: string | null;
   description: string | null;
   website: string | null;
+  show_in_home: boolean;
+  show_in_footer: boolean;
   productCount: number;
   created_at: string;
 }
@@ -18,7 +20,7 @@ export default function AdminBrandsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", logo: "", description: "", website: "" });
+  const [form, setForm] = useState({ name: "", slug: "", logo: "", description: "", website: "", showInHome: false, showInFooter: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
@@ -34,10 +36,12 @@ export default function AdminBrandsPage() {
     setError(""); setSaving(true);
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `/api/admin/brands/${editingId}` : "/api/admin/brands";
-    const body: Record<string, string | undefined> = { name: form.name, slug: form.slug };
+    const body: Record<string, string | boolean | undefined> = { name: form.name, slug: form.slug };
     if (form.logo) body.logo = form.logo;
     if (form.description) body.description = form.description;
     if (form.website) body.website = form.website;
+    body.showInHome = form.showInHome;
+    body.showInFooter = form.showInFooter;
     if (editingId) body.newSlug = form.slug;
 
     const res = await fetch(url, {
@@ -47,7 +51,7 @@ export default function AdminBrandsPage() {
     const json = await res.json();
     if (json.success) {
       setShowForm(false); setEditingId(null);
-      setForm({ name: "", slug: "", logo: "", description: "", website: "" });
+      setForm({ name: "", slug: "", logo: "", description: "", website: "", showInHome: false, showInFooter: false });
       fetchBrands();
     } else setError(json.error || "Errore");
     setSaving(false);
@@ -61,7 +65,7 @@ export default function AdminBrandsPage() {
   };
 
   const startEdit = (b: Brand) => {
-    setForm({ name: b.name, slug: b.slug, logo: b.logo || "", description: b.description || "", website: b.website || "" });
+    setForm({ name: b.name, slug: b.slug, logo: b.logo || "", description: b.description || "", website: b.website || "", showInHome: b.show_in_home, showInFooter: b.show_in_footer });
     setEditingId(b.slug);
     setShowForm(true);
     setAutoSlug(false);
@@ -73,7 +77,7 @@ export default function AdminBrandsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Marche</h1>
-        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ name: "", slug: "", logo: "", description: "", website: "" }); setAutoSlug(true); }}
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ name: "", slug: "", logo: "", description: "", website: "", showInHome: false, showInFooter: false }); setAutoSlug(true); }}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
           {showForm ? "Annulla" : "+ Nuova marca"}
         </button>
@@ -117,6 +121,18 @@ export default function AdminBrandsPage() {
               <input id="b-website" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })}
                 placeholder="https://www.example.com" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.showInHome} onChange={e => setForm({ ...form, showInHome: e.target.checked })}
+                className="rounded border-border text-primary" />
+              Mostra in homepage
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.showInFooter} onChange={e => setForm({ ...form, showInFooter: e.target.checked })}
+                className="rounded border-border text-primary" />
+              Mostra nel footer
+            </label>
           </div>
           <div>
             <label htmlFor="b-desc" className="block text-sm font-medium mb-1">Descrizione</label>
