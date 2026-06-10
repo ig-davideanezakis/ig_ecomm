@@ -1,268 +1,269 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useState } from "react";
-import { cn } from "@/lib/utils";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 
-interface FilterCategory {
+interface FilterOption {
   id: string;
-  name: string;
-  slug: string;
-  productCount: number;
+  value: string;
+  label: string | null;
+  slug: string | null;
+  color: string | null;
 }
 
-interface FilterBrand {
+interface FilterData {
   id: string;
   name: string;
   slug: string;
-  productCount: number;
+  type: string;
+  options: FilterOption[];
+  source: "global" | "inherited" | "direct";
 }
 
 interface ProductFiltersProps {
-  categories: FilterCategory[];
-  brands: FilterBrand[];
-  className?: string;
+  categorySlug?: string;
+  currentSearch?: string;
 }
 
-export function ProductFilters({
-  categories,
-  brands,
-  className,
-}: ProductFiltersProps) {
+export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersProps) {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const currentCategory = searchParams.get("category") || "";
-  const currentBrand = searchParams.get("brand") || "";
-  const currentMinPrice = searchParams.get("minPrice") || "";
-  const currentMaxPrice = searchParams.get("maxPrice") || "";
-  const currentSearch = searchParams.get("search") || "";
+  const [filters, setFilters] = useState<FilterData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
 
-  const [minPrice, setMinPrice] = useState(currentMinPrice);
-  const [maxPrice, setMaxPrice] = useState(currentMaxPrice);
-
-  const createQueryString = useCallback(
-    (updates: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      for (const [key, value] of Object.entries(updates)) {
-        if (value === null || value === "") {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
+  // Load dynamic filters
+  useEffect(() => {
+    const fetchFilters = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (categorySlug) params.set("categorySlug", categorySlug);
+        const res = await fetch(`/api/category-filters?${params}`);
+        const json = await res.json();
+        setFilters(json.filters || []);
+      } catch (e) {
+        console.error("Failed to load filters", e);
       }
-      // Reset page when filters change
-      params.delete("page");
-      return params.toString();
-    },
-    [searchParams],
-  );
+      setLoading(false);
+    };
+    fetchFilters();
+  }, [categorySlug]);
 
-  const handleCategoryClick = (slug: string) => {
-    const next = slug === currentCategory ? null : slug;
-    router.push(`${pathname}?${createQueryString({ category: next })}`);
+  // Read active filters from URL
+  useEffect(() => {
+    const active: Record<string, string[]> = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (key.startsWith("f_")) {
+        const filterKey = key.slice(2);
+        if (!active[filterKey]) active[filterKey] = [];
+        active[filterKey].push(value);
+      }
+    }
+    setActiveFilters(active);
+  }, [searchParams]);
+
+  const buildUrl = useCallback((newFilters: Record<string, string[]>) => {
+    const params = new URLSearchParams();
+
+    // Keep existing search params that aren't filter-related
+    for (const [key, value] of searchParams.entries()) {
+      if (!key.startsWith("f_") && key !== "page") {
+        params.set(key, value);
+      }
+    }
+
+    // Add current search
+    if (currentSearch) params.set("search", currentSearch);
+
+    // Add filter params
+    for (const [key, values] of Object.entries(newFilters)) {
+      for (const v of values) {
+        params.append(`f_${key}`, v);
+      }
+    }
+
+    params.set("page", "1");
+    return `${pathname}?${params.toString()}`;
+  }, [searchParams, pathname, currentSearch]);
+
+  const toggleFilter = (filterSlug: string, value: string) => {
+    const current = activeFilters[filterSlug] || [];
+    const next = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+
+    const newFilters = { ...activeFilters };
+    if (next.length === 0) {
+      delete newFilters[filterSlug];
+    } else {
+      newFilters[filterSlug] = next;
+    }
+
+    router.push(buildUrl(newFilters));
   };
 
-  const handleBrandClick = (slug: string) => {
-    const next = slug === currentBrand ? null : slug;
-    router.push(`${pathname}?${createQueryString({ brand: next })}`);
+  const clearFilters = () => {
+    router.push(buildUrl({}));
   };
 
-  const handlePriceFilter = () => {
-    router.push(
-      `${pathname}?${createQueryString({
-        minPrice: minPrice || null,
-        maxPrice: maxPrice || null,
-      })}`,
-    );
-  };
+  const hasActiveFilters = Object.keys(activeFilters).length > 0;
 
-  const handleClearAll = () => {
-    router.push(pathname);
-  };
+  if (loading) return <div className="text-sm text-muted-foreground py-4">Caricamento filtri...</div>;
+  if (filters.length === 0) return null;
 
-  const hasActiveFilters = currentCategory || currentBrand || currentMinPrice || currentMaxPrice || currentSearch;
+  const sourceLabel = (source: string) => {
+    if (source === "global") return "Sempre disponibile";
+    if (source === "inherited") return "Ereditato";
+    return "";
+  };
 
   return (
-    <aside className={cn("space-y-6", className)}>
-      {/* Active filters summary */}
-      {hasActiveFilters && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold">Filtri attivi</h3>
-            <button
-              onClick={handleClearAll}
-              className="text-xs text-primary hover:underline"
+    <aside className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Filtri</h2>
+        {hasActiveFilters && (
+          <button onClick={clearFilters} className="text-xs text-primary hover:underline">
+            Cancella filtri
+          </button>
+        )}
+      </div>
+
+      {filters.map(filter => (
+        <div key={filter.id} className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">{filter.name}</h3>
+            {filter.source !== "global" && (
+              <span className="text-[10px] text-muted-foreground italic">{sourceLabel(filter.source)}</span>
+            )}
+          </div>
+
+          {/* Checkbox type (multi-select) */}
+          {(filter.type === "checkbox" || filter.type === "color") && (
+            <div className="space-y-1.5">
+              {filter.options.map(opt => {
+                const isActive = (activeFilters[filter.slug] || []).includes(opt.value);
+                return (
+                  <label key={opt.id} className="flex items-center gap-2.5 cursor-pointer group">
+                    {filter.type === "color" && opt.color ? (
+                      <>
+                        <span
+                          className={`inline-block h-5 w-5 rounded-full border-2 ${
+                            isActive ? "border-primary ring-2 ring-primary/30" : "border-border"
+                          }`}
+                          style={{ backgroundColor: opt.color }}
+                          onClick={() => toggleFilter(filter.slug, opt.value)}
+                        />
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          {opt.label || opt.value}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => toggleFilter(filter.slug, opt.value)}
+                          className="rounded border-border text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          {opt.label || opt.value}
+                        </span>
+                      </>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Range type */}
+          {filter.type === "range" && (
+            <RangeFilter
+              slug={filter.slug}
+              min={parseInt(searchParams.get(`f_${filter.slug}_min`) || "0")}
+              max={parseInt(searchParams.get(`f_${filter.slug}_max`) || "5000")}
+              onApply={(min, max) => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set(`f_${filter.slug}_min`, String(min));
+                params.set(`f_${filter.slug}_max`, String(max));
+                params.set("page", "1");
+                router.push(`${pathname}?${params.toString()}`);
+              }}
+            />
+          )}
+
+          {/* Select type */}
+          {filter.type === "select" && (
+            <select
+              value={(activeFilters[filter.slug] || [])[0] || ""}
+              onChange={e => {
+                const val = e.target.value;
+                const newFilters = { ...activeFilters };
+                if (val) {
+                  newFilters[filter.slug] = [val];
+                } else {
+                  delete newFilters[filter.slug];
+                }
+                router.push(buildUrl(newFilters));
+              }}
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
             >
-              Cancella tutto
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {currentCategory && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                {categories.find((c) => c.slug === currentCategory)?.name ?? currentCategory}
-              </span>
-            )}
-            {currentBrand && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                {brands.find((b) => b.slug === currentBrand)?.name ?? currentBrand}
-              </span>
-            )}
-            {(currentMinPrice || currentMaxPrice) && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                Prezzo: {currentMinPrice || "0"}–{currentMaxPrice || "∞"}€
-              </span>
-            )}
-          </div>
+              <option value="">Tutti</option>
+              {filter.options.map(opt => (
+                <option key={opt.id} value={opt.value}>{opt.label || opt.value}</option>
+              ))}
+            </select>
+          )}
         </div>
-      )}
-
-      {/* Search */}
-      {currentSearch && (
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-xs text-muted-foreground">
-            Risultati per: <span className="font-medium text-foreground">&quot;{currentSearch}&quot;</span>
-          </p>
-        </div>
-      )}
-
-      {/* Categories */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Categorie
-        </h3>
-        <ul className="space-y-1">
-          {categories.map((cat) => (
-            <li key={cat.id}>
-              <button
-                onClick={() => handleCategoryClick(cat.slug)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted",
-                  currentCategory === cat.slug
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground",
-                )}
-              >
-                <span>{cat.name}</span>
-                <span className="text-xs text-muted-foreground">{cat.productCount}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Brands */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Marche
-        </h3>
-        <ul className="space-y-1">
-          {brands.map((brand) => (
-            <li key={brand.id}>
-              <button
-                onClick={() => handleBrandClick(brand.slug)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted",
-                  currentBrand === brand.slug
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-foreground",
-                )}
-              >
-                <span>{brand.name}</span>
-                <span className="text-xs text-muted-foreground">{brand.productCount}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Price range */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Fascia prezzo
-        </h3>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <label htmlFor="price-min" className="sr-only">Prezzo minimo</label>
-            <input
-              id="price-min"
-              type="number"
-              placeholder="Da"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              min={0}
-              autoComplete="off"
-            />
-          </div>
-          <span className="text-muted-foreground shrink-0">–</span>
-          <div className="flex-1">
-            <label htmlFor="price-max" className="sr-only">Prezzo massimo</label>
-            <input
-              id="price-max"
-              type="number"
-              placeholder="A"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePriceFilter()}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              min={0}
-              autoComplete="off"
-            />
-          </div>
-        </div>
-        <button
-          onClick={handlePriceFilter}
-          className="mt-2 w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          Applica
-        </button>
-      </div>
-
-      {/* Sort */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Ordina per
-        </h3>
-        <SortSelect
-          current={searchParams.get("sort") || "newest"}
-          onChange={(value) => {
-            router.push(`${pathname}?${createQueryString({ sort: value })}`);
-          }}
-        />
-      </div>
+      ))}
     </aside>
   );
 }
 
-function SortSelect({
-  current,
-  onChange,
+function RangeFilter({
+  slug,
+  min,
+  max,
+  onApply,
 }: {
-  current: string;
-  onChange: (value: string) => void;
+  slug: string;
+  min: number;
+  max: number;
+  onApply: (min: number, max: number) => void;
 }) {
-  const options = [
-    { value: "newest", label: "Più recenti" },
-    { value: "price_asc", label: "Prezzo crescente" },
-    { value: "price_desc", label: "Prezzo decrescente" },
-    { value: "name", label: "Nome A–Z" },
-  ];
+  const [localMin, setLocalMin] = useState(min);
+  const [localMax, setLocalMax] = useState(max);
+
+  useEffect(() => { setLocalMin(min); setLocalMax(max); }, [min, max]);
 
   return (
-    <select
-      value={current}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label="Ordina prodotti"
-      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm">
+        <input
+          type="number"
+          value={localMin}
+          onChange={e => setLocalMin(Number(e.target.value))}
+          placeholder="Min"
+          className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm"
+        />
+        <span className="text-muted-foreground">—</span>
+        <input
+          type="number"
+          value={localMax}
+          onChange={e => setLocalMax(Number(e.target.value))}
+          placeholder="Max"
+          className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm"
+        />
+        <button
+          onClick={() => onApply(localMin, localMax)}
+          className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90"
+        >
+          Vai
+        </button>
+      </div>
+    </div>
   );
 }

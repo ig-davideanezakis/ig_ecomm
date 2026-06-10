@@ -57,15 +57,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
       <div className="flex flex-col gap-8 lg:flex-row">
         <ProductFilters
-          categories={data.filters.categories}
-          brands={data.filters.brands}
-          className="hidden w-64 shrink-0 lg:block"
+          categorySlug={resolved.category?.trim() || undefined}
+          currentSearch={currentSearch}
         />
 
-        <MobileFilters
-          categories={data.filters.categories}
-          brands={data.filters.brands}
-        />
+        <MobileFilters />
 
         <div className="flex-1">
           {data.products.length === 0 ? (
@@ -151,13 +147,7 @@ function SearchBar({ initialValue }: { initialValue: string }) {
   );
 }
 
-function MobileFilters({
-  categories,
-  brands,
-}: {
-  categories: Array<{ id: string; name: string; slug: string; productCount: number }>;
-  brands: Array<{ id: string; name: string; slug: string; productCount: number }>;
-}) {
+function MobileFilters() {
   return (
     <div className="lg:hidden">
       <details className="group">
@@ -176,7 +166,7 @@ function MobileFilters({
           Filtri
         </summary>
         <div className="mt-3">
-          <ProductFilters categories={categories} brands={brands} />
+          <ProductFilters categorySlug={undefined} />
         </div>
       </details>
     </div>

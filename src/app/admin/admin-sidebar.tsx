@@ -9,6 +9,7 @@ const sidebarLinks = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/admin/products", label: "Prodotti", icon: "📦" },
   { href: "/admin/categories", label: "Categorie", icon: "🏷️" },
+  { href: "/admin/filters", label: "Filtri", icon: "🔍" },
   { href: "/admin/brands", label: "Marche", icon: "🏢" },
   { href: "/admin/orders", label: "Ordini", icon: "📋" },
   { href: "/admin/stock", label: "Magazzino", icon: "📦" },
