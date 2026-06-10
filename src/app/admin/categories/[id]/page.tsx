@@ -25,7 +25,6 @@ export default async function EditCategoryPage({
       {category && (
         <CategoryFiltersSectionWrapper
           categoryId={category.id}
-          categoryName={category.name}
           parentName={category.parent?.name}
         />
       )}

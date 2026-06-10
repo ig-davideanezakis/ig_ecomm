@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cartReducer, type CartItem, type CartAction } from "../cart-store";
+import type { CartItem, CartAction } from "../cart-store";
 
 // Extract the reducer for testing (it's not exported, but we test the logic)
 function reducer(state: { items: CartItem[] }, action: CartAction): { items: CartItem[] } {

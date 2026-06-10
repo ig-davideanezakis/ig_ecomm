@@ -57,8 +57,8 @@ describe("slugify", () => {
     expect(slugify("")).toBe("");
   });
   it("handles non-string via toString", () => {
-    const num: any = 123;
-    expect(slugify(num)).toBe("123");
+    const num: number = 123;
+    expect(slugify(String(num))).toBe("123");
   });
 });
 

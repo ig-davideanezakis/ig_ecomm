@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     `);
 
     // 2. Get category-specific filters with inheritance
-    let categoryFilters: any[] = [];
+    const categoryFilters: Array<Record<string, unknown>> = [];
 
     if (categoryId) {
       // Walk up the category tree to collect inherited filters
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
           slug: row.cat_slug,
         };
 
-        categoryFilters.push({
+        (categoryFilters as Array<Record<string, unknown>>).push({
           id: row.filter_id,
           name: row.name,
           slug: row.slug,
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Merge: global filters + category-specific filters (no duplicates)
-    const globalMap = new Map<string, any>();
+    const globalMap = new Map<string, Record<string, unknown>>();
     for (const gf of globalFilters.rows) {
       globalMap.set(gf.id, { ...gf, source: "global", inheritedFrom: null });
     }

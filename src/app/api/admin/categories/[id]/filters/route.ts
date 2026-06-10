@@ -47,7 +47,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     `, [id]);
 
     const seen = new Set<string>();
-    const all: any[] = [];
+    const all: Array<Record<string, unknown>> = [];
     for (const row of [...globalRes.rows, ...inheritedRes.rows, ...directRes.rows]) {
       if (seen.has(row.filter_id)) continue;
       seen.add(row.filter_id);

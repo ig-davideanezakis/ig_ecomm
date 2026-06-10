@@ -38,8 +38,11 @@ export async function POST(request: NextRequest) {
       [name, slug, type || "checkbox", isGlobal || false, sortOrder || 0]
     );
     return NextResponse.json({ success: true, filter: result.rows[0] });
-  } catch (err: any) {
-    if (err?.code === "23505") return NextResponse.json({ error: "Slug già esistente." }, { status: 409 });
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Errore." }, { status: 500 });
+  } catch (e: unknown) {
+    const pgErr = e as Record<string, unknown>;
+    if (pgErr?.code === "23505") {
+      return NextResponse.json({ error: "Slug già esistente." }, { status: 409 });
+    }
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Errore." }, { status: 500 });
   }
 }

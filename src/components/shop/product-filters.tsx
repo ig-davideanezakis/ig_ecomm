@@ -32,28 +32,9 @@ export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersPr
 
   const [filters, setFilters] = useState<FilterData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
 
-  // Load dynamic filters
-  useEffect(() => {
-    const fetchFilters = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (categorySlug) params.set("categorySlug", categorySlug);
-        const res = await fetch(`/api/category-filters?${params}`);
-        const json = await res.json();
-        setFilters(json.filters || []);
-      } catch (e) {
-        console.error("Failed to load filters", e);
-      }
-      setLoading(false);
-    };
-    fetchFilters();
-  }, [categorySlug]);
-
-  // Read active filters from URL
-  useEffect(() => {
+  // Derive active filters from URL search params
+  const activeFilters = React.useMemo(() => {
     const active: Record<string, string[]> = {};
     for (const [key, value] of searchParams.entries()) {
       if (key.startsWith("f_")) {
@@ -62,8 +43,18 @@ export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersPr
         active[filterKey].push(value);
       }
     }
-    setActiveFilters(active);
+    return active;
   }, [searchParams]);
+
+  // Load dynamic filters from API
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (categorySlug) params.set("categorySlug", categorySlug);
+    fetch(`/api/category-filters?${params}`)
+      .then(r => r.json())
+      .then(json => { setFilters(json.filters || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [categorySlug]);
 
   const buildUrl = useCallback((newFilters: Record<string, string[]>) => {
     const params = new URLSearchParams();
@@ -224,20 +215,16 @@ export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersPr
 }
 
 function RangeFilter({
-  slug,
   min,
   max,
   onApply,
 }: {
-  slug: string;
   min: number;
   max: number;
   onApply: (min: number, max: number) => void;
 }) {
   const [localMin, setLocalMin] = useState(min);
   const [localMax, setLocalMax] = useState(max);
-
-  useEffect(() => { setLocalMin(min); setLocalMax(max); }, [min, max]);
 
   return (
     <div className="space-y-2">

@@ -32,14 +32,12 @@ export default function AdminFiltersPage() {
   const [optionForms, setOptionForms] = useState<Record<string, { value: string; label: string; slug: string }>>({});
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  const loadFilters = async () => {
-    setLoading(true);
-    const res = await fetch("/api/admin/filters");
-    setFilters(await res.json());
-    setLoading(false);
-  };
-
-  useEffect(() => { loadFilters(); }, []);
+  useEffect(() => {
+    fetch("/api/admin/filters")
+      .then(r => r.json())
+      .then(data => { setFilters(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,17 +103,17 @@ export default function AdminFiltersPage() {
           <h2 className="font-semibold">{editingId ? "Modifica filtro" : "Nuovo filtro"}</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Nome *</label>
+              <label htmlFor="f-name" className="block text-sm font-medium mb-1">Nome *</label>
               <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (!editingId) setForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })); }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" required />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Slug</label>
+              <label htmlFor="f-slug" className="block text-sm font-medium mb-1">Slug</label>
               <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Tipo</label>
+              <label htmlFor="f-type" className="block text-sm font-medium mb-1">Tipo</label>
               <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
                 <option value="checkbox">Checkbox (multi-select)</option>
@@ -132,7 +130,7 @@ export default function AdminFiltersPage() {
               Filtro globale (attivo su tutte le categorie)
             </label>
             <div className="flex items-center gap-2">
-              <label className="text-sm">Ordine:</label>
+              <label htmlFor="f-order" className="text-sm">Ordine:</label>
               <input type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: Number(e.target.value) })}
                 className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
@@ -182,12 +180,12 @@ export default function AdminFiltersPage() {
                 {/* Add option form */}
                 <div className="flex gap-2 items-end">
                   <div>
-                    <label className="block text-[10px] text-muted-foreground mb-0.5">Valore</label>
+                    <label htmlFor="fo-value" className="block text-[10px] text-muted-foreground mb-0.5">Valore</label>
                     <input value={optionForms[f.id]?.value || ""} onChange={e => setOptionForms({ ...optionForms, [f.id]: { ...optionForms[f.id], value: e.target.value, label: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-") } })}
                       placeholder="es. rosso" className="w-28 rounded border border-input bg-background px-2 py-1 text-xs" />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-muted-foreground mb-0.5">Etichetta</label>
+                    <label htmlFor="fo-label" className="block text-[10px] text-muted-foreground mb-0.5">Etichetta</label>
                     <input value={optionForms[f.id]?.label || ""} onChange={e => setOptionForms({ ...optionForms, [f.id]: { ...optionForms[f.id], label: e.target.value } })}
                       placeholder="Rosso" className="w-28 rounded border border-input bg-background px-2 py-1 text-xs" />
                   </div>

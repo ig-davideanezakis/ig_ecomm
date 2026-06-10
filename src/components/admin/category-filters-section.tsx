@@ -34,11 +34,9 @@ interface CategoryFilterInfo {
 
 export default function CategoryFiltersSection({
   categoryId,
-  categoryName,
   parentName,
 }: {
   categoryId: string;
-  categoryName?: string;
   parentName?: string;
 }) {
   const [filters, setFilters] = useState<CategoryFilterInfo[]>([]);
@@ -47,20 +45,15 @@ export default function CategoryFiltersSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [filtersRes, allRes] = await Promise.all([
-        fetch(`/api/admin/categories/${categoryId}/filters`),
-        fetch("/api/admin/filters"),
-      ]);
-      setFilters(await filtersRes.json());
-      setAllFilters(await allRes.json());
-    } catch {}
-    setLoading(false);
-  };
-
-  useEffect(() => { loadData(); }, [categoryId]);
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/admin/categories/${categoryId}/filters`),
+      fetch("/api/admin/filters"),
+    ])
+      .then(([a, b]) => Promise.all([a.json(), b.json()]))
+      .then(([f, a]) => { setFilters(f); setAllFilters(a); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [categoryId]);
 
   // Group filters by source
   const globalFilters = filters.filter(f => f.source === "global");
@@ -128,7 +121,7 @@ export default function CategoryFiltersSection({
       {/* Inherited filters */}
       {inheritedFilters.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">🟢 Ereditati da "{parentName || "categoria padre"}"</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">🟢 Ereditati da &quot;{parentName || 'categoria padre'}&quot;</p>
           <div className="flex flex-wrap gap-2">
             {inheritedFilters.map(f => (
               <span key={f.filter_id} className="inline-flex items-center gap-1 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-2.5 py-1 text-xs">
