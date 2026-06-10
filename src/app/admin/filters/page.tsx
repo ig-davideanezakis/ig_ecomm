@@ -17,6 +17,7 @@ interface Filter {
   slug: string;
   type: string;
   is_global: boolean;
+  is_system: boolean;
   sort_order: number;
   options: FilterOption[];
 }
@@ -29,8 +30,8 @@ export default function AdminFiltersPage() {
   const [form, setForm] = useState({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [optionForms, setOptionForms] = useState<Record<string, { value: string; label: string; slug: string }>>({});
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [editingOption, setEditingOption] = useState<Record<string, { id: string; value: string; label: string }>>({});
 
   useEffect(() => {
     fetch("/api/admin/filters")
@@ -49,33 +50,63 @@ export default function AdminFiltersPage() {
       body: JSON.stringify(form),
     });
     const json = await res.json();
-    if (json.success) { setShowForm(false); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); fetch("/api/admin/filters").then(r => r.json()).then(setFilters); }
+    if (json.success) { setShowForm(false); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); fetchFilters(); }
     else setError(json.error || "Errore");
     setSaving(false);
   };
 
+  const fetchFilters = () => fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
+
   const handleDelete = async (id: string) => {
     if (!confirm("Eliminare questo filtro e tutte le sue opzioni?")) return;
-    await fetch(`/api/admin/filters/${id}`, { method: "DELETE" });
-    fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
+    const res = await fetch(`/api/admin/filters/${id}`, { method: "DELETE" });
+    if (res.ok) fetchFilters();
+    else { const j = await res.json(); setError(j.error || "Errore"); }
   };
 
   const addOption = async (filterId: string) => {
-    const of = optionForms[filterId];
-    if (!of?.value) return;
-    const res = await fetch(`/api/admin/filters/${filterId}/options`, {
+    const val = prompt("Valore (es. rosso):");
+    if (!val) return;
+    const label = prompt("Etichetta (es. Rosso):", val) || val;
+    await fetch(`/api/admin/filters/${filterId}/options`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(of),
+      body: JSON.stringify({ value: val, label, slug: val.toLowerCase().replace(/[^a-z0-9]+/g, "-") }),
     });
-    if (res.ok) {
-      setOptionForms({ ...optionForms, [filterId]: { value: "", label: "", slug: "" } });
-      fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
-    }
+    fetchFilters();
+  };
+
+  const saveOption = async (filterId: string, optionId: string, value: string, label: string) => {
+    await fetch(`/api/admin/filters/${filterId}/options/${optionId}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value, label }),
+    });
+    setEditingOption({});
+    fetchFilters();
   };
 
   const deleteOption = async (filterId: string, optionId: string) => {
-    await fetch(`/api/admin/filters/${filterId}/options/${optionId}`, { method: "DELETE" });
-    fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
+    if (!confirm("Eliminare questa opzione?")) return;
+    const res = await fetch(`/api/admin/filters/${filterId}/options/${optionId}`, { method: "DELETE" });
+    if (res.ok) fetchFilters();
+  };
+
+  const moveOption = async (filterId: string, optionId: string, direction: number) => {
+    const f = filters.find(f => f.id === filterId);
+    if (!f) return;
+    const idx = f.options.findIndex(o => o.id === optionId);
+    if (idx === -1) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= f.options.length) return;
+
+    const reordered = [...f.options];
+    [reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]];
+    const order = reordered.map(o => o.id);
+
+    await fetch(`/api/admin/filters/${filterId}/options/reorder`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    fetchFilters();
   };
 
   const editFilter = (f: Filter) => {
@@ -104,21 +135,21 @@ export default function AdminFiltersPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label htmlFor="f-name" className="block text-sm font-medium mb-1">Nome *</label>
-              <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (!editingId) setForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })); }}
+              <input id="f-name" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); if (!editingId) setForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })); }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" required />
             </div>
             <div>
               <label htmlFor="f-slug" className="block text-sm font-medium mb-1">Slug</label>
-              <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
+              <input id="f-slug" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
             <div>
               <label htmlFor="f-type" className="block text-sm font-medium mb-1">Tipo</label>
-              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
+              <select id="f-type" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
                 <option value="checkbox">Checkbox (multi-select)</option>
                 <option value="select">Select (singolo)</option>
-                <option value="range">Range (prezzo)</option>
+                <option value="range">Range (slider)</option>
                 <option value="color">Colore (swatch)</option>
               </select>
             </div>
@@ -127,11 +158,11 @@ export default function AdminFiltersPage() {
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isGlobal} onChange={e => setForm({ ...form, isGlobal: e.target.checked })}
                 className="rounded border-border" />
-              Filtro globale (attivo su tutte le categorie)
+              Filtro globale
             </label>
             <div className="flex items-center gap-2">
               <label htmlFor="f-order" className="text-sm">Ordine:</label>
-              <input type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: Number(e.target.value) })}
+              <input id="f-order" type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: Number(e.target.value) })}
                 className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
           </div>
@@ -145,7 +176,7 @@ export default function AdminFiltersPage() {
       {/* Filters list */}
       <div className="space-y-4">
         {filters.map(f => (
-          <div key={f.id} className="rounded-lg border bg-card">
+          <div key={f.id} className={`rounded-lg border bg-card ${f.is_system ? "opacity-80" : ""}`}>
             <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30"
               onClick={() => setCollapsed({ ...collapsed, [f.id]: !collapsed[f.id] })}>
               <div className="flex items-center gap-3">
@@ -153,13 +184,20 @@ export default function AdminFiltersPage() {
                 <div>
                   <span className="font-medium">{f.name}</span>
                   {f.is_global && <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400">Globale</span>}
+                  {f.is_system && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">Sistema</span>}
                   <span className="ml-2 text-xs text-muted-foreground">slug: {f.slug}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">tipo: {f.type}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{f.type}</span>
                 </div>
               </div>
               <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                <button onClick={() => editFilter(f)} className="text-xs text-muted-foreground hover:text-foreground">Modifica</button>
-                <button onClick={() => handleDelete(f.id)} className="text-xs text-destructive hover:underline">Elimina</button>
+                {f.is_system ? (
+                  <span className="text-xs text-muted-foreground italic">Non modificabile</span>
+                ) : (
+                  <>
+                    <button onClick={() => editFilter(f)} className="text-xs text-muted-foreground hover:text-foreground">Modifica</button>
+                    <button onClick={() => handleDelete(f.id)} className="text-xs text-destructive hover:underline">Elimina</button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -167,38 +205,58 @@ export default function AdminFiltersPage() {
               <div className="border-t px-4 py-3 space-y-3">
                 {/* Options list */}
                 <div className="flex flex-wrap gap-2">
-                  {f.options.map(o => (
-                    <div key={o.id} className="inline-flex items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 py-1 text-xs">
-                      {o.color && <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: o.color }} />}
-                      {o.label || o.value}
-                      <button onClick={() => deleteOption(f.id, o.id)} className="text-muted-foreground hover:text-destructive ml-1">&times;</button>
+                  {f.options.map((o, idx) => (
+                    <div key={o.id} className="group inline-flex items-center gap-1 rounded-md border bg-muted/30 px-2 py-1 text-xs">
+                      {editingOption[o.id] ? (
+                        <div className="flex gap-1 items-center">
+                          <input value={editingOption[o.id].value} onChange={e => setEditingOption({ ...editingOption, [o.id]: { ...editingOption[o.id], value: e.target.value } })}
+                            className="w-20 rounded border border-input bg-background px-1 py-0.5 text-xs" />
+                          <input value={editingOption[o.id].label} onChange={e => setEditingOption({ ...editingOption, [o.id]: { ...editingOption[o.id], label: e.target.value } })}
+                            className="w-20 rounded border border-input bg-background px-1 py-0.5 text-xs" />
+                          <button onClick={() => saveOption(f.id, o.id, editingOption[o.id].value, editingOption[o.id].label)}
+                            className="text-green-600 hover:text-green-800">✓</button>
+                          <button onClick={() => setEditingOption({})} className="text-muted-foreground hover:text-foreground">✕</button>
+                        </div>
+                      ) : (
+                        <>
+                          {o.color && <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: o.color }} />}
+                          <span>{o.label || o.value}</span>
+                          <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                            <button onClick={() => moveOption(f.id, o.id, -1)} disabled={idx === 0}
+                              className="text-muted-foreground hover:text-foreground disabled:opacity-20 px-0.5">▲</button>
+                            <button onClick={() => moveOption(f.id, o.id, 1)} disabled={idx === f.options.length - 1}
+                              className="text-muted-foreground hover:text-foreground disabled:opacity-20 px-0.5">▼</button>
+                            <button onClick={() => setEditingOption({ [o.id]: { id: o.id, value: o.value, label: o.label || "" } })}
+                              className="text-muted-foreground hover:text-primary ml-1 px-0.5">✎</button>
+                            {!f.is_system && (
+                              <button onClick={() => deleteOption(f.id, o.id)}
+                                className="text-muted-foreground hover:text-destructive px-0.5">&times;</button>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                   {f.options.length === 0 && <span className="text-xs text-muted-foreground">Nessuna opzione</span>}
                 </div>
 
-                {/* Add option form */}
-                <div className="flex gap-2 items-end">
-                  <div>
-                    <label htmlFor="fo-value" className="block text-[10px] text-muted-foreground mb-0.5">Valore</label>
-                    <input value={optionForms[f.id]?.value || ""} onChange={e => setOptionForms({ ...optionForms, [f.id]: { ...optionForms[f.id], value: e.target.value, label: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-") } })}
-                      placeholder="es. rosso" className="w-28 rounded border border-input bg-background px-2 py-1 text-xs" />
-                  </div>
-                  <div>
-                    <label htmlFor="fo-label" className="block text-[10px] text-muted-foreground mb-0.5">Etichetta</label>
-                    <input value={optionForms[f.id]?.label || ""} onChange={e => setOptionForms({ ...optionForms, [f.id]: { ...optionForms[f.id], label: e.target.value } })}
-                      placeholder="Rosso" className="w-28 rounded border border-input bg-background px-2 py-1 text-xs" />
-                  </div>
-                  <button onClick={() => addOption(f.id)} disabled={!optionForms[f.id]?.value}
-                    className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-30">
-                    + Aggiungi
+                {/* Add option button */}
+                {!f.is_system && (
+                  <button onClick={() => addOption(f.id)}
+                    className="text-xs text-primary hover:underline">
+                    + Aggiungi opzione
                   </button>
-                </div>
+                )}
+                {f.is_system && f.slug === "price" && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Il filtro Prezzo usa dinamicamente i prezzi dei prodotti.
+                  </p>
+                )}
               </div>
             )}
           </div>
         ))}
-        {filters.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nessun filtro ancora. Creane uno!</p>}
+        {filters.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nessun filtro ancora.</p>}
       </div>
     </div>
   );

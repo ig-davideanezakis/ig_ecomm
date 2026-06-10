@@ -5,8 +5,12 @@ import { authorize } from "@/lib/auth-helpers";
 // PUT /api/admin/filters/[id]/options/[optionId]
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string; optionId: string }> }) {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
-  const { optionId } = await params;
+  const { id, optionId } = await params;
   try {
+    // Block editing system filter options
+    const f = await pool.query(`SELECT is_system FROM "filter" WHERE id = $1`, [id]);
+    if (f.rows[0]?.is_system) return NextResponse.json({ error: "Filtro di sistema." }, { status: 403 });
+
     const { value, label, slug, color, sortOrder } = await request.json();
     const result = await pool.query(
       `UPDATE "filter_option" SET value = COALESCE($1, value), label = COALESCE($2, label),
@@ -23,8 +27,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // DELETE /api/admin/filters/[id]/options/[optionId]
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string; optionId: string }> }) {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
-  const { optionId } = await params;
+  const { id, optionId } = await params;
   try {
+    // Block deleting system filter options
+    const f = await pool.query(`SELECT is_system FROM "filter" WHERE id = $1`, [id]);
+    if (f.rows[0]?.is_system) return NextResponse.json({ error: "Filtro di sistema." }, { status: 403 });
+
     await pool.query(`DELETE FROM "filter_option" WHERE id = $1`, [optionId]);
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -18,7 +18,12 @@ export async function GET() {
         ) as options
        FROM "filter" f ORDER BY f.sort_order ASC, f.name ASC`
     );
-    return NextResponse.json(filters.rows);
+    // Add is_system to each filter
+    const rows = filters.rows.map((r: Record<string, unknown>) => ({
+      ...r,
+      is_system: r.is_system ?? false,
+    }));
+    return NextResponse.json(rows);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Errore." }, { status: 500 });
   }

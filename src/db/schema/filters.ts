@@ -17,6 +17,7 @@ export const filters = pgTable("filter", {
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   type: varchar("type", { length: 50 }).notNull().default("checkbox"),
   isGlobal: boolean("is_global").default(false).notNull(),
+  isSystem: boolean("is_system").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

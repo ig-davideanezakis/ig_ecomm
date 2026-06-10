@@ -33,6 +33,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   const { id } = await params;
   try {
+    // Block editing system filters
+    const existing = await pool.query(`SELECT is_system FROM "filter" WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) return NextResponse.json({ error: "Filtro non trovato." }, { status: 404 });
+    if (existing.rows[0].is_system) return NextResponse.json({ error: "Impossibile modificare un filtro di sistema." }, { status: 403 });
+
     const { name, slug, type, isGlobal, sortOrder } = await request.json();
     const result = await pool.query(
       `UPDATE "filter" SET name = COALESCE($1, name), slug = COALESCE($2, slug),
@@ -41,9 +46,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
        WHERE id = $6 RETURNING *`,
       [name, slug, type, isGlobal, sortOrder, id]
     );
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Filtro non trovato." }, { status: 404 });
-    }
     return NextResponse.json({ success: true, filter: result.rows[0] });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Errore." }, { status: 500 });
@@ -55,6 +57,11 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   const { id } = await params;
   try {
+    // Block deleting system filters
+    const existing = await pool.query(`SELECT is_system FROM "filter" WHERE id = $1`, [id]);
+    if (existing.rows.length === 0) return NextResponse.json({ error: "Filtro non trovato." }, { status: 404 });
+    if (existing.rows[0].is_system) return NextResponse.json({ error: "Impossibile eliminare un filtro di sistema." }, { status: 403 });
+
     await pool.query(`DELETE FROM "filter" WHERE id = $1`, [id]);
     return NextResponse.json({ success: true });
   } catch (err) {
