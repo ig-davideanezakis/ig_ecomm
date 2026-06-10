@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { InfografLogo } from "@/components/infograf-logo";
+import { BrandLogoWidget } from "@/components/shop/brand-logo-widget";
 
 interface FooterPage {
   id: string; title: string; slug: string; footer_order: number;
@@ -41,6 +42,7 @@ export default function ShopFooter() {
 
   return (
     <footer className="border-t bg-muted/50">
+      <BrandLogoWidget variant="carousel" title="" limit={8} />
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* About */}
