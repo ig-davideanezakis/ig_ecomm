@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface FilterOption {
   id: string;
@@ -34,7 +34,7 @@ export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersPr
   const [loading, setLoading] = useState(true);
 
   // Derive active filters from URL search params
-  const activeFilters = React.useMemo(() => {
+  const activeFilters = useMemo(() => {
     const active: Record<string, string[]> = {};
     for (const [key, value] of searchParams.entries()) {
       if (key.startsWith("f_")) {
@@ -173,7 +173,6 @@ export function ProductFilters({ categorySlug, currentSearch }: ProductFiltersPr
           {/* Range type */}
           {filter.type === "range" && (
             <RangeFilter
-              slug={filter.slug}
               min={parseInt(searchParams.get(`f_${filter.slug}_min`) || "0")}
               max={parseInt(searchParams.get(`f_${filter.slug}_max`) || "5000")}
               onApply={(min, max) => {

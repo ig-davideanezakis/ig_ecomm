@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     // Category filters override/add to globals
     for (const cf of categoryFilters) {
-      globalMap.set(cf.id, cf);
+      globalMap.set(String(cf.id), cf);
     }
 
     return NextResponse.json({

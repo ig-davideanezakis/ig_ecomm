@@ -49,7 +49,7 @@ export default function AdminFiltersPage() {
       body: JSON.stringify(form),
     });
     const json = await res.json();
-    if (json.success) { setShowForm(false); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); loadFilters(); }
+    if (json.success) { setShowForm(false); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); fetch("/api/admin/filters").then(r => r.json()).then(setFilters); }
     else setError(json.error || "Errore");
     setSaving(false);
   };
@@ -57,7 +57,7 @@ export default function AdminFiltersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Eliminare questo filtro e tutte le sue opzioni?")) return;
     await fetch(`/api/admin/filters/${id}`, { method: "DELETE" });
-    loadFilters();
+    fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
   };
 
   const addOption = async (filterId: string) => {
@@ -69,13 +69,13 @@ export default function AdminFiltersPage() {
     });
     if (res.ok) {
       setOptionForms({ ...optionForms, [filterId]: { value: "", label: "", slug: "" } });
-      loadFilters();
+      fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
     }
   };
 
   const deleteOption = async (filterId: string, optionId: string) => {
     await fetch(`/api/admin/filters/${filterId}/options/${optionId}`, { method: "DELETE" });
-    loadFilters();
+    fetch("/api/admin/filters").then(r => r.json()).then(setFilters);
   };
 
   const editFilter = (f: Filter) => {

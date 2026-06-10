@@ -55,6 +55,16 @@ export default function CategoryFiltersSection({
       .catch(() => setLoading(false));
   }, [categoryId]);
 
+  const refetchFilters = () => {
+    Promise.all([
+      fetch(`/api/admin/categories/${categoryId}/filters`),
+      fetch("/api/admin/filters"),
+    ])
+      .then(([a, b]) => Promise.all([a.json(), b.json()]))
+      .then(([f, a]) => { setFilters(f); setAllFilters(a); })
+      .catch(() => {});
+  };
+
   // Group filters by source
   const globalFilters = filters.filter(f => f.source === "global");
   const inheritedFilters = filters.filter(f => f.source === "inherited");
@@ -76,7 +86,7 @@ export default function CategoryFiltersSection({
       const json = await res.json();
       if (!json.success) { setError(json.error || "Errore"); return; }
       setSelectedFilterId("");
-      loadData();
+      refetchFilters();
     } catch { setError("Errore di connessione."); }
   };
 
@@ -84,7 +94,7 @@ export default function CategoryFiltersSection({
     const res = await fetch(`/api/admin/categories/${categoryId}/filters?filterId=${filterId}`, {
       method: "DELETE",
     });
-    if (res.ok) loadData();
+    if (res.ok) refetchFilters();
   };
 
   const toggleInherit = async (filterId: string, currentInherit: boolean) => {
@@ -93,7 +103,7 @@ export default function CategoryFiltersSection({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filterId, inherit: !currentInherit }),
     });
-    if (res.ok) loadData();
+    if (res.ok) refetchFilters();
   };
 
   if (loading) return <div className="text-sm text-muted-foreground py-4">Caricamento filtri...</div>;
