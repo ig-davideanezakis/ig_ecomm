@@ -17,10 +17,9 @@ interface PageProps {
     search?: string;
     category?: string;
     brand?: string;
-    minPrice?: string;
-    maxPrice?: string;
     sort?: string;
     page?: string;
+    [key: string]: string | undefined;
   }>;
 }
 
@@ -31,8 +30,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     search: resolved.search?.trim() || "",
     category: resolved.category?.trim() || "",
     brand: resolved.brand?.trim() || "",
-    minPrice: resolved.minPrice ? Number(resolved.minPrice) : undefined,
-    maxPrice: resolved.maxPrice ? Number(resolved.maxPrice) : undefined,
+    minPrice: resolved.f_price_min ? Number(resolved.f_price_min) : undefined,
+    maxPrice: resolved.f_price_max ? Number(resolved.f_price_max) : undefined,
     sort: resolved.sort?.trim() || "newest",
     page: Math.max(1, Number(resolved.page) || 1),
     limit: 12,
