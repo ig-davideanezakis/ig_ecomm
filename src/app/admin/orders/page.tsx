@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Order {
   id: string;
@@ -46,6 +47,18 @@ export default function AdminOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState("");
+  const router = useRouter();
+
+  // Store sale form
+  const [showStoreForm, setShowStoreForm] = useState(false);
+  const [storeName, setStoreName] = useState("");
+  const [storeEmail, setStoreEmail] = useState("");
+  const [storePhone, setStorePhone] = useState("");
+  const [storePayment, setStorePayment] = useState("contanti");
+  const [storeNotes, setStoreNotes] = useState("");
+  const [storeItems, setStoreItems] = useState<{ productId: string; variantId: string; title: string; price: number; quantity: number }[]>([]);
+  const [storeSaving, setStoreSaving] = useState(false);
+  const [storeError, setStoreError] = useState("");
 
   const fetchOrders = async (p = page) => {
     setLoading(true);
@@ -99,10 +112,101 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Ordini</h1>
-        <button onClick={exportCSV} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted transition-colors">
-          Esporta CSV
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => { setShowStoreForm(!showStoreForm); setStoreError(""); }}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors">
+            + Nuovo ordine negozio
+          </button>
+          <button onClick={exportCSV} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted transition-colors">
+            Esporta CSV
+          </button>
+        </div>
       </div>
+
+      {/* Manual store order form */}
+      {showStoreForm && (
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="font-semibold">Nuovo ordine negozio fisico</h2>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="s-name" className="block text-sm font-medium mb-1">Cliente *</label>
+              <input id="s-name" value={storeName} onChange={e => setStoreName(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label htmlFor="s-email" className="block text-sm font-medium mb-1">Email</label>
+              <input id="s-email" type="email" value={storeEmail} onChange={e => setStoreEmail(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label htmlFor="s-phone" className="block text-sm font-medium mb-1">Telefono</label>
+              <input id="s-phone" value={storePhone} onChange={e => setStorePhone(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label htmlFor="s-pay" className="block text-sm font-medium mb-1">Pagamento</label>
+              <select id="s-pay" value={storePayment} onChange={e => setStorePayment(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="contanti">Contanti</option>
+                <option value="bancomat">Bancomat</option>
+                <option value="carta">Carta di credito</option>
+                <option value="bonifico">Bonifico</option>
+                <option value="satispay">Satispay</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <p className="block text-sm font-medium mb-1">Prodotti</p>
+            <p className="text-xs text-muted-foreground mb-2">Per ora inserisci l&apos;ID della variante e il prezzo. La selezione prodotti via UI sar&agrave; aggiunta in seguito.</p>
+            <textarea rows={3} value={storeItems.map(i => `${i.title} — ${i.quantity}x €${i.price.toFixed(2)}`).join("\n")} readOnly
+              className="w-full rounded-md border border-muted bg-muted/20 px-3 py-2 text-sm text-muted-foreground" />
+          </div>
+
+          <div>
+            <label htmlFor="s-notes" className="block text-sm font-medium mb-1">Note</label>
+            <textarea id="s-notes" value={storeNotes} onChange={e => setStoreNotes(e.target.value)} rows={2}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+          </div>
+
+          {storeError && <div className="text-sm text-red-600">{storeError}</div>}
+
+          <div className="flex gap-3">
+            <button onClick={async () => {
+              if (!storeName.trim()) { setStoreError("Il nome cliente è obbligatorio."); return; }
+              setStoreSaving(true); setStoreError("");
+              try {
+                const res = await fetch("/api/admin/orders/manual", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    name: storeName, email: storeEmail || null, phone: storePhone || null,
+                    paymentMethod: storePayment, notes: storeNotes || null,
+                    items: storeItems,
+                  }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                  setShowStoreForm(false);
+                  setStoreName(""); setStoreEmail(""); setStorePhone(""); setStoreNotes(""); setStoreItems([]);
+                  setStorePayment("contanti");
+                  fetchOrders(1);
+                  router.refresh();
+                } else {
+                  setStoreError(json.error || "Errore");
+                }
+              } catch { setStoreError("Errore di connessione."); }
+              setStoreSaving(false);
+            }} disabled={storeSaving || !storeName.trim()}
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
+              {storeSaving ? "Creazione..." : "Crea ordine (Pagato)"}
+            </button>
+            <button onClick={() => setShowStoreForm(false)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
