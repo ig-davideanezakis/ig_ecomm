@@ -62,7 +62,15 @@ export default function AdminOrdersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchOrders(1); }, [status]);
+  useEffect(() => {
+    const params = new URLSearchParams({ page: "1", limit: "20", sort: "newest" });
+    if (status) params.set("status", status);
+    fetch(`/api/admin/orders?${params}`)
+      .then(r => r.json())
+      .then(json => { setOrders(json.orders || []); setTotalPages(json.pagination?.totalPages || 1); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [status]);
 
   const handleBulkUpdate = async () => {
     if (!bulkStatus || selected.size === 0) return;
