@@ -23,14 +23,31 @@ export default function CheckoutPage() {
   const [newsletter, setNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const methodLabels: Record<string, string> = {
+    card: "💳 Carta / Digital",
+    bonifico: "🏦 Bonifico",
+    contanti: "💰 Contanti",
+    bancomat: "💳 Bancomat",
+    paypal: "🅿️ PayPal",
+    satispay: "⚡ Satispay",
+  };
   const [mode, setMode] = useState<"choose" | "guest" | "login" | "register">(
     isAuthenticated ? "guest" : "choose",
   );
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [bankDetails, setBankDetails] = useState<Record<string, string>>({});
+  const [checkoutPaymentMethods, setCheckoutPaymentMethods] = useState<string[]>(["card", "bonifico"]);
 
   useEffect(() => {
-    fetch("/api/settings").then(r => r.json()).then(setBankDetails).catch(() => {});
+    fetch("/api/settings").then(r => r.json()).then(s => {
+      setBankDetails(s);
+      if (s.payment_methods) {
+        const methods = s.payment_methods.split("\n").filter(Boolean);
+        setCheckoutPaymentMethods(methods);
+        if (!methods.includes(paymentMethod)) setPaymentMethod(methods[0] || "card");
+      }
+    }).catch(() => {});
   }, []);
 
   const subtotal = totalPrice;
@@ -217,17 +234,14 @@ export default function CheckoutPage() {
         {/* Payment method */}
         <div className="rounded-lg border bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold">Metodo di pagamento</h3>
-          <div className="flex gap-3">
-            <label className={`flex items-center gap-2 rounded-md border p-3 text-sm cursor-pointer transition-colors flex-1 ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
-              <input type="radio" name="payment" value="card" checked={paymentMethod === "card"}
-                onChange={() => setPaymentMethod("card")} className="text-primary" />
-              <span>💳 Carta / Digital</span>
-            </label>
-            <label className={`flex items-center gap-2 rounded-md border p-3 text-sm cursor-pointer transition-colors flex-1 ${paymentMethod === "bonifico" ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
-              <input type="radio" name="payment" value="bonifico" checked={paymentMethod === "bonifico"}
-                onChange={() => setPaymentMethod("bonifico")} className="text-primary" />
-              <span>🏦 Bonifico</span>
-            </label>
+          <div className="flex gap-3 flex-wrap">
+            {checkoutPaymentMethods.map(method => (
+              <label key={method} className={`flex items-center gap-2 rounded-md border p-3 text-sm cursor-pointer transition-colors flex-1 min-w-[140px] ${paymentMethod === method ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
+                <input type="radio" name="payment" value={method} checked={paymentMethod === method}
+                  onChange={() => setPaymentMethod(method)} className="text-primary" />
+                <span>{methodLabels[method] || method.charAt(0).toUpperCase() + method.slice(1)}</span>
+              </label>
+            ))}
           </div>
 
           {paymentMethod === "bonifico" && (

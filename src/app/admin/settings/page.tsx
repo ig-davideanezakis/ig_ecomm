@@ -23,6 +23,7 @@ const SETTING_FIELDS = [
   { key: "bank_bic", label: "Bonifico — BIC/SWIFT", type: "text" },
   { key: "bank_banca", label: "Bonifico — Nome banca", type: "text" },
   { key: "bank_notes", label: "Bonifico — Note (causale, ecc.)", type: "textarea" },
+  { key: "payment_methods", label: "Metodi di pagamento accettati", type: "payment-methods" },
 ];
 
 export default function AdminSettingsPage() {
@@ -76,6 +77,17 @@ export default function AdminSettingsPage() {
             {type === "section" ? (
               <div className="border-b pt-4 pb-2 mb-2">
                 <h3 className="text-base font-semibold">{label}</h3>
+              </div>
+            ) : type === "payment-methods" ? (
+              <div className="space-y-2">
+                <textarea id={`s-${key}`} value={settings[key] || ""} onChange={e => setSettings({ ...settings, [key]: e.target.value })}
+                  rows={4}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono focus-visible:ring-2 focus-visible:ring-ring" />
+                <p className="text-xs text-muted-foreground">
+                  Un metodo per riga. Verranno mostrati come opzioni disponibili nel checkout e negli ordini negozio.
+                  I valori usati internamente sono: <code>card</code>, <code>bonifico</code>, <code>contanti</code>, <code>bancomat</code>,
+                  ma puoi usarne di personalizzati (es. <code>paypal</code>).
+                </p>
               </div>
             ) : type === "seo-prompt" ? (
               <div className="space-y-2">

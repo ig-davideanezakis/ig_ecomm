@@ -59,6 +59,13 @@ export default function AdminOrdersPage() {
   const [storeItems, setStoreItems] = useState<{ productId: string; variantId: string; title: string; price: number; quantity: number }[]>([]);
   const [storeSaving, setStoreSaving] = useState(false);
   const [storeError, setStoreError] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["contanti"]);
+
+  useEffect(() => {
+    fetch("/api/settings").then(r => r.json()).then(s => {
+      if (s.payment_methods) setPaymentMethods(s.payment_methods.split("\n").filter(Boolean));
+    }).catch(() => {});
+  }, []);
 
   const fetchOrders = async (p = page) => {
     setLoading(true);
@@ -148,11 +155,9 @@ export default function AdminOrdersPage() {
               <label htmlFor="s-pay" className="block text-sm font-medium mb-1">Pagamento</label>
               <select id="s-pay" value={storePayment} onChange={e => setStorePayment(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="contanti">Contanti</option>
-                <option value="bancomat">Bancomat</option>
-                <option value="carta">Carta di credito</option>
-                <option value="bonifico">Bonifico</option>
-                <option value="satispay">Satispay</option>
+                {paymentMethods.map(m => (
+                  <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                ))}
               </select>
             </div>
           </div>
