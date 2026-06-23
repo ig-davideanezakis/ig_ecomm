@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-store";
 import { useSession, signIn } from "next-auth/react";
@@ -26,6 +26,12 @@ export default function CheckoutPage() {
   const [mode, setMode] = useState<"choose" | "guest" | "login" | "register">(
     isAuthenticated ? "guest" : "choose",
   );
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [bankDetails, setBankDetails] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch("/api/settings").then(r => r.json()).then(setBankDetails).catch(() => {});
+  }, []);
 
   const subtotal = totalPrice;
   const shippingCost = subtotal >= 150 ? 0 : 9.9;
@@ -50,7 +56,7 @@ export default function CheckoutPage() {
           })),
           email, name, phone, address, city, province, zip, country,
           shippingMethod: "standard",
-          paymentMethod: "card",
+          paymentMethod,
           newsletterConsent: newsletter,
         }),
       });
@@ -205,6 +211,37 @@ export default function CheckoutPage() {
           </div>
           {subtotal < 150 && (
             <p className="text-xs text-muted-foreground pt-1">Spedizione gratuita per ordini sopra €150</p>
+          )}
+        </div>
+
+        {/* Payment method */}
+        <div className="rounded-lg border bg-card p-4 space-y-3">
+          <h3 className="text-sm font-semibold">Metodo di pagamento</h3>
+          <div className="flex gap-3">
+            <label className={`flex items-center gap-2 rounded-md border p-3 text-sm cursor-pointer transition-colors flex-1 ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
+              <input type="radio" name="payment" value="card" checked={paymentMethod === "card"}
+                onChange={() => setPaymentMethod("card")} className="text-primary" />
+              <span>💳 Carta / Digital</span>
+            </label>
+            <label className={`flex items-center gap-2 rounded-md border p-3 text-sm cursor-pointer transition-colors flex-1 ${paymentMethod === "bonifico" ? "border-primary bg-primary/5" : "border-border hover:bg-muted"}`}>
+              <input type="radio" name="payment" value="bonifico" checked={paymentMethod === "bonifico"}
+                onChange={() => setPaymentMethod("bonifico")} className="text-primary" />
+              <span>🏦 Bonifico</span>
+            </label>
+          </div>
+
+          {paymentMethod === "bonifico" && (
+            <div className="rounded-md bg-muted/50 p-4 text-sm space-y-1">
+              <p className="font-medium mb-2">Coordinate bancarie per il bonifico:</p>
+              {bankDetails.bank_intestatario && <p><span className="text-muted-foreground">Intestatario:</span> {bankDetails.bank_intestatario}</p>}
+              {bankDetails.bank_iban && <p><span className="text-muted-foreground">IBAN:</span> <strong>{bankDetails.bank_iban}</strong></p>}
+              {bankDetails.bank_bic && <p><span className="text-muted-foreground">BIC/SWIFT:</span> {bankDetails.bank_bic}</p>}
+              {bankDetails.bank_banca && <p><span className="text-muted-foreground">Banca:</span> {bankDetails.bank_banca}</p>}
+              {bankDetails.bank_notes && <p className="text-xs text-muted-foreground mt-2">{bankDetails.bank_notes}</p>}
+              <p className="text-xs text-muted-foreground mt-2">
+                Dopo aver effettuato il bonifico, riceverai una email di conferma. Il tuo ordine verrà elaborato non appena riceveremo il pagamento.
+              </p>
+            </div>
           )}
         </div>
 
