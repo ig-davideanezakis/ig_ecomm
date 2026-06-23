@@ -17,6 +17,12 @@ const SETTING_FIELDS = [
   { key: "social_youtube", label: "YouTube URL", type: "text" },
   { key: "copyright_text", label: "Testo copyright", type: "text" },
   { key: "seo_format_prompt", label: "✨ Prompt AI formattazione SEO", type: "seo-prompt" },
+  { key: "__payments", label: "Pagamenti", type: "section" },
+  { key: "bank_intestatario", label: "Bonifico — Intestatario", type: "text" },
+  { key: "bank_iban", label: "Bonifico — IBAN", type: "text" },
+  { key: "bank_bic", label: "Bonifico — BIC/SWIFT", type: "text" },
+  { key: "bank_banca", label: "Bonifico — Nome banca", type: "text" },
+  { key: "bank_notes", label: "Bonifico — Note (causale, ecc.)", type: "textarea" },
 ];
 
 export default function AdminSettingsPage() {
@@ -65,9 +71,13 @@ export default function AdminSettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {SETTING_FIELDS.map(({ key, label, type }) => (
-          <div key={key} className={type === "seo-prompt" ? "md:col-span-2" : ""}>
+          <div key={key} className={type === "seo-prompt" || type === "section" ? "md:col-span-2" : ""}>
             <label htmlFor={`s-${key}`} className="block text-sm font-medium mb-1">{label}</label>
-            {type === "seo-prompt" ? (
+            {type === "section" ? (
+              <div className="border-b pt-4 pb-2 mb-2">
+                <h3 className="text-base font-semibold">{label}</h3>
+              </div>
+            ) : type === "seo-prompt" ? (
               <div className="space-y-2">
                 <textarea id={`s-${key}`} value={settings[key] || ""} onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
                   rows={12}
