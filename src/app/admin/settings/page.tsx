@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from "react";
 
+const KNOWN_PAYMENT_METHODS: Record<string, string> = {
+  card: "💳 Carta / Digital Wallet",
+  bonifico: "🏦 Bonifico bancario",
+  contanti: "💰 Contanti",
+  bancomat: "💳 Bancomat / Maestro",
+  paypal: "🅿️ PayPal",
+  satispay: "⚡ Satispay",
+};
+
 const SETTING_FIELDS = [
   { key: "store_name", label: "Nome negozio", type: "text" },
   { key: "store_tagline", label: "Tagline / descrizione", type: "textarea" },
@@ -31,11 +40,18 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [selectedPayMethods, setSelectedPayMethods] = useState<string[]>([]);
+  const [customPayMethod, setCustomPayMethod] = useState("");
+  const [showPayConfirm, setShowPayConfirm] = useState(false);
+  const [pendingPayMethods, setPendingPayMethods] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/settings").then(async (res) => {
       const json = await res.json();
       setSettings(json);
+      if (json.payment_methods) {
+        setSelectedPayMethods(json.payment_methods.split("\n").filter(Boolean));
+      }
       setLoading(false);
     });
   }, []);
@@ -44,10 +60,14 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     setSaving(true);
     setSuccess("");
+
+    // Sync payment methods before saving
+    const body = { ...settings, payment_methods: selectedPayMethods.join("\n") };
+
     await fetch("/api/admin/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
+      body: JSON.stringify(body),
     });
     setSuccess("Impostazioni salvate!");
     setSaving(false);
@@ -79,15 +99,83 @@ export default function AdminSettingsPage() {
                 <h3 className="text-base font-semibold">{label}</h3>
               </div>
             ) : type === "payment-methods" ? (
-              <div className="space-y-2">
-                <textarea id={`s-${key}`} value={settings[key] || ""} onChange={e => setSettings({ ...settings, [key]: e.target.value })}
-                  rows={4}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono focus-visible:ring-2 focus-visible:ring-ring" />
+              <div className="md:col-span-2 space-y-3">
+                <h3 className="text-base font-semibold mb-2">Metodi di pagamento accettati</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {Object.entries(KNOWN_PAYMENT_METHODS).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-md hover:bg-muted transition-colors">
+                      <input type="checkbox" checked={selectedPayMethods.includes(key)}
+                        onChange={e => {
+                          if (e.target.checked) setSelectedPayMethods([...selectedPayMethods, key]);
+                          else setSelectedPayMethods(selectedPayMethods.filter(m => m !== key));
+                        }}
+                        className="rounded border-border text-primary" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-2 items-center">
+                  <input type="text" value={customPayMethod} onChange={e => setCustomPayMethod(e.target.value)}
+                    placeholder="Nome metodo personalizzato (es. applepay)"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+                  <button type="button" onClick={() => {
+                    const v = customPayMethod.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+                    if (v && !selectedPayMethods.includes(v)) {
+                      setSelectedPayMethods([...selectedPayMethods, v]);
+                      setCustomPayMethod("");
+                    }
+                  }} disabled={!customPayMethod.trim()}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-30">
+                    + Aggiungi
+                  </button>
+                </div>
+                {selectedPayMethods.filter(m => !KNOWN_PAYMENT_METHODS[m]).length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Metodi personalizzati:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPayMethods.filter(m => !KNOWN_PAYMENT_METHODS[m]).map(m => (
+                        <span key={m} className="inline-flex items-center gap-1 rounded-md border bg-muted/30 px-2.5 py-1 text-xs">
+                          {m}
+                          <button onClick={() => setSelectedPayMethods(selectedPayMethods.filter(x => x !== m))}
+                            className="text-muted-foreground hover:text-destructive">&times;</button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Un metodo per riga. Verranno mostrati come opzioni disponibili nel checkout e negli ordini negozio.
-                  I valori usati internamente sono: <code>card</code>, <code>bonifico</code>, <code>contanti</code>, <code>bancomat</code>,
-                  ma puoi usarne di personalizzati (es. <code>paypal</code>).
+                  I metodi selezionati appariranno nel checkout e negli ordini negozio.
+                  {selectedPayMethods.length > 0 && (
+                    <button type="button" onClick={() => { setPendingPayMethods([...selectedPayMethods]); setShowPayConfirm(true); }}
+                      className="ml-2 text-primary hover:underline">
+                      Rivedi selezione
+                    </button>
+                  )}
                 </p>
+
+                {/* Confirm dialog */}
+                {showPayConfirm && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPayConfirm(false)}>
+                    <div className="w-full max-w-md rounded-xl bg-background p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+                      <h3 className="font-semibold text-lg mb-2">Conferma metodi di pagamento</h3>
+                      <p className="text-sm text-muted-foreground mb-4">Questi metodi saranno disponibili nel checkout e negli ordini negozio:</p>
+                      <ul className="space-y-2 mb-6">
+                        {pendingPayMethods.map(m => (
+                          <li key={m} className="flex items-center gap-2 text-sm">
+                            <span className="text-green-600">✓</span>
+                            {KNOWN_PAYMENT_METHODS[m] || m.charAt(0).toUpperCase() + m.slice(1)}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex gap-3 justify-end">
+                        <button type="button" onClick={() => setShowPayConfirm(false)}
+                          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">
+                          Chiudi
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : type === "seo-prompt" ? (
               <div className="space-y-2">
