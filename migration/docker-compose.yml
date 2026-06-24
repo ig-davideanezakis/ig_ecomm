@@ -1,0 +1,22 @@
+services:
+  mysql-prestashop:
+    image: mysql:8.0
+    container_name: prestashop-source
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: prestashop_root
+      MYSQL_DATABASE: prestashop
+      MYSQL_USER: prestashop
+      MYSQL_PASSWORD: prestashop_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=""
+
+volumes:
+  mysql_data:
