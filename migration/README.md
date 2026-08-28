@@ -40,6 +40,11 @@ docker exec -i prestashop-source mysql -u root -pprestashop_root prestashop < /p
 
 Or put the dump file in `mysql-init/` before starting the container (it will be auto-imported on first run).
 
+> ⚠️ **Never commit production dumps** — they can be hundreds of MB.
+> The `.gitignore` keeps everything under `migration/mysql-init/` local except the
+> structural schema (`01-prestashop-schema.sql`). If you add a dump, verify with
+> `git status` that only intended files are staged.
+
 ### 3. Run migration
 
 `mysql2` is already a project dependency — no install needed.

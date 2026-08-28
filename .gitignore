@@ -44,3 +44,14 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# ── PrestaShop migration ──────────────────────────────────────────
+# Never commit production dumps (can be hundreds of MB).
+# The structural schema (01-prestashop-schema.sql) IS tracked — everything
+# else under migration/mysql-init/ (dumps, gz, bak) stays local.
+migration/mysql-init/*
+!migration/mysql-init/01-prestashop-schema.sql
+migration/*.sql
+migration/*.sql.gz
+migration/*.dump
+migration/*.bak
