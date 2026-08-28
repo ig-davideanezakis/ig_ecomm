@@ -16,6 +16,80 @@ const MYSQL_CONFIG = {
 
 const pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// ─── Row types (MySQL result rows) ───────────────────────────────
+interface ManufacturerRow {
+  id_manufacturer: number;
+  name: string;
+  active: number;
+  description: string | null;
+}
+
+interface CategoryRow {
+  id_category: number;
+  id_parent: number;
+  active: number;
+  date_add: string | Date | null;
+  name: string;
+  link_rewrite: string | null;
+  description: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+}
+
+interface ProductRow {
+  id_product: number;
+  id_manufacturer: number | null;
+  id_category_default: number;
+  reference: string | null;
+  ean13: string | null;
+  price: string;
+  wholesale_price: string | null;
+  weight: string | null;
+  active: number;
+  date_add: string | Date | null;
+  date_upd: string | Date | null;
+  name: string;
+  link_rewrite: string | null;
+  description: string | null;
+  description_short: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+}
+
+interface AttributeRow {
+  id_product_attribute: number;
+  id_product: number;
+  reference: string | null;
+  ean13: string | null;
+  impact_price: string | null;
+  impact_weight: string | null;
+  default_on: number | null;
+  stock: number | null;
+  attribute_name: string | null;
+}
+
+interface StockRow {
+  id_product: number;
+  quantity: number | null;
+}
+
+interface CustomerRow {
+  id_customer: number;
+  email: string;
+  firstname: string;
+  lastname: string;
+  newsletter: number;
+  optin: number;
+  active: number;
+  date_add: string | Date | null;
+}
+
+interface SubscriberRow {
+  email: string;
+  newsletter: number;
+  date_add: string | Date | null;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────
 function slugify(text: string): string {
   return text
@@ -34,14 +108,14 @@ async function run() {
   // 1. MANUFACTURERS → brands
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 1. Migrating manufacturers → brands ---");
-  const [manufacturers] = await mysqlConn.execute(
+  const [manufacturers] = (await mysqlConn.execute(
     `SELECT m.id_manufacturer, m.name, m.active, COALESCE(ml.description, '') as description
      FROM ps_manufacturer m
      LEFT JOIN ps_manufacturer_lang ml ON ml.id_manufacturer = m.id_manufacturer AND ml.id_lang = 1
      WHERE m.active = 1`
-  );
+  )) as unknown as [ManufacturerRow[], unknown];
 
-  for (const m of manufacturers as any[]) {
+  for (const m of manufacturers) {
     const slug = slugify(m.name);
     await pgPool.query(
       `INSERT INTO "brand" (name, slug, description) VALUES ($1, $2, $3)
@@ -50,23 +124,23 @@ async function run() {
     );
     console.log(`  ✓ ${m.name} → ${slug}`);
   }
-  console.log(`  → ${(manufacturers as any[]).length} brands migrated\n`);
+  console.log(`  → ${manufacturers.length} brands migrated\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 2. CATEGORIES → category (with parent hierarchy)
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 2. Migrating categories ---");
-  const [categories] = await mysqlConn.execute(
+  const [categories] = (await mysqlConn.execute(
     `SELECT c.id_category, c.id_parent, c.active, c.date_add,
             cl.name, cl.link_rewrite, cl.description, cl.meta_title, cl.meta_description
      FROM ps_category c
      JOIN ps_category_lang cl ON cl.id_category = c.id_category AND cl.id_lang = 1
      ORDER BY c.id_category ASC`
-  );
+  )) as unknown as [CategoryRow[], unknown];
 
   // Map PS id → new UUID
   const catIdMap = new Map<number, string>();
-  const catRows = categories as any[];
+  const catRows = categories;
 
   // First pass: create all categories without parent
   for (const c of catRows) {
@@ -93,13 +167,13 @@ async function run() {
     }
   }
 
-  console.log(`  → ${catRows.filter((c: any) => c.id_parent > 1).length} categories migrated\n`);
+  console.log(`  → ${catRows.filter((c) => c.id_parent > 1).length} categories migrated\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 3. PRODUCTS → product
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 3. Migrating products ---");
-  const [products] = await mysqlConn.execute(
+  const [products] = (await mysqlConn.execute(
     `SELECT p.id_product, p.id_manufacturer, p.id_category_default, p.reference, p.ean13,
             p.price, p.wholesale_price, p.weight, p.active, p.date_add, p.date_upd,
             pl.name, pl.link_rewrite, pl.description, pl.description_short,
@@ -107,10 +181,10 @@ async function run() {
      FROM ps_product p
      JOIN ps_product_lang pl ON pl.id_product = p.id_product AND pl.id_lang = 1
      WHERE p.active = 1`
-  );
+  )) as unknown as [ProductRow[], unknown];
 
   const prodIdMap = new Map<number, string>();
-  for (const p of products as any[]) {
+  for (const p of products) {
     const slug = p.link_rewrite || slugify(p.name);
     const identifier = p.reference || `PS-${p.id_product}`;
     const categoryId = catIdMap.get(p.id_category_default) || null;
@@ -140,13 +214,13 @@ async function run() {
     );
     prodIdMap.set(p.id_product, result.rows[0].id);
   }
-  console.log(`  → ${(products as any[]).length} products migrated\n`);
+  console.log(`  → ${products.length} products migrated\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 4. PRODUCT ATTRIBUTES → variants
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 4. Migrating product attributes → variants ---");
-  const [attrs] = await mysqlConn.execute(
+  const [attrs] = (await mysqlConn.execute(
     `SELECT pa.id_product_attribute, pa.id_product, pa.reference, pa.ean13,
             pa.price as impact_price, pa.weight as impact_weight,
             pa.default_on, pa.quantity as stock,
@@ -155,14 +229,14 @@ async function run() {
      LEFT JOIN ps_product_attribute_combination pac ON pac.id_product_attribute = pa.id_product_attribute
      LEFT JOIN ps_attribute_lang al ON al.id_attribute = pac.id_attribute AND al.id_lang = 1
      ORDER BY pa.id_product, pa.id_product_attribute`
-  );
+  )) as unknown as [AttributeRow[], unknown];
 
-  for (const a of attrs as any[]) {
+  for (const a of attrs) {
     const productId = prodIdMap.get(a.id_product);
     if (!productId) continue;
 
     const variantName = a.attribute_name || "Default";
-    const variantPrice = parseFloat(a.impact_price) || 0;
+    const variantPrice = a.impact_price ? parseFloat(a.impact_price) : 0;
 
     // Get base product price to calculate final variant price
     const baseRes = await pgPool.query(`SELECT base_price FROM "product" WHERE id = $1`, [productId]);
@@ -175,19 +249,19 @@ async function run() {
       [variantName, a.reference || null, finalPrice, a.stock || 0, productId]
     );
   }
-  console.log(`  → ${(attrs as any[]).length} variants migrated\n`);
+  console.log(`  → ${attrs.length} variants migrated\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 5. STOCK (simple products without variants)
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 5. Migrating simple stock (no variants) ---");
-  const [stockRows] = await mysqlConn.execute(
+  const [stockRows] = (await mysqlConn.execute(
     `SELECT sa.id_product, sa.quantity
      FROM ps_stock_available sa
      WHERE sa.id_product_attribute = 0`
-  );
+  )) as unknown as [StockRow[], unknown];
 
-  for (const s of stockRows as any[]) {
+  for (const s of stockRows) {
     const productId = prodIdMap.get(s.id_product);
     if (!productId) continue;
 
@@ -204,18 +278,18 @@ async function run() {
       [0, s.quantity || 0, productId]
     );
   }
-  console.log(`  → stock set for ${(stockRows as any[]).length} simple products\n`);
+  console.log(`  → stock set for ${stockRows.length} simple products\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 6. CUSTOMERS
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 6. Migrating customers ---");
-  const [customers] = await mysqlConn.execute(
+  const [customers] = (await mysqlConn.execute(
     `SELECT id_customer, email, firstname, lastname, newsletter, optin, active, date_add
      FROM ps_customer WHERE active = 1 AND is_guest = 0`
-  );
+  )) as unknown as [CustomerRow[], unknown];
 
-  for (const c of customers as any[]) {
+  for (const c of customers) {
     const name = `${c.firstname} ${c.lastname}`.trim();
     await pgPool.query(
       `INSERT INTO "user" (name, email, role, created_at, updated_at)
@@ -225,7 +299,7 @@ async function run() {
         c.date_add && !isNaN(new Date(c.date_add).getTime()) ? new Date(c.date_add) : new Date()]
     );
   }
-  console.log(`  → ${(customers as any[]).length} customers migrated\n`);
+  console.log(`  → ${customers.length} customers migrated\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // 7. BRAND → category_filter (for the global brand filter)
@@ -239,17 +313,17 @@ async function run() {
   // 8. NEWSLETTER SUBSCRIBERS
   // ═══════════════════════════════════════════════════════════════
   console.log("--- 8. Migrating newsletter subscribers ---");
-  const [subs] = await mysqlConn.execute(
+  const [subs] = (await mysqlConn.execute(
     `SELECT email, newsletter, date_add FROM ps_customer WHERE newsletter = 1 AND active = 1`
-  );
+  )) as unknown as [SubscriberRow[], unknown];
 
-  for (const s of subs as any[]) {
+  for (const s of subs) {
     await pgPool.query(
       `INSERT INTO "newsletter_subscriber" (email) VALUES ($1) ON CONFLICT (email) DO NOTHING`,
       [s.email]
     );
   }
-  console.log(`  → ${(subs as any[]).length} subscribers migrated\n`);
+  console.log(`  → ${subs.length} subscribers migrated\n`);
 
   await mysqlConn.end();
   await pgPool.end();
