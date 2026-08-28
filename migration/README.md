@@ -57,6 +57,17 @@ npx tsx scripts/migrate.ts
 The script requires `DATABASE_URL` (from the project `.env`) and defaults for MySQL
 connection (override via `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`).
 
+> **Table prefix:** the production store uses the `pr_` prefix (not PrestaShop's default `ps_`).
+> The script reads the prefix from the `PS_PREFIX` env var and defaults to `pr_`.
+> If your store uses the default prefix, run with `PS_PREFIX=ps_ npx tsx scripts/migrate.ts`.
+>
+> **Language:** localized rows (`*_lang` tables) are read with `PS_LANG_ID` (default `2` =
+> Italiano). If your store's default language has a different `id_lang`, override it.
+>
+> **Duplicate slugs:** PrestaShop allows duplicate `link_rewrite` values. The script
+> deduplicates slugs with a numeric suffix (`-2`, `-3`, …) and truncates to 250 chars,
+> so the `slug` unique constraint is never violated.
+
 ## What Gets Migrated
 
 | # | PrestaShop Table | ig_ecomm Table | Notes |
@@ -100,4 +111,6 @@ connection (override via `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWO
 | `MYSQL_USER` | No | Default: `prestashop` |
 | `MYSQL_PASSWORD` | No | Default: `prestashop_pass` |
 | `MYSQL_DATABASE` | No | Default: `prestashop` |
+| `PS_PREFIX` | No | PrestaShop table prefix — default: `pr_` (production store) |
+| `PS_LANG_ID` | No | Language ID for localized rows — default: `2` (Italiano in this store) |
 | `DATABASE_URL` | Yes | Supabase PostgreSQL URL |
