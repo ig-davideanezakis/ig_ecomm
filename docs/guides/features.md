@@ -22,6 +22,15 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 - Scroll-triggered animations (parallax, fade-in reveal, slide transitions)
 - Full-text product search
 
+## Brand Management
+**Status:** ✅ Done
+
+- Brand CRUD in admin (`/admin/brands`): name, slug, logo, description
+- Logo widget with `show_in_home` / `show_in_footer` visibility flags
+- Brand logo shown on homepage and footer via `BrandLogoWidget`
+- Brand filter linked to the dynamic filter system
+- Product → brand relationship (brand shown on product cards and detail pages)
+
 ## Authentication & Authorization
 **Status:** ✅ Done
 
@@ -57,18 +66,24 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 ## Cart & Checkout
 **Linear:** IG-10
+**Status:** ✅ Done
 
 - Add/remove/update item quantities
+- Guest checkout (see [guest-checkout guide](guest-checkout.md))
 - Estimated shipping cost calculation
 - Checkout flow: address → shipping method → payment → confirmation
 - Order confirmation email via Resend
 
 ## Payments
 **Linear:** IG-11
+**Status:** 🟡 Partial — payment methods configurable, transactional provider TBD
 
-- Card / digital wallet integration (provider TBD)
+- Payment methods managed in **Admin → Settings** (not hardcoded): checkbox UI for known methods (card/digital wallet, bank transfer, cash, bancomat/maestro, PayPal, Satispay) + custom methods as tags
+- Confirmation dialog before saving the method list
+- Checkout shows the configured methods
 - Post-MVP: installments (Scalapay / Klarna)
-- PDF invoice generation post-purchase
+- Post-MVP: PDF invoice generation post-purchase
+- Transactional card processing: provider TBD
 
 ## Shipping
 **Linear:** IG-12
@@ -116,10 +131,13 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 ## Admin — Orders
 **Linear:** IG-17
+**Status:** ✅ Done
 
 - Order list with filters (status, date range)
 - Update order status (confirm, process, ship, deliver, cancel)
+- Payment management per order (manual orders: cash / bank transfer)
 - Manual notification email trigger
+- Manual sale orders from admin (store-front sales)
 
 ## Promotions & Newsletter
 **Linear:** IG-18

@@ -1,7 +1,7 @@
 # Admin — Products Management
 
 > Guida alla gestione dei prodotti nel pannello di amministrazione di ig_ecomm.
-> Ultimo aggiornamento: 2026-06-06
+> Ultimo aggiornamento: 2026-06-27
 
 ## Panoramica
 
@@ -195,13 +195,22 @@ Elimina un prodotto (cascade su varianti e immagini).
 
 ### `POST /api/admin/upload`
 
-Aggiunge un'immagine a un prodotto.
+Aggiunge un'immagine a un prodotto (solo ADMIN).
 
-**Body:** `{ url, alt?, productId }`
+**Due modalità:**
+
+1. **File upload** — `multipart/form-data` con `file`, `productId`, `alt`:
+   - Formati accettati: **JPG, PNG, WebP, AVIF** — max **5MB**
+   - Il file viene caricato su **Supabase Storage** (bucket pubblico `product-images`, auto-creato al primo upload) in `products/{productId}/{timestamp}-{random}.{ext}` con cache 1 anno
+   - L'URL pubblico risultante viene salvato nella tabella `product_image` con `sort_order` progressivo
+
+2. **URL fallback** — `{ url, alt?, productId }` in JSON: salva un riferimento esterno (es. URL Icecat) senza scaricare nulla
 
 ### `DELETE /api/admin/upload?id=xxx`
 
-Rimuove un'immagine.
+Rimuove un'immagine: elimina il record dal DB e prova a rimuovere l'oggetto dallo storage (best-effort). Il DB è la fonte di verità.
+
+**Env vars richieste per l'upload:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only, vedi `src/lib/supabase-admin.ts`).
 
 ## Files
 

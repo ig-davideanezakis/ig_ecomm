@@ -7,7 +7,7 @@
 
 **Decision:** Next.js (App Router) full-stack + Supabase (PostgreSQL) + Drizzle ORM + NextAuth.js + Resend (email) + Vercel (deploy)
 
-**Date:** 2026-05-26 (last updated: 2026-05-28)
+**Date:** 2026-05-26 (last updated: 2026-06-27)
 
 **Rationale:**
 - Single deploy (Vercel), no separate backend to maintain
@@ -23,9 +23,31 @@
 
 **Consequences:**
 - Admin panel needs custom development (more initial work, full control)
-- Images: Supabase Storage (free 1GB) -> Cloudflare Images when needed
+- Images: Supabase Storage (bucket `product-images`, public) -> Cloudflare Images when needed
 - Search: PostgreSQL ILIKE for MVP -> Meilisearch/Typesense later
 - Payments: TBD (no provider chosen yet)
+
+---
+
+## Storage (Product Images)
+
+**Decision:** Supabase Storage — public bucket `product-images`, accessed only server-side via the service role key
+
+**Date:** 2026-05-26 (bucket provisioned + env vars documented: 2026-06-27)
+
+**How it works:**
+- Bucket is **auto-created on first upload** (`ensureBucket()` in `src/lib/supabase-admin.ts`), public, 5MB file limit
+- Upload path: admin form → `POST /api/admin/upload` (multipart) → `uploadProductImage()` → storage at `products/{productId}/{timestamp}-{random}.{ext}` → public URL saved in `product_image` table
+- The DB record is the source of truth; deleting a record also removes the storage object (best-effort)
+- External image URLs (e.g. Icecat) can be saved as references via the JSON fallback of the same endpoint
+- `next/image` optimization: only `**.supabase.co/storage/v1/object/public/**` and Google avatar hosts are allowed in `next.config.ts` remotePatterns
+
+**Env vars:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-only — never bundled client-side)
+
+**Known gaps / roadmap:**
+- Icecat image URLs are currently referenced externally, not imported — `remotePatterns` for Icecat hosts or a download-and-import proxy is the next step
+- No server-side resize/WebP conversion at upload time (Next.js optimizes on-the-fly only)
+- RLS write policies on the bucket are not yet configured (writes happen exclusively through the authenticated admin API)
 
 ---
 

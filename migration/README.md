@@ -7,7 +7,7 @@ Migrate data from an existing PrestaShop 1.7.7.8 e-commerce to the ig_ecomm Next
 ```
 ┌─────────────────┐         ┌─────────────────┐
 │   PrestaShop    │         │    ig_ecomm      │
-│   MySQL 5.7     │  ───→   │   PostgreSQL     │
+│   MySQL 8.0     │  ───→   │   PostgreSQL     │
 │   (Docker)      │  migrate│   (Supabase)     │
 │   port 3307     │         │   DATABASE_URL   │
 └─────────────────┘         └─────────────────┘
@@ -22,10 +22,12 @@ cd migration
 docker compose up -d
 ```
 
-This starts MySQL 5.7 on port `3307` with:
+This starts MySQL 8.0 on port `3307` with:
 - Database: `prestashop`
 - User: `prestashop` / `prestashop_pass`
 - Root: `prestashop_root`
+- Container name: `prestashop-source`
+- `mysql-init/` SQL files are auto-imported on first run (utf8mb4 charset)
 
 ### 2. Load PrestaShop data
 
@@ -38,18 +40,17 @@ docker exec -i prestashop-source mysql -u root -pprestashop_root prestashop < /p
 
 Or put the dump file in `mysql-init/` before starting the container (it will be auto-imported on first run).
 
-### 3. Install MySQL client
+### 3. Run migration
 
-```bash
-npm install mysql2
-```
-
-### 4. Run migration
+`mysql2` is already a project dependency — no install needed.
 
 ```bash
 cd migration
 npx tsx scripts/migrate.ts
 ```
+
+The script requires `DATABASE_URL` (from the project `.env`) and defaults for MySQL
+connection (override via `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`).
 
 ## What Gets Migrated
 
