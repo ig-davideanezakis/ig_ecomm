@@ -375,7 +375,7 @@ async function run() {
     }
     console.log(`  → store logo saved`);
   } else {
-    console.log(`  → store logo not found (${logoStatus.stdout.trim()})`);
+    console.log(`  → store logo not found (${logoStatus})`);
   }
 
   await mysqlConn.end();
