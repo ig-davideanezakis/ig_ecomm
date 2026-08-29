@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com", // Google OAuth avatars
       },
+      {
+        protocol: "https",
+        hostname: "**.icecat.biz", // Icecat product images (images.icecat.biz)
+      },
     ],
   },
 };

@@ -46,6 +46,9 @@ export default function ProductForm({ productId }: Props) {
   const [imageAlt, setImageAlt] = useState("");
   const [seoLoading, setSeoLoading] = useState(false);
   const [eanLoading, setEanLoading] = useState(false);
+  const [eanImages, setEanImages] = useState<Image[]>([]);
+  const [importingEanImages, setImportingEanImages] = useState(false);
+  const [importError, setImportError] = useState("");
 
   const uploadFile = async (file: File) => {
     if (!productId) return;
@@ -138,6 +141,37 @@ export default function ProductForm({ productId }: Props) {
     setSaving(false);
   };
 
+  const importEanImages = async () => {
+    if (!productId || eanImages.length === 0 || importingEanImages) return;
+    setImportingEanImages(true); setError(""); setImportError(""); setSuccess("");
+    try {
+      const res = await fetch("/api/admin/import-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          images: eanImages.map(({ url, alt }) => ({ url, alt })),
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setImages(prev => [...prev, ...json.imported]);
+        setEanImages([]);
+        const n = json.imported.length;
+        if (json.failedCount > 0) {
+          setImportError(`${json.failedCount} immagine${json.failedCount > 1 ? "e" : ""} non importata${json.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`);
+        } else {
+          setSuccess(`${n} immagine${n > 1 ? "e" : ""} importata${n > 1 ? "e" : ""} su Storage.`);
+        }
+      } else {
+        setImportError(json.error || "Errore durante l'import.");
+      }
+    } catch {
+      setImportError("Errore di connessione.");
+    }
+    setImportingEanImages(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setSuccess("");
@@ -165,7 +199,24 @@ export default function ProductForm({ productId }: Props) {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
         });
         const json = await res.json();
-        if (json.success) router.push(`/admin/products/${json.id}`);
+        if (json.success) {
+          // Copy Icecat images to Storage right after creation, then land on the edit page
+          if (eanImages.length > 0) {
+            try {
+              await fetch("/api/admin/import-images", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  productId: json.id,
+                  images: eanImages.map(({ url, alt }) => ({ url, alt })),
+                }),
+              });
+            } catch {
+              // non-blocking: images can be imported later from the edit page
+            }
+          }
+          router.push(`/admin/products/${json.id}`);
+        }
         else setError(json.error ?? "Errore durante la creazione.");
       } else {
         const res = await fetch(`/api/admin/products/${productId}`, {
@@ -303,6 +354,11 @@ export default function ProductForm({ productId }: Props) {
                     const data = await res.json();
                     if (data.found) {
                       updateTitle(data.title);
+                      if (data.images?.length) {
+                        setEanImages(data.images.map((img: { url: string; alt: string }, i: number) => ({
+                          url: img.url, alt: img.alt || "", sortOrder: i,
+                        })));
+                      }
                       setDescription(data.shortDesc || data.longDesc || "");
                       if (data.longDesc && data.longDesc !== data.shortDesc) {
                         setContent(data.longDesc);
@@ -400,6 +456,36 @@ export default function ProductForm({ productId }: Props) {
                 </button>
               </div>
             </div>
+
+            {/* Icecat lookup images — pending copy to Storage */}
+            {eanImages.length > 0 && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    {eanImages.length} {eanImages.length > 1 ? "immagini" : "immagine"} {eanImages.length > 1 ? "trovate" : "trovata"} su Icecat
+                  </p>
+                  {!isNew && (
+                    <button type="button" onClick={importEanImages} disabled={importingEanImages}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap">
+                      {importingEanImages ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "⬇️"}
+                      {importingEanImages ? "Importazione..." : `Importa su Storage (${eanImages.length})`}
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {eanImages.map((img, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={img.url} alt={img.alt || "Anteprima Icecat"} className="h-16 w-16 rounded-md border object-cover" />
+                  ))}
+                </div>
+                {isNew && (
+                  <p className="text-xs text-muted-foreground">
+                    Le immagini verranno copiate su Storage automaticamente al salvataggio del prodotto.
+                  </p>
+                )}
+                {importError && <p className="text-xs text-red-600">{importError}</p>}
+              </div>
+            )}
 
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>

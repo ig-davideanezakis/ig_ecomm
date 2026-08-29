@@ -38,15 +38,15 @@
 **How it works:**
 - Bucket is **auto-created on first upload** (`ensureBucket()` in `src/lib/supabase-admin.ts`), public, 5MB file limit
 - Upload path: admin form → `POST /api/admin/upload` (multipart) → `uploadProductImage()` → storage at `products/{productId}/{timestamp}-{random}.{ext}` → public URL saved in `product_image` table
+- **Icecat images are imported to Storage** (not referenced externally): `POST /api/admin/import-images` downloads each URL server-side (HTTPS + Icecat hosts only, SSRF-guarded), validates format/size (JPG/PNG/WebP/AVIF source ≤ 20MB), **downscales to max 1600px and converts to WebP q82 via sharp** (Icecat photos often exceed the 5MB bucket limit), uploads to `products/{productId}/{timestamp}-{random}.webp` via `importImagesFromUrls()` in `src/lib/supabase-admin.ts` (input order preserved for gallery sort_order), then saves `product_image` rows. The product form triggers this manually (edit) or automatically at creation
 - The DB record is the source of truth; deleting a record also removes the storage object (best-effort)
-- External image URLs (e.g. Icecat) can be saved as references via the JSON fallback of the same endpoint
-- `next/image` optimization: only `**.supabase.co/storage/v1/object/public/**` and Google avatar hosts are allowed in `next.config.ts` remotePatterns
+- Manual paste of an external URL is still possible via the JSON fallback of `POST /api/admin/upload` (saves the reference as-is)
+- `next/image` optimization: `**.supabase.co/storage/v1/object/public/**`, Google avatar hosts and `**.icecat.biz` (import source) are allowed in `next.config.ts` remotePatterns
 
 **Env vars:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-only — never bundled client-side)
 
 **Known gaps / roadmap:**
-- Icecat image URLs are currently referenced externally, not imported — `remotePatterns` for Icecat hosts or a download-and-import proxy is the next step
-- No server-side resize/WebP conversion at upload time (Next.js optimizes on-the-fly only)
+- No server-side resize/WebP conversion at upload time for manual uploads (Next.js optimizes on-the-fly only; Icecat imports ARE downscaled+WebP via sharp)
 - RLS write policies on the bucket are not yet configured (writes happen exclusively through the authenticated admin API)
 
 ---

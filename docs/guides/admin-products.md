@@ -37,6 +37,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 │  DELETE /api/admin/products/[id] → Elimina       │
 │  POST   /api/admin/upload        → Aggiungi img  │
 │  DELETE /api/admin/upload        → Rimuovi img   │
+│  POST   /api/admin/import-images → Importa img Icecat su Storage │
 └──────────────────────┬───────────────────────────┘
                        │ SQL
 ┌──────────────────────▼───────────────────────────┐
@@ -111,9 +112,29 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | EAN / Codice a barre | `text` | ❌ | GTIN per fatturazione e Google Shopping |
 | Peso (kg) | `number` | ❌ | Per calcolo spedizioni |
 
+##### Enrichment automatico via Icecat
+
+Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsante **"📦 Cerca su Icecat"** accanto al campo EAN interroga `GET /api/products/lookup-ean?ean=xxx` e auto-compila:
+
+| Campo del form | Fonte Icecat (Live API `live.icecat.biz/api`) |
+|----------------|-----------------------------------------------|
+| Titolo | `GeneralInfo.Title` |
+| Descrizione breve | `GeneralInfo.SummaryDescription.ShortSummaryDescription` |
+| Descrizione lunga (content) | `GeneralInfo.SummaryDescription.LongSummaryDescription` |
+| Peso (kg) | spec "Peso dell'imballo" (poi senza supporto, poi primo peso) |
+| Specifiche tecniche | `FeaturesGroups[].Features[]` → tabella HTML nel content |
+| Bullet points | `GeneralInfo.BulletPoints.Values` / `GeneratedBulletPoints.Values` / `ReasonsToBuy` |
+| Immagini | `Image` + `Gallery[]` (max 12, dedupe) → **copiate su Supabase Storage** |
+
+Prezzo e stock restano sempre manuali. Le immagini trovate su Icecat **non vengono salvate come URL esterni**: vengono scaricate lato server e copiate su **Supabase Storage** con il classico path `products/{productId}/{timestamp}-{random}.{ext}` (vedi sotto, sezione Immagini).
+
 #### 4. Immagini
 
-- **Aggiunta:** URL immagine + testo alternativo (alt) → pulsante "Aggiungi"
+- **Aggiunta manuale:** URL immagine + testo alternativo (alt) → pulsante "Aggiungi"
+- **Upload file:** drag & drop o selezione (JPG, PNG, WebP, AVIF — max 5MB)
+- **Da Icecat:** dopo la ricerca EAN, le immagini trovate appaiono in anteprima nella sezione Immagini:
+  - **Prodotto esistente** → pulsante **"Importa su Storage (N)"**: scarica ogni immagine da `images.icecat.biz`, la ridimensiona lato server (max 1600px, WebP q82 — le foto Icecat superano spesso 5MB), la carica su Supabase Storage in `products/{productId}/{timestamp}-{random}.webp` e salva i record in `product_image`
+  - **Nuovo prodotto** → le immagini vengono importate **automaticamente al salvataggio** (dopo la creazione), prima di arrivare alla pagina di modifica
 - **Galleria:** miniature con pulsante × per rimuovere
 - **Alt text:** obbligatorio per accessibilità (EAA)
 - **Nota:** il prodotto deve essere salvato prima di poter aggiungere immagini
@@ -210,6 +231,31 @@ Aggiunge un'immagine a un prodotto (solo ADMIN).
 
 Rimuove un'immagine: elimina il record dal DB e prova a rimuovere l'oggetto dallo storage (best-effort). Il DB è la fonte di verità.
 
+### `POST /api/admin/import-images`
+
+Copia immagini esterne (Icecat) su **Supabase Storage** e salva i record in `product_image` (solo ADMIN).
+
+**Body:** `{ productId, images: [{ url, alt? }] }` — max 20 immagini.
+
+**Validazioni:**
+- Solo URL **HTTPS** verso host Icecat (`images.icecat.biz`, `bo.icecat.biz`, `icecat.biz`) — blocca SSRF verso host arbitrari
+- Formati accettati: **JPG, PNG, WebP, AVIF** — max **5MB** per immagine
+- Gli errori per singola immagine (formato/dimensione/download) **non bloccano** le altre: tornano in `errors[]`
+
+**Flusso:** ogni URL viene scaricato lato server → validato → caricato in `products/{productId}/{timestamp}-{random}.{ext}` (cache 1 anno) → record `product_image` con `sort_order` progressivo.
+
+**Response:**
+```json
+{
+  "success": true,
+  "imported": [{ "id": 11, "url": "https://...supabase.co/...", "alt": "...", "sort_order": 3 }],
+  "errors": [{ "url": "https://images.icecat.biz/bad.jpg", "error": "Formato non supportato" }],
+  "failedCount": 1
+}
+```
+
+**Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only).
+
 **Env vars richieste per l'upload:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only, vedi `src/lib/supabase-admin.ts`).
 
 ## Files
@@ -223,3 +269,4 @@ Rimuove un'immagine: elimina il record dal DB e prova a rimuovere l'oggetto dall
 | `src/app/api/admin/products/route.ts` | API list + create |
 | `src/app/api/admin/products/[id]/route.ts` | API get + update + delete |
 | `src/app/api/admin/upload/route.ts` | API immagini |
+| `src/app/api/admin/import-images/route.ts` | API import immagini Icecat → Storage |
