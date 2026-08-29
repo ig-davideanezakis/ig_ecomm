@@ -127,13 +127,14 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
       <div className="grid gap-8 lg:grid-cols-2">
         {/* ─── Images ───────────────────────────────────────────── */}
         <div className="space-y-4">
-          {/* Main image */}
-          <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
+          {/* Main image — white frame: PrestaShop JPGs have a baked white background,
+              so images blend seamlessly and are never cropped (object-contain) */}
+          <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-white">
             {images[selectedImage] ? (
               <Image
                 src={images[selectedImage].url}
                 alt={images[selectedImage].alt ?? product.title}
-                className="h-full w-full object-cover transition-transform duration-500"
+                className="h-full w-full object-contain p-3 transition-transform duration-500"
                 width={800}
                 height={800}
                 priority
@@ -170,7 +171,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 <button
                   key={img.id}
                   onClick={() => setSelectedImage(i)}
-                  className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-md border-2 transition-all ${
+                  className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-all ${
                     i === selectedImage
                       ? "border-primary"
                       : "border-border hover:border-muted-foreground"
@@ -179,7 +180,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                   <Image
                     src={img.url}
                     alt={img.alt ?? `${product.title} ${i + 1}`}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain p-0.5"
                     width={80}
                     height={80}
                   />

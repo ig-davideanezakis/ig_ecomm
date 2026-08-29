@@ -61,6 +61,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GROQ_API_KEY` | No | AI SEO formatting in admin |
 | `ICECAT_KEY` / `ICECAT_USERNAME` | No | Icecat product data lookup by EAN |
 | `MYSQL_HOST/PORT/USER/PASSWORD/DATABASE` | No | PrestaShop migration source (defaults in `migration/README.md`) |
+| `PS_PREFIX` / `PS_LANG_ID` | No | PrestaShop table prefix (`pr_` in production) + language id (`2` = Italiano) |
+| `PS_SITE_URL` | No | Old PrestaShop store base URL (image migration download source) |
+| `SUPABASE_BUCKET` | No | Image migration bucket — default `product-images` |
+| `IMG_CONCURRENCY` / `DRY_RUN` / `FORCE` | No | Image migration tuning (see `migration/README.md`) |
 
 ## Product Images & Storage
 
@@ -74,6 +78,11 @@ Product images are stored in **Supabase Storage** in the public bucket `product-
 - External URLs (e.g. from Icecat) can also be saved as image references via the JSON fallback
 
 See `docs/guides/admin-products.md` for the full admin flow.
+
+**PrestaShop migration**: `migration/scripts/migrate-images.ts` downloads images from
+the old store (`PS_SITE_URL`) and uploads them to the same `product-images` bucket —
+see `migration/README.md` for the full image migration guide (cover ordering,
+Cloudflare/IPv4 notes, `fix-image-order.ts`).
 
 ## Project Structure
 

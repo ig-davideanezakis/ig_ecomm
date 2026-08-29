@@ -22,7 +22,8 @@
     "db:promote-admin": "npx tsx scripts/promote-admin.ts",
     "db:init": "npx tsx scripts/init-db.ts",
     "db:check": "npx tsx -e \"const {Pool}=require('pg');const pool=new Pool({connectionString:process.env.DATABASE_URL});pool.query('SELECT 1').then(()=>{console.log('DB OK');process.exit(0)}).catch(e=>{console.log('DB ERROR:',e.message);process.exit(1)})\"",
-    "db:cleanup": "npx tsx scripts/cleanup-test-users.ts"
+    "db:cleanup": "npx tsx scripts/cleanup-test-users.ts",
+    "db:migrate-images": "npx tsx migration/scripts/migrate-images.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

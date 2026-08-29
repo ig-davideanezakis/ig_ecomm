@@ -35,8 +35,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
       href={`/product/${product.slug}`}
       className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_15px_rgba(255,12,60,0.15)]"
     >
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      {/* Image — white frame: PrestaShop baked a white background into every JPG
+          (PNG uploads were converted), so images blend seamlessly on bg-white and
+          are never cropped (object-contain). White is also a brand color. */}
+      <div className="relative aspect-square overflow-hidden bg-white">
         {image ? (
           <Image
             src={image.url}
@@ -44,7 +46,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             width={400}
             height={400}
             priority={priority}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
