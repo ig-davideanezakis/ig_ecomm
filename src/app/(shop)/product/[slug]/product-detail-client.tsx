@@ -33,6 +33,7 @@ interface ProductDetail {
   slug: string;
   description: string | null;
   content: string | null;
+  specifications: string | null;
   basePrice: number;
   compareAtPrice: number | null;
   sku: string | null;
@@ -341,6 +342,19 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             <div
               className="product-rich-content"
               dangerouslySetInnerHTML={{ __html: product.content }}
+            />
+          </div>
+        </SectionAnimation>
+      )}
+
+      {/* ─── Technical Specifications ────────────────────────────── */}
+      {product.specifications && (
+        <SectionAnimation className="mt-16">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="mb-6 text-2xl font-bold">Specifiche tecniche</h2>
+            <div
+              className="product-rich-content"
+              dangerouslySetInnerHTML={{ __html: product.specifications }}
             />
           </div>
         </SectionAnimation>

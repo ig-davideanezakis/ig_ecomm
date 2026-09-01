@@ -96,6 +96,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | Identificativo | `text` | ❌ | Codice interno (auto-generato se vuoto) |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
+| Specifiche tecniche | `textarea` (HTML) | ❌ | Tabella HTML delle specifiche (es. `Risoluzione`, `Rapporto`), **compilata automaticamente da Icecat** e visualizzata in una sezione dedicata nella pagina prodotto lato utente |
 
 #### 2. Prezzi
 
@@ -122,7 +123,7 @@ Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsa
 | Titolo | `GeneralInfo.Title` |
 | Descrizione breve | `GeneralInfo.SummaryDescription.ShortSummaryDescription` |
 | Descrizione lunga (content) | `GeneralInfo.SummaryDescription.LongSummaryDescription` |
-| Specifiche tecniche | `FeaturesGroups[].Features[]` → tabella HTML nel content (con riga "Dimensioni (L×A×P)" se disponibili) |
+| Specifiche tecniche | `FeaturesGroups[].Features[]` → tabella HTML nel campo dedicato **"Specifiche tecniche"** (con riga "Dimensioni (L×A×P)" se disponibili), non più nel content |
 | Bullet points | `GeneralInfo.BulletPoints.Values` / `GeneratedBulletPoints.Values` / `ReasonsToBuy` |
 | Peso (kg) | spec "Peso dell'imballo" (poi senza supporto, poi primo peso) |
 | Immagini | `Image` + `Gallery[]` (max 12, dedupe) → miniature nella dialog |

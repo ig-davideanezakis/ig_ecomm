@@ -25,6 +25,7 @@ export interface ProductDetail {
   slug: string;
   description: string | null;
   content: string | null;
+  specifications: string | null;
   basePrice: number;
   compareAtPrice: number | null;
   costPrice: number | null;
@@ -214,7 +215,7 @@ export async function getProductList(params: ProductListParams = {}) {
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
   const result = await pool.query(
     `SELECT
-      p.id, p.identifier, p.title, p.slug, p.description, p.content,
+      p.id, p.identifier, p.title, p.slug, p.description, p.content, p.specifications,
       p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
       p."cost_price"::float as "costPrice", p.weight::float, p.sku, p.barcode,
       p."seo_title", p."seo_description", p.featured, p."created_at", p."updated_at",

@@ -26,6 +26,7 @@ export interface IcecatFormSnapshot {
   title: string;
   description: string;
   content: string;
+  specifications: string;
   weight: string;
   brandId: string;
   categoryId: string;
@@ -52,6 +53,8 @@ export interface IcecatApplyResult {
   title?: string;
   description?: string;
   content?: string;
+  /** HTML specs table (dimensions row + FeatureGroups) — dedicated field. */
+  specifications?: string;
   weight?: number;
   images?: { url: string; alt: string }[];
   brandId?: string;
@@ -179,8 +182,8 @@ export function buildIcecatSections(
       id: "specs",
       label: "Specifiche tecniche",
       preview: `${specCount} specifiche${firstLabels ? ` — ${truncate(firstLabels, 70)}` : ""}`,
-      conflict: false,
-      defaultSelected: true,
+      conflict: Boolean(snapshot.specifications),
+      defaultSelected: !snapshot.specifications,
     });
   }
 
@@ -258,8 +261,9 @@ export function applyIcecatSelection(
     : undefined;
   if (category) result.categoryId = category.id;
 
-  const wantsContent =
-    selected.has("longDesc") || selected.has("bulletPoints") || selected.has("specs");
+  // Content = long description + bullet list only. The specs table lives in
+  // its own dedicated field (product.specifications), rendered separately.
+  const wantsContent = selected.has("longDesc") || selected.has("bulletPoints");
   if (wantsContent) {
     let content = selected.has("longDesc") && data.longDesc ? data.longDesc : snapshot.content;
 
@@ -271,26 +275,25 @@ export function applyIcecatSelection(
       }
     }
 
-    if (selected.has("specs")) {
-      const dimRow = buildDimensionsRow(data.dimensions);
-      const rows = [
-        ...(dimRow ? [dimRow] : []),
-        ...data.specs.map((s) => ({ label: s.label, value: s.value })),
-      ];
-      if (rows.length > 0) {
-        const htmlRows = rows
-          .map(
-            (r) =>
-              `<tr><td class="font-medium px-4 py-2 border">${escapeHtml(r.label)}</td><td class="px-4 py-2 border">${escapeHtml(r.value)}</td></tr>`,
-          )
-          .join("");
-        content = content
-          ? `${content}\n<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${htmlRows}</table>`
-          : `<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${htmlRows}</table>`;
-      }
-    }
-
     result.content = content;
+  }
+
+  // Specs table (dimensions row first, then FeatureGroups) → dedicated field
+  if (selected.has("specs")) {
+    const dimRow = buildDimensionsRow(data.dimensions);
+    const rows = [
+      ...(dimRow ? [dimRow] : []),
+      ...data.specs.map((s) => ({ label: s.label, value: s.value })),
+    ];
+    if (rows.length > 0) {
+      const htmlRows = rows
+        .map(
+          (r) =>
+            `<tr><td class="font-medium px-4 py-2 border">${escapeHtml(r.label)}</td><td class="px-4 py-2 border">${escapeHtml(r.value)}</td></tr>`,
+        )
+        .join("");
+      result.specifications = `<table class="w-full border-collapse">${htmlRows}</table>`;
+    }
   }
 
   return result;

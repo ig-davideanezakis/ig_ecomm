@@ -42,6 +42,7 @@ const emptySnapshot = {
   title: "",
   description: "",
   content: "",
+  specifications: "",
   weight: "",
   brandId: "",
   categoryId: "",
@@ -123,6 +124,7 @@ describe("buildIcecatSections", () => {
       title: "Titolo esistente",
       description: "",
       content: "",
+      specifications: "",
       weight: "",
       brandId: "",
       categoryId: "",
@@ -189,19 +191,22 @@ describe("applyIcecatSelection", () => {
     expect(result.content).toBeUndefined();
   });
 
-  it("composes content: long description + bullets + specs table", () => {
+  it("composes content (long desc + bullets) and specs go to the dedicated field", () => {
     const selected = new Set<IcecatSectionId>(["longDesc", "bulletPoints", "specs"]);
     const result = applyIcecatSelection(fullData, selected, emptySnapshot, catalog);
+    // Content: long description + bullets only
     expect(result.content).toContain("Descrizione lunga completa.");
     expect(result.content).toContain("<ul>");
     expect(result.content).toContain("<li>Sottile e leggero</li>");
     expect(result.content).toContain("<li>Batteria 10 ore</li>");
-    expect(result.content).toContain("<h2>Specifiche tecniche</h2>");
-    expect(result.content).toContain(">CPU</td>");
-    expect(result.content).toContain(">Intel i5</td>");
-    // Dimensions row first.
-    expect(result.content).toContain("Dimensioni (L×A×P)");
-    expect(result.content).toContain("35.6 × 2.2 × 25.2");
+    expect(result.content).not.toContain("<h2>Specifiche tecniche</h2>");
+    expect(result.content).not.toContain(">CPU</td>");
+    // Specifications: dedicated HTML table (dimensions row first)
+    expect(result.specifications).toContain("<table");
+    expect(result.specifications).toContain(">CPU</td>");
+    expect(result.specifications).toContain(">Intel i5</td>");
+    expect(result.specifications).toContain("Dimensioni (L×A×P)");
+    expect(result.specifications).toContain("35.6 × 2.2 × 25.2");
   });
 
   it("escapes Icecat HTML in bullets and specs", () => {
@@ -215,15 +220,17 @@ describe("applyIcecatSelection", () => {
     const result = applyIcecatSelection(evil, selected, emptySnapshot, catalog);
     expect(result.content).not.toContain("<script>");
     expect(result.content).toContain("&lt;script&gt;");
-    expect(result.content).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(result.specifications).not.toContain("<img src=x onerror=alert(1)>");
+    expect(result.specifications).toContain("&lt;img src=x onerror=alert(1)&gt;");
   });
 
-  it("keeps existing content when only specs are added", () => {
+  it("keeps existing content untouched and fills specifications when only specs are selected", () => {
     const snapshot = { ...emptySnapshot, content: "Contenuto attuale" };
     const selected = new Set<IcecatSectionId>(["specs"]);
     const result = applyIcecatSelection(fullData, selected, snapshot, catalog);
-    expect(result.content).toContain("Contenuto attuale");
-    expect(result.content).toContain("<h2>Specifiche tecniche</h2>");
+    expect(result.content).toBeUndefined(); // content left as-is
+    expect(result.specifications).toContain("<table");
+    expect(result.specifications).toContain(">CPU</td>");
   });
 
   it("maps brand and category when selected", () => {

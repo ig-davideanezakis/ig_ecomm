@@ -29,6 +29,7 @@ const snapshot = {
   title: "",
   description: "",
   content: "",
+  specifications: "",
   weight: "",
   brandId: "",
   categoryId: "",

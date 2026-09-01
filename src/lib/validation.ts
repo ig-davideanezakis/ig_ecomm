@@ -8,6 +8,7 @@ export const productSchema = z.object({
   identifier: z.string().max(255).optional(),
   description: z.string().optional().default(""),
   content: z.string().optional().default(""),
+  specifications: z.string().optional().default(""),
   basePrice: z.number().min(0, "Il prezzo base deve essere positivo."),
   compareAtPrice: z.number().min(0).nullable().optional().default(null),
   costPrice: z.number().min(0).nullable().optional().default(null),

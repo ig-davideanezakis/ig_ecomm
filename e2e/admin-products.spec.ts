@@ -54,7 +54,10 @@ test.describe("Admin Products — authenticated", () => {
             { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
             { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
           ],
-          specs: [],
+          specs: [
+            { label: "Risoluzione", value: "3440x1440" },
+            { label: "Rapporto", value: "21:9" },
+          ],
           bullets: [],
           bulletPoints: "",
           dimensions: { width: "", height: "", depth: "" },
@@ -95,6 +98,11 @@ test.describe("Admin Products — authenticated", () => {
     // The long description is written into the rich text editor (sync fix)
     const editor = page.locator('[contenteditable="true"]').first();
     await expect(editor).toContainText("Descrizione lunga dal catalogo Icecat");
+    // The technical specifications land in their dedicated field
+    await expect(page.locator("#prod-specs")).toHaveValue(/Risoluzione/);
+    await expect(page.locator("#prod-specs")).toHaveValue(/3440x1440/);
+    // And the live preview renders the table
+    await expect(page.getByText("Anteprima", { exact: true })).toBeVisible();
   });
 
   test("Formatta SEO button is disabled while the editor is empty", async ({ page }) => {
@@ -135,7 +143,10 @@ test.describe("Admin Products — authenticated", () => {
             { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
             { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
           ],
-          specs: [],
+          specs: [
+            { label: "Risoluzione", value: "3440x1440" },
+            { label: "Rapporto", value: "21:9" },
+          ],
           bullets: [],
           bulletPoints: "",
           dimensions: { width: "", height: "", depth: "" },
@@ -176,7 +187,10 @@ test.describe("Admin Products — authenticated", () => {
             { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
             { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
           ],
-          specs: [],
+          specs: [
+            { label: "Risoluzione", value: "3440x1440" },
+            { label: "Rapporto", value: "21:9" },
+          ],
           bullets: [],
           bulletPoints: "",
           dimensions: { width: "", height: "", depth: "" },

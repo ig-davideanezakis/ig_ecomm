@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   try {
     const result = await pool.query(
-      `SELECT p.id, p.identifier, p.title, p.slug, p.description, p.content,
+      `SELECT p.id, p.identifier, p.title, p.slug, p.description, p.content, p.specifications,
         p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
         p."cost_price"::float as "costPrice", p.sku, p.barcode, p.weight::float,
         p."seo_title" as "seoTitle", p."seo_description" as "seoDescription",
@@ -44,13 +44,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const productSlug = data.slug || data.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "prodotto";
 
     await pool.query(
-      `UPDATE "product" SET identifier=$1, title=$2, slug=$3, description=$4, content=$5,
-        base_price=$6, compare_at_price=$7, cost_price=$8, sku=$9, barcode=$10,
-        weight=$11, seo_title=$12, seo_description=$13, published=$14, featured=$15,
-        category_id=$16, brand_id=$17, updated_at=NOW()
-       WHERE id=$18`,
+      `UPDATE "product" SET identifier=$1, title=$2, slug=$3, description=$4, content=$5, specifications=$6,
+        base_price=$7, compare_at_price=$8, cost_price=$9, sku=$10, barcode=$11,
+        weight=$12, seo_title=$13, seo_description=$14, published=$15, featured=$16,
+        category_id=$17, brand_id=$18, updated_at=NOW()
+       WHERE id=$19`,
       [data.identifier || `PROD-${Date.now().toString(36).toUpperCase()}`, data.title, productSlug,
-        data.description, data.content, data.basePrice, data.compareAtPrice, data.costPrice,
+        data.description, data.content, data.specifications, data.basePrice, data.compareAtPrice, data.costPrice,
         data.sku, data.barcode, data.weight, data.seoTitle, data.seoDescription,
         data.published, data.featured, data.categoryId, data.brandId, id]);
 

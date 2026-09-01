@@ -37,6 +37,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [identifier, setIdentifier] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
+  const [specifications, setSpecifications] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [compareAtPrice, setCompareAtPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
@@ -109,6 +110,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       const p = await res.json();
       setTitle(p.title); setSlug(p.slug); setIdentifier(p.identifier || "");
       setDescription(p.description || ""); setContent(p.content || "");
+      setSpecifications(p.specifications || "");
       setBasePrice(String(p.basePrice)); setCompareAtPrice(String(p.compareAtPrice || ""));
       setCostPrice(String(p.costPrice || "")); setSku(p.sku || ""); setBarcode(p.barcode || "");
       setWeight(String(p.weight || ""));
@@ -145,7 +147,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           identifier, title: `${title} (copia)`, slug: `${slug}-copia`,
-          description, content, basePrice: parseFloat(basePrice),
+          description, content, specifications, basePrice: parseFloat(basePrice),
           compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
           costPrice: costPrice ? parseFloat(costPrice) : null,
           sku: sku ? `${sku}-COPY` : null, barcode, weight: weight ? parseFloat(weight) : null,
@@ -208,11 +210,12 @@ export default function ProductForm({ productId, initialImportError }: Props) {
 
   const handleIcecatApply = (selected: Set<IcecatSectionId>) => {
     if (!icecatData) return;
-    const snapshot: IcecatFormSnapshot = { title, description, content, weight, brandId, categoryId };
+    const snapshot: IcecatFormSnapshot = { title, description, content, specifications, weight, brandId, categoryId };
     const applied = applyIcecatSelection(icecatData, selected, snapshot, { brands, categories });
     if (applied.title) updateTitle(applied.title);
     if (applied.description !== undefined) setDescription(applied.description);
     if (applied.content !== undefined) setContent(applied.content);
+    if (applied.specifications !== undefined) setSpecifications(applied.specifications);
     if (applied.weight !== undefined) setWeight(String(applied.weight));
     if (applied.images) {
       setEanImages(applied.images.map((img, i) => ({
@@ -269,7 +272,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     const body = {
       identifier: identifier || undefined,
       title: title.trim(), slug: slug || undefined,
-      description, content,
+      description, content, specifications,
       basePrice: parseFloat(basePrice),
       compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       costPrice: costPrice ? parseFloat(costPrice) : null,
@@ -396,6 +399,35 @@ export default function ProductForm({ productId, initialImportError }: Props) {
               <p className="mt-1 text-xs text-muted-foreground">
                 Formatta il contenuto con grassetti, elenchi, tabelle, immagini e link. Il font rimane sempre quello del sito.
               </p>
+            </div>
+
+            {/* Technical specifications — dedicated field, populated by Icecat */}
+            <div>
+              <label htmlFor="prod-specs" className="block text-sm font-medium mb-1">
+                Specifiche tecniche
+              </label>
+              <textarea
+                id="prod-specs"
+                value={specifications}
+                onChange={(e) => setSpecifications(e.target.value)}
+                rows={6}
+                placeholder='Tabella HTML delle specifiche (es. &lt;table&gt;...&lt;/table&gt;) — compilata automaticamente da Icecat'
+                className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {specifications.trim() ? (
+                <div className="mt-2 rounded-md border bg-muted/30 p-3 overflow-x-auto">
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Anteprima</p>
+                  <div
+                    className="product-rich-content"
+                    // eslint-disable-next-line react/no-danger
+                    dangerouslySetInnerHTML={{ __html: specifications }}
+                  />
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Compilato automaticamente scegliendo &quot;Specifiche tecniche&quot; nella dialog Icecat. Visibile nella pagina prodotto lato utente.
+                </p>
+              )}
             </div>
           </section>
 
@@ -709,7 +741,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         open={icecatOpen}
         onOpenChange={setIcecatOpen}
         data={icecatData}
-        snapshot={{ title, description, content, weight, brandId, categoryId }}
+        snapshot={{ title, description, content, specifications, weight, brandId, categoryId }}
         brands={brands}
         categories={categories}
         onApply={handleIcecatApply}
