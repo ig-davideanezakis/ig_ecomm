@@ -13,6 +13,8 @@ import {
 
 interface Props {
   productId?: string; // undefined = new product
+  /** Error surfaced after creation when the automatic Icecat import failed. */
+  initialImportError?: string;
 }
 
 interface Category { id: string; name: string; slug: string; }
@@ -25,7 +27,7 @@ interface Variant {
 
 interface Image { id?: string; url: string; alt: string; sortOrder: number; }
 
-export default function ProductForm({ productId }: Props) {
+export default function ProductForm({ productId, initialImportError }: Props) {
   const router = useRouter();
   const isNew = !productId;
 
@@ -55,7 +57,7 @@ export default function ProductForm({ productId }: Props) {
   const [eanLoading, setEanLoading] = useState(false);
   const [eanImages, setEanImages] = useState<Image[]>([]);
   const [importingEanImages, setImportingEanImages] = useState(false);
-  const [importError, setImportError] = useState("");
+  const [importError, setImportError] = useState(initialImportError || "");
   const [icecatData, setIcecatData] = useState<IcecatProductData | null>(null);
   const [icecatOpen, setIcecatOpen] = useState(false);
 
@@ -117,6 +119,14 @@ export default function ProductForm({ productId }: Props) {
     });
     return () => { cancelled = true; };
   }, [productId]);
+
+  // Clean the ?importError= query param from the URL once it has been
+  // surfaced, so a page reload doesn't show the banner again.
+  useEffect(() => {
+    if (initialImportError && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [initialImportError]);
 
   // Auto-generate slug from title
   const updateTitle = (v: string) => {
@@ -213,6 +223,42 @@ export default function ProductForm({ productId }: Props) {
     if (applied.categoryId) setCategoryId(applied.categoryId);
   };
 
+  // ─── Gallery reorder + cover ─────────────────────────────────────
+  // The first image (sort_order = 0) is the cover: reordering the list
+  // both updates the UI and persists the new sort_order to the DB.
+  const persistImageOrder = async (ordered: Image[]) => {
+    const withIds = ordered.filter((img) => img.id);
+    if (!productId || withIds.length === 0) return;
+    try {
+      const res = await fetch("/api/admin/product-images/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          images: withIds.map((img, i) => ({ id: img.id, sortOrder: i })),
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) setImportError(json.error || "Errore durante il riordino.");
+    } catch {
+      setImportError("Errore di connessione durante il riordino.");
+    }
+  };
+
+  const moveImage = (from: number, to: number) => {
+    if (to < 0 || to >= images.length || from === to) return;
+    const next = [...images];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setImages(next);
+    persistImageOrder(next);
+  };
+
+  const setCoverImage = (index: number) => {
+    if (index === 0) return;
+    moveImage(index, 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setSuccess("");
@@ -241,10 +287,12 @@ export default function ProductForm({ productId }: Props) {
         });
         const json = await res.json();
         if (json.success) {
-          // Copy Icecat images to Storage right after creation, then land on the edit page
+          // Copy Icecat images to Storage right after creation, then land on
+          // the edit page. Surface import failures instead of swallowing them.
+          let importMsg = "";
           if (eanImages.length > 0) {
             try {
-              await fetch("/api/admin/import-images", {
+              const impRes = await fetch("/api/admin/import-images", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -252,11 +300,18 @@ export default function ProductForm({ productId }: Props) {
                   images: eanImages.map(({ url, alt }) => ({ url, alt })),
                 }),
               });
+              const impJson = await impRes.json();
+              if (!impRes.ok || !impJson.success) {
+                importMsg = impJson.error || "Errore durante l'importazione delle immagini.";
+              } else if (impJson.failedCount > 0) {
+                importMsg = `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`;
+              }
             } catch {
-              // non-blocking: images can be imported later from the edit page
+              importMsg = "Errore di connessione durante l'importazione delle immagini.";
             }
           }
-          router.push(`/admin/products/${json.id}`);
+          const qs = importMsg ? `?importError=${encodeURIComponent(importMsg)}` : "";
+          router.push(`/admin/products/${json.id}${qs}`);
         }
         else setError(json.error ?? "Errore durante la creazione.");
       } else {
@@ -501,16 +556,41 @@ export default function ProductForm({ productId }: Props) {
             {images.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {images.map((img, i) => (
-                  <div key={img.id || i} className="relative group">
+                  <div key={img.id || i} className="relative group w-24">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img.url} alt={img.alt || ""} className="h-24 w-24 rounded-md border object-cover" />
+                    {i === 0 && (
+                      <span className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                        Copertina
+                      </span>
+                    )}
                     <button type="button" onClick={async () => {
                       if (img.id) await fetch(`/api/admin/upload?id=${img.id}`, { method: "DELETE" });
                       setImages(prev => prev.filter((_, idx) => idx !== i));
                     }}
-                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Rimuovi immagine ${i + 1}`}>
                       ×
                     </button>
+                    {/* Reorder + cover controls */}
+                    <div className="mt-1 flex items-center justify-between rounded-md border bg-background px-1 py-0.5">
+                      <button type="button" onClick={() => moveImage(i, i - 1)} disabled={i === 0}
+                        className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                        aria-label={`Sposta immagine ${i + 1} prima`} title="Sposta prima">
+                        ↑
+                      </button>
+                      <button type="button" onClick={() => setCoverImage(i)} disabled={i === 0}
+                        className={`px-1 text-xs hover:text-amber-500 disabled:opacity-30 disabled:hover:text-muted-foreground ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`}
+                        aria-label={i === 0 ? "Immagine di copertina" : `Imposta immagine ${i + 1} come copertina`}
+                        title={i === 0 ? "Copertina" : "Imposta come copertina"}>
+                        ★
+                      </button>
+                      <button type="button" onClick={() => moveImage(i, i + 1)} disabled={i === images.length - 1}
+                        className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                        aria-label={`Sposta immagine ${i + 1} dopo`} title="Sposta dopo">
+                        ↓
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

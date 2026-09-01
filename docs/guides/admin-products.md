@@ -38,6 +38,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 │  POST   /api/admin/upload        → Aggiungi img  │
 │  DELETE /api/admin/upload        → Rimuovi img   │
 │  POST   /api/admin/import-images → Importa img Icecat su Storage │
+│  POST   /api/admin/product-images/reorder → Riordina gallery + cover │
 └──────────────────────┬───────────────────────────┘
                        │ SQL
 ┌──────────────────────▼───────────────────────────┐
@@ -94,7 +95,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | Slug | `text` | ❌ | Auto-generato dal titolo, modificabile + pulsante ripristino |
 | Identificativo | `text` | ❌ | Codice interno (auto-generato se vuoto) |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
-| Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video) |
+| Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
 
 #### 2. Prezzi
 
@@ -140,7 +141,11 @@ Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsa
 - **Upload file:** drag & drop o selezione (JPG, PNG, WebP, AVIF — max 5MB)
 - **Da Icecat:** dopo la ricerca EAN, le immagini trovate appaiono in anteprima nella sezione Immagini:
   - **Prodotto esistente** → pulsante **"Importa su Storage (N)"**: scarica ogni immagine da `images.icecat.biz`, la ridimensiona lato server (max 1600px, WebP q82 — le foto Icecat superano spesso 5MB), la carica su Supabase Storage in `products/{productId}/{timestamp}-{random}.webp` e salva i record in `product_image`
-  - **Nuovo prodotto** → le immagini vengono importate **automaticamente al salvataggio** (dopo la creazione), prima di arrivare alla pagina di modifica
+  - **Nuovo prodotto** → le immagini vengono importate **automaticamente al salvataggio** (dopo la creazione), prima di arrivare alla pagina di modifica. Se l'import automatico fallisce, la pagina di modifica mostra il messaggio d'errore (banner rosso) — le immagini possono essere importate in un secondo momento col pulsante "Importa su Storage"
+- **Ordine e copertina:** la prima immagine è la **copertina** (badge "Copertina", usata come thumbnail nel catalogo). Sotto ogni miniatura:
+  - **↑ / ↓** per spostare l'immagine nell'ordine della galleria
+  - **★** per impostare l'immagine come copertina (la porta in prima posizione)
+  - L'ordine viene salvato subito via `POST /api/admin/product-images/reorder` (aggiorna `sort_order` in transazione)
 - **Galleria:** miniature con pulsante × per rimuovere
 - **Alt text:** obbligatorio per accessibilità (EAA)
 - **Nota:** il prodotto deve essere salvato prima di poter aggiungere immagini
@@ -240,7 +245,6 @@ Rimuove un'immagine: elimina il record dal DB e prova a rimuovere l'oggetto dall
 ### `POST /api/admin/import-images`
 
 Copia immagini esterne (Icecat) su **Supabase Storage** e salva i record in `product_image` (solo ADMIN).
-
 **Body:** `{ productId, images: [{ url, alt? }] }` — max 20 immagini.
 
 **Validazioni:**
@@ -262,7 +266,21 @@ Copia immagini esterne (Icecat) su **Supabase Storage** e salva i record in `pro
 
 **Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only).
 
+**Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only).
+
 **Env vars richieste per l'upload:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only, vedi `src/lib/supabase-admin.ts`).
+
+### `POST /api/admin/product-images/reorder`
+
+Riordina la galleria di un prodotto (solo ADMIN). La **prima immagine** (`sort_order = 0`) è la **copertina**.
+
+**Body:** `{ productId, images: [{ id, sortOrder }] }` — max 100 immagini, `sortOrder` intero ≥ 0.
+
+**Validazioni:**
+- Ogni `id` deve appartenere al prodotto indicato — altrimenti **404 + ROLLBACK** (transazione)
+- L'aggiornamento avviene in **transazione** (BEGIN → UPDATE × N → COMMIT)
+
+**Response:** `{ success: true, count: N }`
 
 ## Files
 
@@ -276,3 +294,4 @@ Copia immagini esterne (Icecat) su **Supabase Storage** e salva i record in `pro
 | `src/app/api/admin/products/[id]/route.ts` | API get + update + delete |
 | `src/app/api/admin/upload/route.ts` | API immagini |
 | `src/app/api/admin/import-images/route.ts` | API import immagini Icecat → Storage |
+| `src/app/api/admin/product-images/reorder/route.ts` | API riordino galleria + copertina |

@@ -92,6 +92,30 @@ test.describe("Admin Products — authenticated", () => {
     // New product: no import button yet, only the auto-import hint
     await expect(page.getByRole("button", { name: /Importa su Storage/ })).toHaveCount(0);
     await expect(page.getByText(/verranno copiate su Storage automaticamente al salvataggio/)).toBeVisible();
+    // The long description is written into the rich text editor (sync fix)
+    const editor = page.locator('[contenteditable="true"]').first();
+    await expect(editor).toContainText("Descrizione lunga dal catalogo Icecat");
+  });
+
+  test("Formatta SEO button is disabled while the editor is empty", async ({ page }) => {
+    await page.goto("/admin/products/new");
+
+    const editor = page.locator('[contenteditable="true"]').first();
+    const seoBtn = page.getByRole("button", { name: "Formatta SEO" });
+
+    // Empty editor → disabled
+    await expect(seoBtn).toBeDisabled();
+
+    // Type into the editor → enabled
+    await editor.click();
+    await page.keyboard.type("Descrizione di prova");
+    await expect(seoBtn).toBeEnabled();
+
+    // Clear everything → disabled again
+    await editor.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("Backspace");
+    await expect(seoBtn).toBeDisabled();
   });
 
   test("Icecat dialog cancel keeps the form untouched", async ({ page }) => {

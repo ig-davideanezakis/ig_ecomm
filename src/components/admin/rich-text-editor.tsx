@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useCallback, useEffect, useState } from "react";
+import { useEditor, useEditorState, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExtension from "@tiptap/extension-link";
 import ImageExtension from "@tiptap/extension-image";
@@ -54,6 +54,12 @@ function ToolbarDivider() {
 function SeoFormatButton({ editor }: { editor: Editor }) {
   const [loading, setLoading] = useState(false);
 
+  // Reactive to editor content changes: disabled while the editor is empty
+  const { hasContent } = useEditorState({
+    editor,
+    selector: ({ editor }) => ({ hasContent: editor.getText().trim().length > 0 }),
+  });
+
   const handleFormat = useCallback(async () => {
     setLoading(true);
     try {
@@ -83,7 +89,7 @@ function SeoFormatButton({ editor }: { editor: Editor }) {
     <button
       type="button"
       onClick={handleFormat}
-      disabled={loading}
+      disabled={loading || !hasContent}
       className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-primary to-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap"
     >
       {loading ? (
@@ -264,6 +270,18 @@ export default function RichTextEditor({
       },
     },
   });
+
+  // Keep the editor in sync with external value changes (Icecat import,
+  // product edit load, "Formatta SEO"): TipTap is uncontrolled, so the
+  // initial `content` is only applied once. `emitUpdate: false` prevents
+  // the sync from firing onChange back (no loop).
+  useEffect(() => {
+    if (!editor) return;
+    const current = editor.getHTML();
+    if (value !== current) {
+      editor.commands.setContent(value || "", { emitUpdate: false });
+    }
+  }, [editor, value]);
 
   return (
     <div
