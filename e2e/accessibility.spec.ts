@@ -39,4 +39,56 @@ test.describe("Accessibility — axe-core scans", () => {
     const critical = results.violations.filter((v) => v.impact === "critical");
     expect(critical).toEqual([]);
   });
+
+  test("admin Icecat selection dialog should have no violations", async ({ page }) => {
+    // Authenticate as admin
+    await page.goto("/auth/login");
+    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
+    await page.getByPlaceholder("••••••••").fill("TestPass123!");
+    await page.getByText("Accedi").click();
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+
+    // Intercept the Icecat lookup so the scan is network-independent
+    await page.route("**/api/products/lookup-ean**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          found: true,
+          brandLogo: null,
+          title: "ASUS ROG Strix OLED XG34WCDMS Monitor PC 34\"",
+          brand: "ASUS",
+          shortDesc: "Monitor QD-OLED 34 pollici",
+          longDesc: "<p>Descrizione lunga dal catalogo Icecat</p>",
+          weight: 6.8,
+          images: [
+            { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
+            { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
+          ],
+          specs: [{ name: "Risoluzione", value: "3440x1440" }],
+          bullets: ["HDR True Black 400", "180 Hz"],
+          bulletPoints: "HDR True Black 400\n180 Hz",
+          dimensions: { width: "81.3", height: "36.2", depth: "11.5" },
+          categoryHint: "Monitor",
+        }),
+      });
+    });
+
+    await page.goto("/admin/products/new");
+    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Scan only the dialog itself — the rest of the admin page has
+    // pre-existing contrast issues unrelated to this feature
+    const results = await new AxeBuilder({ page })
+      .include("[role='dialog']")
+      .withTags(["wcag2a", "wcag2aa"])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
 });

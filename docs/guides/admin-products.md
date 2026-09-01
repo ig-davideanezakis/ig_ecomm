@@ -112,21 +112,27 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | EAN / Codice a barre | `text` | ❌ | GTIN per fatturazione e Google Shopping |
 | Peso (kg) | `number` | ❌ | Per calcolo spedizioni |
 
-##### Enrichment automatico via Icecat
+##### Enrichment via Icecat (dialog di selezione)
 
-Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsante **"📦 Cerca su Icecat"** accanto al campo EAN interroga `GET /api/products/lookup-ean?ean=xxx` e auto-compila:
+Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsante **"📦 Cerca su Icecat"** accanto al campo EAN interroga `GET /api/products/lookup-ean?ean=xxx`. Se il prodotto esiste nel catalogo, si apre una **dialog "Dati trovati su Icecat"** con tutte le sezioni restituite, ciascuna con checkbox e anteprima:
 
-| Campo del form | Fonte Icecat (Live API `live.icecat.biz/api`) |
-|----------------|-----------------------------------------------|
+| Sezione | Fonte Icecat (Live API `live.icecat.biz/api`) |
+|---------|-----------------------------------------------|
 | Titolo | `GeneralInfo.Title` |
 | Descrizione breve | `GeneralInfo.SummaryDescription.ShortSummaryDescription` |
 | Descrizione lunga (content) | `GeneralInfo.SummaryDescription.LongSummaryDescription` |
-| Peso (kg) | spec "Peso dell'imballo" (poi senza supporto, poi primo peso) |
-| Specifiche tecniche | `FeaturesGroups[].Features[]` → tabella HTML nel content |
+| Specifiche tecniche | `FeaturesGroups[].Features[]` → tabella HTML nel content (con riga "Dimensioni (L×A×P)" se disponibili) |
 | Bullet points | `GeneralInfo.BulletPoints.Values` / `GeneratedBulletPoints.Values` / `ReasonsToBuy` |
-| Immagini | `Image` + `Gallery[]` (max 12, dedupe) → **copiate su Supabase Storage** |
+| Peso (kg) | spec "Peso dell'imballo" (poi senza supporto, poi primo peso) |
+| Immagini | `Image` + `Gallery[]` (max 12, dedupe) → miniature nella dialog |
+| Brand | match per nome/slug sul catalogo esistente |
+| Categoria | match per `CategoryFeature` sul catalogo esistente |
 
-Prezzo e stock restano sempre manuali. Le immagini trovate su Icecat **non vengono salvate come URL esterni**: vengono scaricate lato server e copiate su **Supabase Storage** con il classico path `products/{productId}/{timestamp}-{random}.{ext}` (vedi sotto, sezione Immagini).
+**Comportamento:**
+- Le sezioni che **non sovrascriverebbero nulla** (campi vuoti) sono **preselezionate**; quelle che andrebbero a sovrascrivere un campo già compilato sono **deselezionate** e marcate con badge giallo "già compilato — verrà sovrascritto"
+- **"Importa selezionate (N)"** applica solo le sezioni spuntate (disabilitato se nessuna selezionata); **"Annulla"** chiude senza toccare il form
+- Prezzo e stock restano sempre manuali
+- Le immagini trovate su Icecat **non vengono salvate come URL esterni**: vengono scaricate lato server e copiate su **Supabase Storage** con il classico path `products/{productId}/{timestamp}-{random}.{ext}` (vedi sotto, sezione Immagini)
 
 #### 4. Immagini
 

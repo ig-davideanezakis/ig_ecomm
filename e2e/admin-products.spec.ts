@@ -36,7 +36,7 @@ test.describe("Admin Products — authenticated", () => {
     await expect(page.locator("#prod-price")).toBeVisible();
   });
 
-  test("Icecat EAN lookup shows found images as pending import preview", async ({ page }) => {
+  test("Icecat EAN lookup opens selection dialog and applies only chosen sections", async ({ page }) => {
     // Intercept the Icecat lookup so the test is network-independent
     await page.route("**/api/products/lookup-ean**", async (route) => {
       await route.fulfill({
@@ -44,13 +44,21 @@ test.describe("Admin Products — authenticated", () => {
         contentType: "application/json",
         body: JSON.stringify({
           found: true,
+          brandLogo: null,
           title: "ASUS ROG Strix OLED XG34WCDMS Monitor PC 34\"",
           brand: "ASUS",
           shortDesc: "Monitor QD-OLED 34 pollici",
+          longDesc: "<p>Descrizione lunga dal catalogo Icecat</p>",
+          weight: 6.8,
           images: [
             { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
             { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
           ],
+          specs: [],
+          bullets: [],
+          bulletPoints: "",
+          dimensions: { width: "", height: "", depth: "" },
+          categoryHint: "",
         }),
       });
     });
@@ -59,14 +67,115 @@ test.describe("Admin Products — authenticated", () => {
     await page.locator("#prod-barcode").fill("4711636454414");
     await page.getByRole("button", { name: "Cerca su Icecat" }).click();
 
-    // Title auto-filled from the lookup
+    // The selection dialog opens instead of auto-filling the form
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("Dati trovati su Icecat")).toBeVisible();
+
+    // Nothing is applied before confirming
+    await expect(page.locator("#prod-title")).not.toHaveValue(/ASUS/);
+
+    // Sections are listed as selectable checkboxes with previews
+    await expect(dialog.getByRole("checkbox").first()).toBeVisible();
+    await expect(dialog.getByText("Titolo", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Immagini", { exact: true })).toBeVisible();
+
+    // Confirm the import of the default-selected sections
+    await dialog.getByRole("button", { name: /Importa selezionate \(\d+\)/ }).click();
+
+    // Dialog closes and the chosen data lands in the form
+    await expect(dialog).not.toBeVisible();
     await expect(page.locator("#prod-title")).toHaveValue(/ASUS ROG Strix OLED/);
-    // Preview block with the 2 found images
     await expect(page.getByText("2 immagini trovate su Icecat")).toBeVisible();
     await expect(page.getByAltText("Foto 1")).toBeVisible();
     await expect(page.getByAltText("Foto 2")).toBeVisible();
     // New product: no import button yet, only the auto-import hint
     await expect(page.getByRole("button", { name: /Importa su Storage/ })).toHaveCount(0);
     await expect(page.getByText(/verranno copiate su Storage automaticamente al salvataggio/)).toBeVisible();
+  });
+
+  test("Icecat dialog cancel keeps the form untouched", async ({ page }) => {
+    await page.route("**/api/products/lookup-ean**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          found: true,
+          brandLogo: null,
+          title: "ASUS ROG Strix OLED XG34WCDMS Monitor PC 34\"",
+          brand: "ASUS",
+          shortDesc: "Monitor QD-OLED 34 pollici",
+          longDesc: "<p>Descrizione lunga dal catalogo Icecat</p>",
+          weight: 6.8,
+          images: [
+            { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
+            { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
+          ],
+          specs: [],
+          bullets: [],
+          bulletPoints: "",
+          dimensions: { width: "", height: "", depth: "" },
+          categoryHint: "",
+        }),
+      });
+    });
+
+    await page.goto("/admin/products/new");
+    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Annulla" }).click();
+
+    // Dialog closed, nothing applied
+    await expect(dialog).not.toBeVisible();
+    await expect(page.locator("#prod-title")).not.toHaveValue(/ASUS/);
+    await expect(page.getByText(/immagini trovate su Icecat/)).toHaveCount(0);
+  });
+
+  test("Icecat dialog import button is disabled when all sections are unchecked", async ({ page }) => {
+    await page.route("**/api/products/lookup-ean**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          found: true,
+          brandLogo: null,
+          title: "ASUS ROG Strix OLED XG34WCDMS Monitor PC 34\"",
+          brand: "ASUS",
+          shortDesc: "Monitor QD-OLED 34 pollici",
+          longDesc: "<p>Descrizione lunga dal catalogo Icecat</p>",
+          weight: 6.8,
+          images: [
+            { url: "https://images.icecat.biz/img/gallery/1.jpg", alt: "Foto 1" },
+            { url: "https://images.icecat.biz/img/gallery/2.jpg", alt: "Foto 2" },
+          ],
+          specs: [],
+          bullets: [],
+          bulletPoints: "",
+          dimensions: { width: "", height: "", depth: "" },
+          categoryHint: "",
+        }),
+      });
+    });
+
+    await page.goto("/admin/products/new");
+    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Uncheck every section
+    const checkboxes = dialog.getByRole("checkbox");
+    const count = await checkboxes.count();
+    expect(count).toBeGreaterThan(1);
+    for (let i = 0; i < count; i++) {
+      await checkboxes.nth(i).uncheck();
+    }
+
+    await expect(dialog.getByRole("button", { name: /Importa selezionate \(0\)/ })).toBeDisabled();
   });
 });

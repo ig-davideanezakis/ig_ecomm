@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/admin/rich-text-editor";
+import IcecatDialog from "@/components/admin/icecat-dialog";
+import type { IcecatProductData } from "@/lib/icecat";
+import {
+  applyIcecatSelection,
+  type IcecatFormSnapshot,
+  type IcecatSectionId,
+} from "@/lib/icecat-form";
 
 interface Props {
   productId?: string; // undefined = new product
@@ -49,6 +56,8 @@ export default function ProductForm({ productId }: Props) {
   const [eanImages, setEanImages] = useState<Image[]>([]);
   const [importingEanImages, setImportingEanImages] = useState(false);
   const [importError, setImportError] = useState("");
+  const [icecatData, setIcecatData] = useState<IcecatProductData | null>(null);
+  const [icecatOpen, setIcecatOpen] = useState(false);
 
   const uploadFile = async (file: File) => {
     if (!productId) return;
@@ -170,6 +179,38 @@ export default function ProductForm({ productId }: Props) {
       setImportError("Errore di connessione.");
     }
     setImportingEanImages(false);
+  };
+
+  const handleIcecatLookup = async () => {
+    if (!barcode || eanLoading) return;
+    setEanLoading(true); setError("");
+    try {
+      const res = await fetch(`/api/products/lookup-ean?ean=${encodeURIComponent(barcode)}`);
+      if (!res.ok) { const e = await res.json(); setError(e.error || "Prodotto non trovato."); setEanLoading(false); return; }
+      const data = await res.json();
+      if (data.found) {
+        setIcecatData(data);
+        setIcecatOpen(true);
+      }
+    } catch { setError("Errore di connessione."); }
+    setEanLoading(false);
+  };
+
+  const handleIcecatApply = (selected: Set<IcecatSectionId>) => {
+    if (!icecatData) return;
+    const snapshot: IcecatFormSnapshot = { title, description, content, weight, brandId, categoryId };
+    const applied = applyIcecatSelection(icecatData, selected, snapshot, { brands, categories });
+    if (applied.title) updateTitle(applied.title);
+    if (applied.description !== undefined) setDescription(applied.description);
+    if (applied.content !== undefined) setContent(applied.content);
+    if (applied.weight !== undefined) setWeight(String(applied.weight));
+    if (applied.images) {
+      setEanImages(applied.images.map((img, i) => ({
+        url: img.url, alt: img.alt || "", sortOrder: i,
+      })));
+    }
+    if (applied.brandId) setBrandId(applied.brandId);
+    if (applied.categoryId) setCategoryId(applied.categoryId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -345,51 +386,13 @@ export default function ProductForm({ productId }: Props) {
               <div className="flex gap-2">
                 <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                <button type="button" onClick={async () => {
-                  if (!barcode || eanLoading) return;
-                  setEanLoading(true); setError("");
-                  try {
-                    const res = await fetch(`/api/products/lookup-ean?ean=${encodeURIComponent(barcode)}`);
-                    if (!res.ok) { const e = await res.json(); setError(e.error || "Prodotto non trovato."); setEanLoading(false); return; }
-                    const data = await res.json();
-                    if (data.found) {
-                      updateTitle(data.title);
-                      if (data.images?.length) {
-                        setEanImages(data.images.map((img: { url: string; alt: string }, i: number) => ({
-                          url: img.url, alt: img.alt || "", sortOrder: i,
-                        })));
-                      }
-                      setDescription(data.shortDesc || data.longDesc || "");
-                      if (data.longDesc && data.longDesc !== data.shortDesc) {
-                        setContent(data.longDesc);
-                      }
-                      if (data.weight) setWeight(String(data.weight));
-                      if (data.bulletPoints) {
-                        const html = data.bulletPoints
-                          .split("\n").filter(Boolean)
-                          .map((b: string) => `<li>${b}</li>`).join("");
-                        setContent(prev => prev
-                          ? `${prev}\n<ul>${html}</ul>`
-                          : `<ul>${html}</ul>`);
-                      }
-                      if (data.specs?.length) {
-                        const rows = data.specs.map((s: {label:string;value:string}) =>
-                          `<tr><td class="font-medium px-4 py-2 border">${s.label}</td><td class="px-4 py-2 border">${s.value}</td></tr>`
-                        ).join("");
-                        setContent(prev => prev
-                          ? `${prev}\n<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`
-                          : `<h2>Specifiche tecniche</h2>\n<table class="w-full border-collapse">${rows}</table>`);
-                      }
-                    }
-                  } catch { setError("Errore di connessione."); }
-                  setEanLoading(false);
-                }} disabled={!barcode || barcode.length < 8 || eanLoading}
+                <button type="button" onClick={handleIcecatLookup} disabled={!barcode || barcode.length < 8 || eanLoading}
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 flex items-center gap-1.5 whitespace-nowrap">
                   {eanLoading ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
                   {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Auto-compila titolo, descrizione e specifiche tecniche. Prezzo e stock rimangono manuali.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Apre l&apos;anteprima Icecat: scegli quali sezioni importare. Prezzo e stock rimangono manuali.</p>
             </div>
           </section>
 
@@ -621,6 +624,16 @@ export default function ProductForm({ productId }: Props) {
           </section>
         </div>
       </div>
+
+      <IcecatDialog
+        open={icecatOpen}
+        onOpenChange={setIcecatOpen}
+        data={icecatData}
+        snapshot={{ title, description, content, weight, brandId, categoryId }}
+        brands={brands}
+        categories={categories}
+        onApply={handleIcecatApply}
+      />
     </form>
   );
 }
