@@ -126,6 +126,29 @@ test.describe("Admin Products — authenticated", () => {
     await expect(seoBtn).toBeDisabled();
   });
 
+  test("edit page shows 'Vedi nel negozio' link opening the shop product in a new tab", async ({ page }) => {
+    // Create a product via the authenticated request context (reuses the
+    // session cookie from beforeEach) so the edit page has a slug to link.
+    const createRes = await page.request.post("/api/admin/products", {
+      data: {
+        title: "Prodotto E2E Vista",
+        slug: "prodotto-e2e-vista",
+        basePrice: 10,
+        published: true,
+      },
+    });
+    const created = await createRes.json();
+    expect(created.success).toBe(true);
+
+    await page.goto(`/admin/products/${created.id}`);
+
+    const viewLink = page.getByRole("link", { name: /Vedi nel negozio/ });
+    await expect(viewLink).toBeVisible();
+    // The create API appends a random suffix to the slug, so match by prefix
+    await expect(viewLink).toHaveAttribute("href", /\/product\/prodotto-e2e-vista/);
+    await expect(viewLink).toHaveAttribute("target", "_blank");
+  });
+
   test("Icecat dialog cancel keeps the form untouched", async ({ page }) => {
     await page.route("**/api/products/lookup-ean**", async (route) => {
       await route.fulfill({

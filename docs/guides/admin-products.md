@@ -15,6 +15,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 - Campi SEO
 - Duplicazione rapida
 - Eliminazione singola e bulk
+- Link "Vedi nel negozio" nella scheda prodotto (apre la pagina shop in una nuova tab)
 
 ## Architettura
 

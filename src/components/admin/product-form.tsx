@@ -262,6 +262,33 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     moveImage(index, 0);
   };
 
+  // Import the pending Icecat images for the given product. Returns an error
+  // message (empty on success) and clears eanImages once imported.
+  const importPendingImages = async (targetProductId: string): Promise<string> => {
+    if (eanImages.length === 0) return "";
+    try {
+      const impRes = await fetch("/api/admin/import-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: targetProductId,
+          images: eanImages.map(({ url, alt }) => ({ url, alt })),
+        }),
+      });
+      const impJson = await impRes.json();
+      if (!impRes.ok || !impJson.success) {
+        return impJson.error || "Errore durante l'importazione delle immagini.";
+      }
+      if (impJson.failedCount > 0) {
+        return `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`;
+      }
+      setEanImages([]);
+      return "";
+    } catch {
+      return "Errore di connessione durante l'importazione delle immagini.";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setSuccess("");
@@ -290,29 +317,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         });
         const json = await res.json();
         if (json.success) {
-          // Copy Icecat images to Storage right after creation, then land on
-          // the edit page. Surface import failures instead of swallowing them.
-          let importMsg = "";
-          if (eanImages.length > 0) {
-            try {
-              const impRes = await fetch("/api/admin/import-images", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  productId: json.id,
-                  images: eanImages.map(({ url, alt }) => ({ url, alt })),
-                }),
-              });
-              const impJson = await impRes.json();
-              if (!impRes.ok || !impJson.success) {
-                importMsg = impJson.error || "Errore durante l'importazione delle immagini.";
-              } else if (impJson.failedCount > 0) {
-                importMsg = `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`;
-              }
-            } catch {
-              importMsg = "Errore di connessione durante l'importazione delle immagini.";
-            }
-          }
+          // Copy pending Icecat images right after creation, then land on the
+          // edit page. Surface failures instead of swallowing them.
+          const importMsg = await importPendingImages(json.id);
           const qs = importMsg ? `?importError=${encodeURIComponent(importMsg)}` : "";
           router.push(`/admin/products/${json.id}${qs}`);
         }
@@ -322,7 +329,13 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
         });
         const json = await res.json();
-        if (json.success) setSuccess("Prodotto salvato!");
+        if (json.success) {
+          // Also import pending Icecat images when saving an existing product
+          // (previously only the create flow did this — images were lost).
+          const importMsg = await importPendingImages(productId!);
+          if (importMsg) setImportError(importMsg);
+          setSuccess("Prodotto salvato!");
+        }
         else setError(json.error ?? "Errore durante il salvataggio.");
       }
     } catch { setError("Errore di connessione."); }
@@ -340,6 +353,17 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          {!isNew && slug && (
+            <a
+              href={`/product/${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              title="Apre il prodotto nel negozio, in una nuova scheda"
+            >
+              👁️ Vedi nel negozio
+            </a>
+          )}
           {!isNew && (
             <button type="button" onClick={handleDuplicate} disabled={saving}
               className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">
