@@ -180,7 +180,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         setEanImages([]);
         const n = json.imported.length;
         if (json.failedCount > 0) {
-          setImportError(`${json.failedCount} immagine${json.failedCount > 1 ? "e" : ""} non importata${json.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`);
+          const firstError = json.errors?.[0]?.error;
+          const detail = firstError ? ` — ${firstError}` : "";
+          setImportError(`${json.failedCount} immagine${json.failedCount > 1 ? "e" : ""} non importata${json.failedCount > 1 ? "e" : ""}${detail}`);
         } else {
           setSuccess(`${n} immagine${n > 1 ? "e" : ""} importata${n > 1 ? "e" : ""} su Storage.`);
         }
@@ -280,7 +282,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         return impJson.error || "Errore durante l'importazione delle immagini.";
       }
       if (impJson.failedCount > 0) {
-        return `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""} (formato o dimensione non validi).`;
+        const firstError = impJson.errors?.[0]?.error;
+        const detail = firstError ? ` — ${firstError}` : "";
+        return `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""}${detail}`;
       }
       setEanImages([]);
       return "";

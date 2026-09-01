@@ -56,6 +56,12 @@ export async function POST(request: Request) {
   try {
     const result = await importImagesFromUrls(images, productId);
 
+    // Surface per-item failures in the logs even when the request returns
+    // 200 — otherwise silent import failures are impossible to diagnose.
+    for (const err of result.errors) {
+      console.error(`[import-images] per-item failure (${productId}):`, err);
+    }
+
     // Persist imported URLs as product_image rows, continuing sort_order
     const maxResult = await pool.query(
       `SELECT COALESCE(MAX("sort_order"), -1) + 1 as next_order FROM "product_image" WHERE "product_id" = $1`,
