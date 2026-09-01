@@ -81,6 +81,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Import failed";
+    console.error("[import-images] 500:", error);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

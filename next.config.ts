@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // sharp ships native binaries — bundling it into serverless functions breaks
+  // at runtime on Vercel ("Could not load the sharp module"). Externalize it so
+  // the platform installs the correct prebuilt binaries for the runtime.
+  serverExternalPackages: ["sharp"],
   images: {
     remotePatterns: [
       {
