@@ -264,10 +264,13 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     moveImage(index, 0);
   };
 
-  // Import the pending Icecat images for the given product. Returns an error
-  // message (empty on success) and clears eanImages once imported.
-  const importPendingImages = async (targetProductId: string): Promise<string> => {
-    if (eanImages.length === 0) return "";
+  // Import the pending Icecat images for the given product. Returns the
+  // imported images (to update the gallery state) plus an error message
+  // (empty on success). Clears eanImages once imported.
+  const importPendingImages = async (
+    targetProductId: string,
+  ): Promise<{ error: string; imported: { id: string; url: string; alt: string }[] }> => {
+    if (eanImages.length === 0) return { error: "", imported: [] };
     try {
       const impRes = await fetch("/api/admin/import-images", {
         method: "POST",
@@ -279,17 +282,27 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       });
       const impJson = await impRes.json();
       if (!impRes.ok || !impJson.success) {
-        return impJson.error || "Errore durante l'importazione delle immagini.";
+        return { error: impJson.error || "Errore durante l'importazione delle immagini.", imported: [] };
       }
       if (impJson.failedCount > 0) {
         const firstError = impJson.errors?.[0]?.error;
         const detail = firstError ? ` — ${firstError}` : "";
-        return `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""}${detail}`;
+        return {
+          error: `${impJson.failedCount} immagine${impJson.failedCount > 1 ? "e" : ""} non importata${impJson.failedCount > 1 ? "e" : ""}${detail}`,
+          imported: (impJson.imported || []).map((img: { id: string; url: string; alt: string | null }) => ({
+            id: img.id, url: img.url, alt: img.alt || "",
+          })),
+        };
       }
       setEanImages([]);
-      return "";
+      return {
+        error: "",
+        imported: (impJson.imported || []).map((img: { id: string; url: string; alt: string | null }) => ({
+          id: img.id, url: img.url, alt: img.alt || "",
+        })),
+      };
     } catch {
-      return "Errore di connessione durante l'importazione delle immagini.";
+      return { error: "Errore di connessione durante l'importazione delle immagini.", imported: [] };
     }
   };
 
@@ -323,7 +336,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         if (json.success) {
           // Copy pending Icecat images right after creation, then land on the
           // edit page. Surface failures instead of swallowing them.
-          const importMsg = await importPendingImages(json.id);
+          const { error: importMsg } = await importPendingImages(json.id);
           const qs = importMsg ? `?importError=${encodeURIComponent(importMsg)}` : "";
           router.push(`/admin/products/${json.id}${qs}`);
         }
@@ -334,11 +347,19 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         });
         const json = await res.json();
         if (json.success) {
-          // Also import pending Icecat images when saving an existing product
-          // (previously only the create flow did this — images were lost).
-          const importMsg = await importPendingImages(productId!);
+          // Also import pending Icecat images when saving an existing product,
+          // and append them to the gallery state so they show up immediately.
+          const { error: importMsg, imported } = await importPendingImages(productId!);
           if (importMsg) setImportError(importMsg);
-          setSuccess("Prodotto salvato!");
+          if (imported.length > 0) {
+            setImages((prev) => {
+              const existing = new Set(prev.map((img) => img.id));
+              const fresh = imported.filter((img) => !existing.has(img.id));
+              if (fresh.length === 0) return prev;
+              return [...prev, ...fresh.map((img, i) => ({ ...img, sortOrder: prev.length + i }))];
+            });
+          }
+          setSuccess(importMsg ? "Prodotto salvato (alcune immagini non importate)." : "Prodotto salvato!");
         }
         else setError(json.error ?? "Errore durante il salvataggio.");
       }
