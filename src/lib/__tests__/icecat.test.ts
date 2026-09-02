@@ -7,6 +7,7 @@ import {
   parseDescriptions,
   parseDimensions,
   parseImages,
+  parseSpecGroups,
   parseSpecs,
   parseWeight,
 } from "@/lib/icecat";
@@ -230,6 +231,30 @@ describe("parseSpecs", () => {
   it("skips features without a value", () => {
     const specs = parseSpecs(featureGroups);
     expect(specs.some((s) => s.label === "Campo vuoto")).toBe(false);
+  });
+});
+
+describe("parseSpecGroups", () => {
+  it("keeps specs grouped under their original (localized) group names", () => {
+    const groups = parseSpecGroups(featureGroups);
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups[0].group).toBe("Display");
+    expect(groups[0].rows.length).toBeGreaterThan(0);
+    expect(groups[0].rows[0]).toMatchObject({ label: expect.any(String), value: expect.any(String) });
+    // every feature from the flat parse must appear in exactly one group
+    const flat = parseSpecs(featureGroups);
+    const grouped = groups.flatMap((g) => g.rows);
+    expect(grouped).toHaveLength(flat.length);
+  });
+
+  it("drops empty groups and falls back to 'Altro' for unnamed ones", () => {
+    const groups = parseSpecGroups([
+      { FeatureGroup: { Name: { Value: "Vuoto" } }, Features: [] },
+      { Features: [{ Feature: { Name: { Value: "X" } }, Value: "1" }] },
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].group).toBe("Altro");
+    expect(groups[0].rows).toEqual([{ label: "X", value: "1" }]);
   });
 });
 

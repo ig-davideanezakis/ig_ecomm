@@ -278,21 +278,32 @@ export function applyIcecatSelection(
     result.content = content;
   }
 
-  // Specs table (dimensions row first, then FeatureGroups) → dedicated field
+  // Specs → dedicated `specifications` field.
+  // Preferred format: structured JSON of the Icecat FeaturesGroups
+  // ([{ group, rows: [{ label, value }] }]) — enables grouped rendering on
+  // the shop page and future product comparison. Falls back to a flat HTML
+  // table when the source has no groups (e.g. legacy/lookup without groups).
   if (selected.has("specs")) {
     const dimRow = buildDimensionsRow(data.dimensions);
-    const rows = [
-      ...(dimRow ? [dimRow] : []),
-      ...data.specs.map((s) => ({ label: s.label, value: s.value })),
-    ];
-    if (rows.length > 0) {
-      const htmlRows = rows
-        .map(
-          (r) =>
-            `<tr><td class="font-medium px-4 py-2 border">${escapeHtml(r.label)}</td><td class="px-4 py-2 border">${escapeHtml(r.value)}</td></tr>`,
-        )
-        .join("");
-      result.specifications = `<table class="w-full border-collapse">${htmlRows}</table>`;
+    const groups = data.specGroups?.length
+      ? data.specGroups
+      : [
+          {
+            group: "",
+            rows: [...(dimRow ? [dimRow] : []), ...data.specs.map((s) => ({ label: s.label, value: s.value }))],
+          },
+        ];
+
+    // Drop empty groups, keep only label+value rows
+    const clean = groups
+      .map((g) => ({
+        group: g.group,
+        rows: g.rows.filter((r) => r.label && r.value),
+      }))
+      .filter((g) => g.rows.length > 0);
+
+    if (clean.length > 0) {
+      result.specifications = JSON.stringify(clean);
     }
   }
 

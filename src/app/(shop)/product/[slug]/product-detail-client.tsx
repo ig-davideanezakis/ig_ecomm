@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart-store";
+import SpecificationsView from "@/components/shop/specifications-view";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -352,10 +353,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         <SectionAnimation className="mt-16">
           <div className="mx-auto max-w-3xl">
             <h2 className="mb-6 text-2xl font-bold">Specifiche tecniche</h2>
-            <div
-              className="product-rich-content"
-              dangerouslySetInnerHTML={{ __html: product.specifications }}
-            />
+            <SpecificationsView value={product.specifications} />
           </div>
         </SectionAnimation>
       )}

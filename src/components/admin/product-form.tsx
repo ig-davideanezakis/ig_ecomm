@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import RichTextEditor from "@/components/admin/rich-text-editor";
 import IcecatDialog from "@/components/admin/icecat-dialog";
+import SpecificationsView from "@/components/shop/specifications-view";
 import type { IcecatProductData } from "@/lib/icecat";
 import {
   applyIcecatSelection,
@@ -460,17 +461,13 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                 value={specifications}
                 onChange={(e) => setSpecifications(e.target.value)}
                 rows={6}
-                placeholder='Tabella HTML delle specifiche (es. &lt;table&gt;...&lt;/table&gt;) — compilata automaticamente da Icecat'
+                placeholder='Specifiche in JSON raggruppate (es. [{"group":"Display","rows":[{"label":"Risoluzione","value":"3440x1440"}]}]) — compilato automaticamente da Icecat'
                 className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs focus-visible:ring-2 focus-visible:ring-ring"
               />
               {specifications.trim() ? (
                 <div className="mt-2 rounded-md border bg-muted/30 p-3 overflow-x-auto">
                   <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Anteprima</p>
-                  <div
-                    className="product-rich-content"
-                    // eslint-disable-next-line react/no-danger
-                    dangerouslySetInnerHTML={{ __html: specifications }}
-                  />
+                  <SpecificationsView value={specifications} />
                 </div>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">

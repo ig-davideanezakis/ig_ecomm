@@ -31,9 +31,17 @@ export interface IcecatProductData {
   dimensions: { width: string; height: string; depth: string };
   images: { url: string; alt: string }[];
   specs: { label: string; value: string }[];
+  /** Specs preserved in their original Icecat FeaturesGroups. */
+  specGroups: SpecGroup[];
   bulletPoints: string;
   categoryHint: string;
   ean: string;
+}
+
+/** A named group of spec rows (Icecat FeaturesGroup). */
+export interface SpecGroup {
+  group: string;
+  rows: { label: string; value: string }[];
 }
 
 /** A single feature/spec entry inside a FeaturesGroup. */
@@ -48,6 +56,9 @@ interface FeatureItem {
 }
 
 interface FeatureGroup {
+  Name?: { Value?: unknown };
+  /** Real Icecat shape: the group metadata (incl. localized name) is nested. */
+  FeatureGroup?: { Name?: { Value?: unknown } };
   Features?: FeatureItem[];
 }
 
@@ -209,6 +220,26 @@ export function parseSpecs(featureGroups: FeatureGroup[]): { label: string; valu
 }
 
 /**
+ * Parse FeaturesGroups keeping their original grouping (name + rows).
+ * Groups without a name fall back to "Altro"; empty groups are dropped.
+ */
+export function parseSpecGroups(featureGroups: FeatureGroup[]): SpecGroup[] {
+  const groups: SpecGroup[] = [];
+  for (const group of featureGroups) {
+    const rows: { label: string; value: string }[] = [];
+    for (const f of group.Features || []) {
+      const label = asString(f.Feature?.Name?.Value);
+      const value = asString(f.PresentationValue ?? f.Value ?? f.RawValue);
+      if (label && value) rows.push({ label, value });
+    }
+    if (rows.length === 0) continue;
+    const name = asString(group.FeatureGroup?.Name?.Value || group.Name?.Value).trim();
+    groups.push({ group: name || "Altro", rows });
+  }
+  return groups;
+}
+
+/**
  * Collect gallery images: main `Image` first, then the `Gallery` list
  * (one URL per photo, preferring Pic500x500 > Pic > LowPic). URLs are
  * deduped and the total is capped to avoid flooding the product form.
@@ -303,6 +334,7 @@ export async function lookupProductByEan(ean: string): Promise<IcecatProductData
     dimensions: parseDimensions(featureGroups),
     images: parseImages(data, title, brand),
     specs: parseSpecs(featureGroups),
+    specGroups: parseSpecGroups(featureGroups),
     bulletPoints: parseBulletPoints(generalInfo, data),
     categoryHint: parseCategoryHint(generalInfo),
     ean,

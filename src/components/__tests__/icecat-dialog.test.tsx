@@ -22,6 +22,10 @@ const data: IcecatProductData = {
     { label: "CPU", value: "Intel i5" },
     { label: "RAM", value: "16 GB" },
   ],
+  specGroups: [
+    { group: "Processore", rows: [{ label: "CPU", value: "Intel i5" }] },
+    { group: "Memoria", rows: [{ label: "RAM", value: "16 GB" }] },
+  ],
   bulletPoints: "Sottile e leggero\nBatteria 10 ore",
 };
 
