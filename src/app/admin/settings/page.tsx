@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { SpecChipsEditor } from "@/components/admin/spec-chips-editor";
 
 const KNOWN_PAYMENT_METHODS: Record<string, string> = {
   card: "💳 Carta / Digital Wallet",
@@ -33,6 +34,8 @@ const SETTING_FIELDS = [
   { key: "bank_banca", label: "Bonifico — Nome banca", type: "text" },
   { key: "bank_notes", label: "Bonifico — Note (causale, ecc.)", type: "textarea" },
   { key: "payment_methods", label: "Metodi di pagamento accettati", type: "payment-methods" },
+  { key: "__specs", label: "Caratteristiche prodotto", type: "section" },
+  { key: "spec_chips", label: "Specifiche in evidenza (chip)", type: "spec-chips" },
 ];
 
 export default function AdminSettingsPage() {
@@ -44,6 +47,7 @@ export default function AdminSettingsPage() {
   const [customPayMethod, setCustomPayMethod] = useState("");
   const [showPayConfirm, setShowPayConfirm] = useState(false);
   const [pendingPayMethods, setPendingPayMethods] = useState<string[]>([]);
+  const [specChipsJson, setSpecChipsJson] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/settings").then(async (res) => {
@@ -52,6 +56,7 @@ export default function AdminSettingsPage() {
       if (json.payment_methods) {
         setSelectedPayMethods(json.payment_methods.split("\n").filter(Boolean));
       }
+      setSpecChipsJson(json.spec_chips ?? "");
       setLoading(false);
     });
   }, []);
@@ -62,7 +67,7 @@ export default function AdminSettingsPage() {
     setSuccess("");
 
     // Sync payment methods before saving
-    const body = { ...settings, payment_methods: selectedPayMethods.join("\n") };
+    const body = { ...settings, payment_methods: selectedPayMethods.join("\n"), spec_chips: specChipsJson };
 
     await fetch("/api/admin/settings", {
       method: "PUT",
@@ -92,7 +97,7 @@ export default function AdminSettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {SETTING_FIELDS.map(({ key, label, type }) => (
-          <div key={key} className={type === "seo-prompt" || type === "section" ? "md:col-span-2" : ""}>
+          <div key={key} className={type === "seo-prompt" || type === "section" || type === "spec-chips" ? "md:col-span-2" : ""}>
             <label htmlFor={`s-${key}`} className="block text-sm font-medium mb-1">{label}</label>
             {type === "section" ? (
               <div className="border-b pt-4 pb-2 mb-2">
@@ -176,6 +181,10 @@ export default function AdminSettingsPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            ) : type === "spec-chips" ? (
+              <div className="space-y-2">
+                <SpecChipsEditor value={specChipsJson} onChange={setSpecChipsJson} />
               </div>
             ) : type === "seo-prompt" ? (
               <div className="space-y-2">

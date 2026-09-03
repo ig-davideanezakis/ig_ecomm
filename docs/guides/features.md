@@ -31,6 +31,16 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 - Brand filter linked to the dynamic filter system
 - Product → brand relationship (brand shown on product cards and detail pages)
 
+## Spec Chips — Caratteristiche in evidenza
+**Status:** ✅ Done
+**Docs:** [docs/guides/spec-chips.md](spec-chips.md)
+
+- Global, admin-editable chip config (`store_setting.spec_chips`) with curated icons
+- Default chips: CPU, RAM, Archiviazione, Schermo, Scheda video, Sistema operativo
+- Chips on product cards (list, search results, brand pages) and on the product detail page
+- Values derived at render time from Icecat grouped specifications — no per-product storage
+- Unit + component + E2E coverage (`spec-chips`, `product-spec-chips`, `spec-chips-editor`)
+
 ## Authentication & Authorization
 **Status:** ✅ Done
 

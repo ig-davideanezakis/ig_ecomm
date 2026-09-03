@@ -8,6 +8,8 @@ export interface ProductListItem {
   title: string;
   slug: string;
   description: string | null;
+  /** Raw specs JSON (Icecat groups) — lets pages render spec chips on cards. */
+  specifications: string | null;
   basePrice: number;
   compareAtPrice: number | null;
   featured: boolean;
@@ -137,7 +139,7 @@ export async function getProductList(params: ProductListParams = {}) {
   // Get products
   const result = await pool.query(
     `SELECT
-      p.id, p.identifier, p.title, p.slug, p.description,
+      p.id, p.identifier, p.title, p.slug, p.description, p.specifications,
       p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
       p.featured, p."created_at",
       CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('id', c.id, 'name', c.name, 'slug', c.slug) ELSE NULL END as category,

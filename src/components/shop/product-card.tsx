@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
+import type { SpecChipValue } from "@/lib/spec-chips";
+import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 
 export interface ProductCardData {
   id: string;
@@ -16,6 +18,8 @@ export interface ProductCardData {
   variants: Array<{ id: string; name: string; price: number; stock: number }>;
   category: { id: string; name: string; slug: string } | null;
   brand: { id: string; name: string; slug: string } | null;
+  /** Key specs extracted from product.specifications — rendered as chips. */
+  specChips?: SpecChipValue[];
 }
 
 interface ProductCardProps {
@@ -87,6 +91,11 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
             {product.description}
           </p>
+        )}
+
+        {/* Key specs chips (CPU, RAM, storage, …) — all configured ones found */}
+        {product.specChips && product.specChips.length > 0 && (
+          <ProductSpecChips chips={product.specChips} variant="card" className="mt-2" />
         )}
 
         <div className="mt-auto pt-2 flex items-baseline gap-2">

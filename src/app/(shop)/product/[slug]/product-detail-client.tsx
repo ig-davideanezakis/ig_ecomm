@@ -6,6 +6,8 @@ import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart-store";
 import SpecificationsView from "@/components/shop/specifications-view";
+import { ProductSpecChips } from "@/components/shop/product-spec-chips";
+import type { SpecChipValue } from "@/lib/spec-chips";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -50,11 +52,13 @@ interface ProductDetail {
 
 interface ProductDetailClientProps {
   product: ProductDetail;
+  /** Key specs extracted server-side — rendered as icon+value chips. */
+  specChips?: SpecChipValue[];
 }
 
 // ─── Main Component ───────────────────────────────────────────────
 
-export function ProductDetailClient({ product }: ProductDetailClientProps) {
+export function ProductDetailClient({ product, specChips = [] }: ProductDetailClientProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null,
   );
@@ -91,7 +95,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   }, [addItem, product, selectedVariant, images, currentPrice]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 pt-8 pb-28 sm:px-6 lg:px-8 lg:pb-8">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <ol className="flex items-center gap-2">
@@ -226,6 +230,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             </p>
           )}
 
+          {/* Key specs chips (CPU, RAM, storage, …) */}
+          {specChips.length > 0 && (
+            <ProductSpecChips chips={specChips} variant="detail" />
+          )}
+
           {/* Price */}
           <div className="flex items-baseline gap-3">
             <span className="text-3xl font-bold text-foreground">
@@ -266,27 +275,41 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             </div>
           )}
 
-          {/* Stock status */}
-          <div className="flex items-center gap-2 text-sm">
+          {/* Stock status — traffic-light with explicit copy */}
+          <div className="rounded-lg border bg-card p-3">
             {inStock ? (
-              <>
-                <span className="h-2 w-2 rounded-full bg-success" />
-                <span className="text-success font-medium">
-                  Disponibile
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
                 </span>
-                {isLowStock && (
-                  <span className="text-warning text-xs">
-                    (solo {selectedVariant!.stock} rimasti)
-                  </span>
-                )}
-              </>
+                <div>
+                  <p className="text-sm font-semibold text-success">
+                    {isLowStock ? `Ultimi ${selectedVariant!.stock} pezzi in magazzino` : "Pronto per la spedizione"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isLowStock
+                      ? "Ordina subito: quantità limitata"
+                      : "Spedito in 24/48h dalla sede di Palermo"}
+                  </p>
+                </div>
+              </div>
             ) : (
-              <>
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                <span className="text-destructive font-medium">
-                  Esaurito
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
                 </span>
-              </>
+                <div>
+                  <p className="text-sm font-semibold text-destructive">Al momento esaurito</p>
+                  <p className="text-xs text-muted-foreground">
+                    Chiamaci allo{" "}
+                    <a href="tel:+39091342171" className="text-primary underline hover:opacity-80">
+                      091 342171
+                    </a>{" "}
+                    per conoscere la data di arrivo.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 
@@ -302,35 +325,49 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           {/* Divider */}
           <hr className="border-border" />
 
-          {/* Highlights */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Pagamenti sicuri
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              Garanzia 24 mesi
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14" />
-                <path d="M12 5l7 7-7 7" />
-              </svg>
-              Assistenza tecnica
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {/* Trust bar */}
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                 <polyline points="17 6 23 6 23 12" />
               </svg>
-              Spedizione rapida
+              <span>
+                <span className="block font-medium text-foreground">Spedizione rapida</span>
+                <span className="text-xs">In 24/48h in tutta Italia</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
+                <path d="M3 11v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6" />
+                <path d="M12 3v9" />
+                <path d="M8 8l4-4 4 4" />
+              </svg>
+              <span>
+                <span className="block font-medium text-foreground">Ritiro in sede</span>
+                <span className="text-xs">Via Duca della Verdura 23, Palermo</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
+                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>
+                <span className="block font-medium text-foreground">Garanzia 24 mesi</span>
+                <span className="text-xs">E resi entro 14 giorni</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5 text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              <span>
+                <span className="block font-medium text-foreground">Assistenza locale</span>
+                <a href="tel:+39091342171" className="text-xs text-primary underline hover:opacity-80">
+                  Chiamaci: 091 342171
+                </a>
+              </span>
             </div>
           </div>
         </div>
@@ -365,6 +402,28 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           (Da implementare — mostrerà prodotti nella stessa categoria)
         </p>
       </SectionAnimation>
+
+      {/* ─── Sticky buy bar (mobile only) ────────────────────────── */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-2">
+          <div className="shrink-0">
+            <p className="text-lg font-bold leading-tight">{formatPrice(currentPrice)}</p>
+            {hasDiscount && (
+              <p className="text-xs leading-tight text-muted-foreground line-through">
+                {formatPrice(product.compareAtPrice!)}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!inStock}
+            className="flex-1 rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 neon-glow"
+          >
+            {inStock ? "Aggiungi al carrello" : "Non disponibile"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { getProductList } from "@/db/queries";
+import { getProductList, getSpecChipsConfig } from "@/db/queries";
 import { ProductCard, type ProductCardData } from "@/components/shop/product-card";
 import { ProductFilters } from "@/components/shop/product-filters";
+import { extractSpecChips } from "@/lib/spec-chips";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -26,16 +27,19 @@ interface PageProps {
 export default async function ProductsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;
 
-  const data = await getProductList({
-    search: resolved.search?.trim() || "",
-    category: resolved.category?.trim() || "",
-    brand: resolved.brand?.trim() || "",
-    minPrice: resolved.f_price_min ? Number(resolved.f_price_min) : undefined,
-    maxPrice: resolved.f_price_max ? Number(resolved.f_price_max) : undefined,
-    sort: resolved.sort?.trim() || "newest",
-    page: Math.max(1, Number(resolved.page) || 1),
-    limit: 12,
-  });
+  const [data, chipsConfig] = await Promise.all([
+    getProductList({
+      search: resolved.search?.trim() || "",
+      category: resolved.category?.trim() || "",
+      brand: resolved.brand?.trim() || "",
+      minPrice: resolved.f_price_min ? Number(resolved.f_price_min) : undefined,
+      maxPrice: resolved.f_price_max ? Number(resolved.f_price_max) : undefined,
+      sort: resolved.sort?.trim() || "newest",
+      page: Math.max(1, Number(resolved.page) || 1),
+      limit: 12,
+    }),
+    getSpecChipsConfig(),
+  ]);
 
   const currentSearch = resolved.search?.trim() || "";
 
@@ -97,7 +101,14 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                 <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                   {data.products.map((product, i) => (
                     <li key={product.id}>
-                      <ProductCard key={product.id} product={product as ProductCardData} priority={i < 6} />
+                      <ProductCard
+                        key={product.id}
+                        product={{
+                          ...(product as ProductCardData),
+                          specChips: extractSpecChips(product.specifications, chipsConfig),
+                        }}
+                        priority={i < 6}
+                      />
                     </li>
                   ))}
                 </ul>
