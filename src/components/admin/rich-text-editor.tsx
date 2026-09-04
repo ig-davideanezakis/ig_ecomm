@@ -18,6 +18,12 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: number;
+  /**
+   * Show the inline "✨ Formatta SEO" toolbar button (default true).
+   * Product form disables it: the centralized top-bar action formats the
+   * description and the meta fields together. CMS pages keep it.
+   */
+  showSeoFormatButton?: boolean;
 }
 
 function ToolbarButton({
@@ -110,7 +116,7 @@ function SeoFormatButton({ editor }: { editor: Editor }) {
   );
 }
 
-function MenuBar({ editor }: { editor: Editor }) {
+function MenuBar({ editor, showSeoFormatButton = true }: { editor: Editor; showSeoFormatButton?: boolean }) {
   const addImage = useCallback(() => {
     const url = prompt("URL immagine:");
     if (url) editor.chain().focus().setImage({ src: url }).run();
@@ -228,7 +234,7 @@ function MenuBar({ editor }: { editor: Editor }) {
 
       {/* Spacer + SEO Format */}
       <div className="flex-1" />
-      <SeoFormatButton editor={editor} />
+      {showSeoFormatButton && <SeoFormatButton editor={editor} />}
     </div>
   );
 }
@@ -238,6 +244,7 @@ export default function RichTextEditor({
   onChange,
   placeholder = "Scrivi qui la descrizione dettagliata...",
   minHeight = 300,
+  showSeoFormatButton = true,
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -288,7 +295,7 @@ export default function RichTextEditor({
       className="rounded-md border border-input bg-background overflow-hidden"
       style={{ minHeight }}
     >
-      {editor && <MenuBar editor={editor} />}
+      {editor && <MenuBar editor={editor} showSeoFormatButton={showSeoFormatButton} />}
       <EditorContent editor={editor} />
     </div>
   );

@@ -377,6 +377,57 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     setSaving(false);
   };
 
+  /**
+   * Central "✨ Formatta SEO con AI" action (top bar): formats the detailed
+   * description (when present) and then generates meta title/description.
+   */
+  const handleSeoAll = async () => {
+    if (seoLoading) return;
+    setSeoLoading(true); setError(""); setSuccess("");
+    try {
+      let source = description || content || "";
+      if (content && content.trim()) {
+        const fmtRes = await fetch("/api/ai/seo-format", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (!fmtRes.ok) {
+          const e = await fmtRes.json().catch(() => ({}));
+          throw new Error(e.error || "Errore durante la formattazione della descrizione.");
+        }
+        const fmt = await fmtRes.json();
+        if (fmt.formatted) {
+          setContent(fmt.formatted);
+          source = fmt.formatted;
+        }
+      }
+      const genRes = await fetch("/api/admin/seo/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "product", title, description: source }),
+      });
+      if (!genRes.ok) {
+        const e = await genRes.json().catch(() => ({}));
+        throw new Error(e.error || "Errore durante la generazione dei meta.");
+      }
+      const gd = await genRes.json();
+      if (gd.seoTitle) setSeoTitle(gd.seoTitle);
+      if (gd.seoDescription) setSeoDescription(gd.seoDescription);
+      setSuccess(
+        content && content.trim()
+          ? "Descrizione formattata e meta SEO generati con AI."
+          : "Meta title e description generati con AI.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Errore di connessione.");
+    }
+    setSeoLoading(false);
+  };
+
+  const inputCls =
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
@@ -415,9 +466,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       {error && <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600">{error}</div>}
       {success && <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600">{success}</div>}
 
-      {/* Icecat search — separate GTIN lookup bar (product EAN is independent) */}
+      {/* Top bar: Icecat GTIN search + centralized AI SEO action */}
       <section className="rounded-lg border bg-card p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="flex flex-1 items-center gap-2">
             <label htmlFor="prod-gtin" className="sr-only">
               Cerca su Icecat per GTIN (EAN/UPC)
@@ -439,309 +490,277 @@ export default function ProductForm({ productId, initialImportError }: Props) {
               {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground lg:max-w-xs lg:text-right">
-            Ricerca il prodotto su Icecat dal codice GTIN: titolo, immagini e specifiche si
-            applicano con la dialog di anteprima. Il campo EAN del prodotto resta indipendente.
-          </p>
+          <div className="flex items-center justify-end gap-3">
+            <p className="hidden text-xs text-muted-foreground lg:block">
+              Formatta la descrizione dettagliata e genera meta title/description.
+            </p>
+            <button type="button" onClick={handleSeoAll} disabled={!title.trim() || seoLoading}
+              title="Formatta la descrizione dettagliata e genera meta title/description con l'AI"
+              className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-primary to-purple-600 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap">
+              {seoLoading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              )}
+              {seoLoading ? "Formattazione..." : "Formatta SEO con AI"}
+            </button>
+          </div>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-12">
-        {/* Left: Main info */}
-        <div className="xl:col-span-8 space-y-5">
-          {/* Basic info */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Informazioni di base</h2>
-            <div className="grid gap-4 md:grid-cols-12">
-              <div className="md:col-span-12">
-                <label htmlFor="prod-title" className="block text-sm font-medium mb-1">Titolo *</label>
-                <input id="prod-title" type="text" value={title} onChange={(e) => updateTitle(e.target.value)}
-                  required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div className="md:col-span-6">
-                <label htmlFor="prod-slug" className="block text-sm font-medium mb-1">Slug</label>
-                <div className="flex gap-2">
-                  <input id="prod-slug" type="text" value={slug} onChange={(e) => { setSlug(e.target.value); setAutoSlug(false); }}
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                  <button type="button" onClick={() => { setAutoSlug(true); updateTitle(title); }}
-                    className="rounded-md border border-border px-2 text-xs hover:bg-muted transition-colors" title="Auto-genera">↻</button>
-                </div>
-              </div>
-              <div className="md:col-span-6">
-                <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / GTIN *</label>
-                <input
-                  id="prod-barcode"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                  placeholder="es. 4719512030394"
-                  required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio e indipendente
-                  dalla ricerca Icecat.
-                </p>
-              </div>
-              <div className="md:col-span-6">
-                <label htmlFor="prod-identifier" className="block text-sm font-medium mb-1">Identificativo</label>
-                <input id="prod-identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div className="md:col-span-6">
-                <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
-                <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div className="md:col-span-12">
-                <label htmlFor="prod-desc" className="block text-sm font-medium mb-1">Descrizione breve</label>
-                <textarea id="prod-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-            </div>
-          </section>
+      {/* ── Part 1: Stato (30%) + Immagini (70%) ───────────────────── */}
+      <div className="grid gap-6 xl:grid-cols-10">
+        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-3 h-fit">
+          <h2 className="font-semibold">Stato</h2>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
+              className="rounded border-border" />
+            Pubblicato (visibile nel catalogo)
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
+              className="rounded border-border" />
+            In evidenza (mostrato in homepage)
+          </label>
+        </section>
 
-          {/* Content */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Descrizione dettagliata</h2>
-            <RichTextEditor
-                value={content}
-                onChange={setContent}
-                placeholder="Scrivi qui la descrizione dettagliata del prodotto..."
-                minHeight={350}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Formatta il contenuto con grassetti, elenchi, tabelle, immagini e link. Il font rimane sempre quello del sito.
-              </p>
-          </section>
+        {/* Images */}
+        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-7">
+          <h2 className="font-semibold">Immagini</h2>
 
-          {/* Technical specifications — dedicated field, populated by Icecat */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Specifiche tecniche</h2>
-            <div>
-              <label htmlFor="prod-specs" className="sr-only">Specifiche tecniche (JSON)</label>
-              <textarea
-                id="prod-specs"
-                value={specifications}
-                onChange={(e) => setSpecifications(e.target.value)}
-                rows={6}
-                placeholder='Specifiche in JSON raggruppate (es. [{"group":"Display","rows":[{"label":"Risoluzione","value":"3440x1440"}]}]) — compilato automaticamente da Icecat'
-                className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              {specifications.trim() ? (
-                <div className="mt-2 rounded-md border bg-muted/30 p-3 overflow-x-auto">
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Anteprima</p>
-                  <SpecificationsView value={specifications} />
-                </div>
-              ) : (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Compilato automaticamente scegliendo &quot;Specifiche tecniche&quot; nella dialog Icecat. Visibile nella pagina prodotto lato utente.
-                </p>
-              )}
-            </div>
-          </section>
-
-          {/* Images */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Immagini</h2>
-
-            {/* Drop zone + URL fallback */}
-            <div className="space-y-3">
-              {/* File upload via drag & drop */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
-                onDragLeave={(e) => { e.currentTarget.classList.remove('border-primary'); }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove('border-primary');
-                  const file = e.dataTransfer.files[0];
+          {/* Drop zone + URL fallback */}
+          <div className="space-y-3">
+            {/* File upload via drag & drop */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
+              onDragLeave={(e) => { e.currentTarget.classList.remove('border-primary'); }}
+              onDrop={async (e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-primary');
+                const file = e.dataTransfer.files[0];
+                if (!file || !productId) return;
+                await uploadFile(file);
+              }}
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground mb-2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p className="text-sm font-medium">Trascina un&apos;immagine qui</p>
+              <p className="text-xs text-muted-foreground mt-1">o clicca per selezionare (JPG, PNG, WebP, AVIF — max 5MB)</p>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                className="hidden"
+                id="file-upload"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
                   if (!file || !productId) return;
                   await uploadFile(file);
+                  e.target.value = "";
                 }}
-                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground mb-2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <p className="text-sm font-medium">Trascina un&apos;immagine qui</p>
-                <p className="text-xs text-muted-foreground mt-1">o clicca per selezionare (JPG, PNG, WebP, AVIF — max 5MB)</p>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="hidden"
-                  id="file-upload"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !productId) return;
-                    await uploadFile(file);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-
-              {/* URL fallback */}
-              <div className="flex gap-2">
-                <input type="text" placeholder="o incolla URL immagine..." value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                <input type="text" placeholder="Testo alt" value={imageAlt}
-                  onChange={(e) => setImageAlt(e.target.value)}
-                  className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                <button type="button" onClick={async () => {
-                  if (!imageUrl || !productId) return;
-                  const res = await fetch("/api/admin/upload", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
-                  });
-                  const json = await res.json();
-                  if (json.success) {
-                    setImages(prev => [...prev, json.image]);
-                    setImageUrl(""); setImageAlt("");
-                  }
-                }} disabled={!imageUrl || isNew}
-                  className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                  Aggiungi
-                </button>
-              </div>
+              />
             </div>
 
-            {/* Icecat lookup images — pending copy to Storage */}
-            {eanImages.length > 0 && (
-              <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">
-                    {eanImages.length} {eanImages.length > 1 ? "immagini" : "immagine"} {eanImages.length > 1 ? "trovate" : "trovata"} su Icecat
-                  </p>
-                  {!isNew && (
-                    <button type="button" onClick={importEanImages} disabled={importingEanImages}
-                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap">
-                      {importingEanImages ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "⬇️"}
-                      {importingEanImages ? "Importazione..." : `Importa su Storage (${eanImages.length})`}
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {eanImages.map((img, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={img.url} alt={img.alt || "Anteprima Icecat"} className="h-16 w-16 rounded-md border object-cover" />
-                  ))}
-                </div>
-                {isNew && (
-                  <p className="text-xs text-muted-foreground">
-                    Le immagini verranno copiate su Storage automaticamente al salvataggio del prodotto.
-                  </p>
+            {/* URL fallback */}
+            <div className="flex gap-2">
+              <input type="text" placeholder="o incolla URL immagine..." value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              <input type="text" placeholder="Testo alt" value={imageAlt}
+                onChange={(e) => setImageAlt(e.target.value)}
+                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              <button type="button" onClick={async () => {
+                if (!imageUrl || !productId) return;
+                const res = await fetch("/api/admin/upload", {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                  setImages(prev => [...prev, json.image]);
+                  setImageUrl(""); setImageAlt("");
+                }
+              }} disabled={!imageUrl || isNew}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                Aggiungi
+              </button>
+            </div>
+          </div>
+
+          {/* Icecat lookup images — pending copy to Storage */}
+          {eanImages.length > 0 && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {eanImages.length} {eanImages.length > 1 ? "immagini" : "immagine"} {eanImages.length > 1 ? "trovate" : "trovata"} su Icecat
+                </p>
+                {!isNew && (
+                  <button type="button" onClick={importEanImages} disabled={importingEanImages}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap">
+                    {importingEanImages ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "⬇️"}
+                    {importingEanImages ? "Importazione..." : `Importa su Storage (${eanImages.length})`}
+                  </button>
                 )}
-                {importError && <p className="text-xs text-red-600">{importError}</p>}
               </div>
-            )}
-
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Carica dal computer
-            </label>
-
-            {isNew && <p className="text-xs text-muted-foreground">Salva prima il prodotto per poter aggiungere immagini.</p>}
-
-            {/* Image list */}
-            {images.length > 0 && (
-              <div className="flex flex-wrap gap-3">
-                {images.map((img, i) => (
-                  <div key={img.id || i} className="relative group w-24">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.url} alt={img.alt || ""} className="h-24 w-24 rounded-md border object-cover" />
-                    {i === 0 && (
-                      <span className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                        Copertina
-                      </span>
-                    )}
-                    <button type="button" onClick={async () => {
-                      if (img.id) await fetch(`/api/admin/upload?id=${img.id}`, { method: "DELETE" });
-                      setImages(prev => prev.filter((_, idx) => idx !== i));
-                    }}
-                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label={`Rimuovi immagine ${i + 1}`}>
-                      ×
-                    </button>
-                    {/* Reorder + cover controls */}
-                    <div className="mt-1 flex items-center justify-between rounded-md border bg-background px-1 py-0.5">
-                      <button type="button" onClick={() => moveImage(i, i - 1)} disabled={i === 0}
-                        className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                        aria-label={`Sposta immagine ${i + 1} prima`} title="Sposta prima">
-                        ↑
-                      </button>
-                      <button type="button" onClick={() => setCoverImage(i)} disabled={i === 0}
-                        className={`px-1 text-xs hover:text-amber-500 disabled:opacity-30 disabled:hover:text-muted-foreground ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`}
-                        aria-label={i === 0 ? "Immagine di copertina" : `Imposta immagine ${i + 1} come copertina`}
-                        title={i === 0 ? "Copertina" : "Imposta come copertina"}>
-                        ★
-                      </button>
-                      <button type="button" onClick={() => moveImage(i, i + 1)} disabled={i === images.length - 1}
-                        className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                        aria-label={`Sposta immagine ${i + 1} dopo`} title="Sposta dopo">
-                        ↓
-                      </button>
-                    </div>
-                  </div>
+              <div className="flex flex-wrap gap-2">
+                {eanImages.map((img, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={img.url} alt={img.alt || "Anteprima Icecat"} className="h-16 w-16 rounded-md border object-cover" />
                 ))}
               </div>
-            )}
-          </section>
+              {isNew && (
+                <p className="text-xs text-muted-foreground">
+                  Le immagini verranno copiate su Storage automaticamente al salvataggio del prodotto.
+                </p>
+              )}
+              {importError && <p className="text-xs text-red-600">{importError}</p>}
+            </div>
+          )}
 
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Carica dal computer
+          </label>
+
+          {isNew && <p className="text-xs text-muted-foreground">Salva prima il prodotto per poter aggiungere immagini.</p>}
+
+          {/* Image list */}
+          {images.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {images.map((img, i) => (
+                <div key={img.id || i} className="relative group w-24">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt={img.alt || ""} className="h-24 w-24 rounded-md border object-cover" />
+                  {i === 0 && (
+                    <span className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                      Copertina
+                    </span>
+                  )}
+                  <button type="button" onClick={async () => {
+                    if (img.id) await fetch(`/api/admin/upload?id=${img.id}`, { method: "DELETE" });
+                    setImages(prev => prev.filter((_, idx) => idx !== i));
+                  }}
+                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Rimuovi immagine ${i + 1}`}>
+                    ×
+                  </button>
+                  {/* Reorder + cover controls */}
+                  <div className="mt-1 flex items-center justify-between rounded-md border bg-background px-1 py-0.5">
+                    <button type="button" onClick={() => moveImage(i, i - 1)} disabled={i === 0}
+                      className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                      aria-label={`Sposta immagine ${i + 1} prima`} title="Sposta prima">
+                      ↑
+                    </button>
+                    <button type="button" onClick={() => setCoverImage(i)} disabled={i === 0}
+                      className={`px-1 text-xs hover:text-amber-500 disabled:opacity-30 disabled:hover:text-muted-foreground ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`}
+                      aria-label={i === 0 ? "Immagine di copertina" : `Imposta immagine ${i + 1} come copertina`}
+                      title={i === 0 ? "Copertina" : "Imposta come copertina"}>
+                      ★
+                    </button>
+                    <button type="button" onClick={() => moveImage(i, i + 1)} disabled={i === images.length - 1}
+                      className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                      aria-label={`Sposta immagine ${i + 1} dopo`} title="Sposta dopo">
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── Part 2: Informazioni di base (100%) — include prezzi, peso, organizzazione, varianti ── */}
+      <section className="rounded-lg border bg-card p-5 space-y-5">
+        <h2 className="font-semibold">Informazioni di base</h2>
+        <div className="grid gap-4 md:grid-cols-12">
+          <div className="md:col-span-12">
+            <label htmlFor="prod-title" className="block text-sm font-medium mb-1">Titolo *</label>
+            <input id="prod-title" type="text" value={title} onChange={(e) => updateTitle(e.target.value)}
+              required className={inputCls} />
+          </div>
+          <div className="md:col-span-6">
+            <label htmlFor="prod-slug" className="block text-sm font-medium mb-1">Slug</label>
+            <div className="flex gap-2">
+              <input id="prod-slug" type="text" value={slug} onChange={(e) => { setSlug(e.target.value); setAutoSlug(false); }}
+                className={`flex-1 ${inputCls}`} />
+              <button type="button" onClick={() => { setAutoSlug(true); updateTitle(title); }}
+                className="rounded-md border border-border px-2 text-xs hover:bg-muted transition-colors" title="Auto-genera">↻</button>
+            </div>
+          </div>
+          <div className="md:col-span-6">
+            <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / GTIN *</label>
+            <input
+              id="prod-barcode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value.replace(/\D/g, "").slice(0, 14))}
+              placeholder="es. 4719512030394"
+              required
+              className={inputCls}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio e indipendente
+              dalla ricerca Icecat.
+            </p>
+          </div>
+          <div className="md:col-span-6">
+            <label htmlFor="prod-identifier" className="block text-sm font-medium mb-1">Identificativo</label>
+            <input id="prod-identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+              className={inputCls} />
+          </div>
+          <div className="md:col-span-6">
+            <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
+            <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
+              className={inputCls} />
+          </div>
+          <div className="md:col-span-12">
+            <label htmlFor="prod-desc" className="block text-sm font-medium mb-1">Descrizione breve</label>
+            <textarea id="prod-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
+              className={inputCls} />
+          </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-5">
-          {/* Status */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Stato</h2>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
-                className="rounded border-border" />
-              Pubblicato (visibile nel catalogo)
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
-                className="rounded border-border" />
-              In evidenza (mostrato in homepage)
-            </label>
-          </section>
-
-          {/* Pricing */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Prezzi</h2>
+        {/* Prezzi + peso */}
+        <div className="border-t pt-4 space-y-4">
+          <h3 className="font-semibold">Prezzi</h3>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div>
               <label htmlFor="prod-price" className="block text-sm font-medium mb-1">Prezzo base (€) *</label>
               <input id="prod-price" type="number" step="0.01" min="0" value={basePrice} onChange={(e) => setBasePrice(e.target.value)}
-                required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                required className={inputCls} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="prod-sale" className="block text-sm font-medium mb-1">In offerta (€)</label>
-                <input id="prod-sale" type="number" step="0.01" min="0" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div>
-                <label htmlFor="prod-cost" className="block text-sm font-medium mb-1">Di costo (€)</label>
-                <input id="prod-cost" type="number" step="0.01" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
+            <div>
+              <label htmlFor="prod-sale" className="block text-sm font-medium mb-1">In offerta (€)</label>
+              <input id="prod-sale" type="number" step="0.01" min="0" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)}
+                className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="prod-cost" className="block text-sm font-medium mb-1">Di costo (€)</label>
+              <input id="prod-cost" type="number" step="0.01" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)}
+                className={inputCls} />
             </div>
             <div>
               <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>
               <input id="prod-weight" type="number" step="0.01" min="0" value={weight} onChange={(e) => setWeight(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                className={inputCls} />
             </div>
-          </section>
+          </div>
+        </div>
 
-          {/* Organization */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="font-semibold">Organizzazione</h2>
+        {/* Organizzazione */}
+        <div className="border-t pt-4 space-y-4">
+          <h3 className="font-semibold">Organizzazione</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="prod-cat" className="block text-sm font-medium mb-1">Categoria</label>
               <select id="prod-cat" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
+                className={inputCls}>
                 <option value="">Nessuna categoria</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -749,51 +768,17 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             <div>
               <label htmlFor="prod-brand" className="block text-sm font-medium mb-1">Marca</label>
               <select id="prod-brand" value={brandId} onChange={(e) => setBrandId(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring">
+                className={inputCls}>
                 <option value="">Nessuna marca</option>
                 {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
-          </section>
-
-          {/* SEO */}
-          <section className="rounded-lg border bg-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">SEO</h2>
-              <button type="button" onClick={async () => {
-                if (!title || seoLoading) return;
-                setSeoLoading(true);
-                const res = await fetch("/api/admin/seo/generate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "product", title, description: description || content }),
-                });
-                const json = await res.json();
-                if (json.seoTitle) setSeoTitle(json.seoTitle);
-                if (json.seoDescription) setSeoDescription(json.seoDescription);
-                setSeoLoading(false);
-              }} disabled={!title || seoLoading}
-                className="text-xs text-primary hover:underline disabled:opacity-30 disabled:no-underline transition-opacity flex items-center gap-1">
-                {seoLoading ? <span className="inline-block w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : "✨"}
-                {seoLoading ? "Generazione..." : "Genera con AI"}
-              </button>
-            </div>
-            <div>
-              <label htmlFor="prod-seo-title" className="block text-sm font-medium mb-1">Meta Title</label>
-              <input id="prod-seo-title" type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-            <div>
-              <label htmlFor="prod-seo-desc" className="block text-sm font-medium mb-1">Meta Description</label>
-              <textarea id="prod-seo-desc" value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-          </section>
+          </div>
         </div>
 
-        {/* Variants — full width, below the two columns */}
-        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-12">
-          <h2 className="font-semibold">Varianti</h2>
+        {/* Varianti */}
+        <div className="border-t pt-4 space-y-4">
+          <h3 className="font-semibold">Varianti</h3>
           {variants.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nessuna variante. Il prodotto avrà una variante predefinita.</p>
           ) : (
@@ -802,16 +787,16 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                 <div key={i} className="flex flex-wrap gap-2 rounded-md border bg-muted/30 p-3">
                   <input value={v.name} onChange={(e) => {
                     const next = [...variants]; next[i] = { ...next[i], name: e.target.value }; setVariants(next);
-                  }} placeholder="Nome variante" className="w-40 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  }} placeholder="Nome variante" className="w-48 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
                   <input type="number" value={v.price} onChange={(e) => {
                     const next = [...variants]; next[i] = { ...next[i], price: Number(e.target.value) }; setVariants(next);
-                  }} placeholder="Prezzo" step="0.01" className="w-28 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  }} placeholder="Prezzo" step="0.01" className="w-32 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
                   <input type="number" value={v.stock} onChange={(e) => {
                     const next = [...variants]; next[i] = { ...next[i], stock: Number(e.target.value) }; setVariants(next);
-                  }} placeholder="Stock" className="w-24 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  }} placeholder="Stock" className="w-28 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
                   <input value={v.sku} onChange={(e) => {
                     const next = [...variants]; next[i] = { ...next[i], sku: e.target.value }; setVariants(next);
-                  }} placeholder="SKU" className="w-36 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  }} placeholder="SKU" className="w-44 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
                   <button type="button" onClick={() => setVariants(prev => prev.filter((_, idx) => idx !== i))}
                     className="text-destructive text-xs hover:underline">Rimuovi</button>
                 </div>
@@ -822,8 +807,66 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             className="text-sm text-primary hover:underline">
             + Aggiungi variante
           </button>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* ── Part 3: Descrizione dettagliata (100%) + meta SEO ──────── */}
+      <section className="rounded-lg border bg-card p-5 space-y-4">
+        <h2 className="font-semibold">Descrizione dettagliata</h2>
+        <RichTextEditor
+          value={content}
+          onChange={setContent}
+          placeholder="Scrivi qui la descrizione dettagliata del prodotto..."
+          minHeight={350}
+          showSeoFormatButton={false}
+        />
+        <p className="text-xs text-muted-foreground">
+          Formatta il contenuto con grassetti, elenchi, tabelle, immagini e link. Il font rimane sempre quello del sito.
+          Usa il bottone <strong>✨ Formatta SEO con AI</strong> in alto per formattare questa descrizione e generare i meta.
+        </p>
+
+        <div className="border-t pt-4 space-y-4">
+          <h3 className="font-semibold">SEO</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="prod-seo-title" className="block text-sm font-medium mb-1">Meta Title</label>
+              <input id="prod-seo-title" type="text" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)}
+                className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="prod-seo-desc" className="block text-sm font-medium mb-1">Meta Description</label>
+              <textarea id="prod-seo-desc" value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={3}
+                className={inputCls} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Part 4: Specifiche tecniche (100%) ─────────────────────── */}
+      <section className="rounded-lg border bg-card p-5 space-y-4">
+        <h2 className="font-semibold">Specifiche tecniche</h2>
+        <div>
+          <label htmlFor="prod-specs" className="sr-only">Specifiche tecniche (JSON)</label>
+          <textarea
+            id="prod-specs"
+            value={specifications}
+            onChange={(e) => setSpecifications(e.target.value)}
+            rows={6}
+            placeholder='Specifiche in JSON raggruppate (es. [{"group":"Display","rows":[{"label":"Risoluzione","value":"3440x1440"}]}]) — compilato automaticamente da Icecat'
+            className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          {specifications.trim() ? (
+            <div className="mt-2 rounded-md border bg-muted/30 p-3 overflow-x-auto">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Anteprima</p>
+              <SpecificationsView value={specifications} />
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Compilato automaticamente scegliendo &quot;Specifiche tecniche&quot; nella dialog Icecat. Visibile nella pagina prodotto lato utente.
+            </p>
+          )}
+        </div>
+      </section>
 
       <IcecatDialog
         open={icecatOpen}

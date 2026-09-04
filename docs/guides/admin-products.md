@@ -88,7 +88,12 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 
 ### Sezioni del form
 
-Layout a tutta larghezza (area admin, max ~1680px) su due colonne: a sinistra **Informazioni di base**, **Descrizione dettagliata**, **Specifiche tecniche** e **Immagini**; a destra **Stato**, **Prezzi**, **Organizzazione** e **SEO**. **Varianti** in basso a tutta larghezza. Sopra il form, in alto, la barra **ricerca Icecat** (input GTIN dedicato).
+Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
+1. **In alto** — barra Icecat (input GTIN con placeholder "GTIN (EAN/UPC)") + bottone centralizzato **"✨ Formatta SEO con AI"** (formatta la descrizione dettagliata e genera meta title/description);
+2. **Parte 1** — due colonne: **Stato** (30%) e **Immagini** (70%);
+3. **Parte 2** — **Informazioni di base** al 100%: dati anagrafici, e dentro la stessa card **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
+4. **Parte 3** — **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
+5. **Parte 4** — **Specifiche tecniche** al 100% (JSON + anteprima).
 
 #### 1. Informazioni di base
 

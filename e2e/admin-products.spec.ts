@@ -116,25 +116,18 @@ test.describe("Admin Products — authenticated", () => {
     await expect(page.getByText("3440x1440", { exact: true })).toBeVisible();
   });
 
-  test("Formatta SEO button is disabled while the editor is empty", async ({ page }) => {
+  test("central 'Formatta SEO con AI' button requires a title", async ({ page }) => {
     await page.goto("/admin/products/new");
 
-    const editor = page.locator('[contenteditable="true"]').first();
-    const seoBtn = page.getByRole("button", { name: "Formatta SEO" });
+    const seoBtn = page.getByRole("button", { name: "Formatta SEO con AI" });
+    await expect(seoBtn).toBeVisible();
 
-    // Empty editor → disabled
+    // No title → disabled
     await expect(seoBtn).toBeDisabled();
 
-    // Type into the editor → enabled
-    await editor.click();
-    await page.keyboard.type("Descrizione di prova");
+    // Title present → enabled (formats the description + generates meta)
+    await page.locator("#prod-title").fill("Monitor ASUS 27");
     await expect(seoBtn).toBeEnabled();
-
-    // Clear everything → disabled again
-    await editor.click();
-    await page.keyboard.press("ControlOrMeta+a");
-    await page.keyboard.press("Backspace");
-    await expect(seoBtn).toBeDisabled();
   });
 
   test("edit page shows 'Vedi nel negozio' link opening the shop product in a new tab", async ({ page }) => {
