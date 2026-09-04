@@ -134,22 +134,29 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     }
   }, [initialImportError]);
 
-  // Scroll-to-top floating button: the admin scroll container is <main>
+  // Scroll-to-top floating button. Depending on the admin layout the
+  // scrollable element is <main> (overflow-auto) or the window itself —
+  // listen to both and react to whichever actually scrolls.
   useEffect(() => {
     const onScroll = () => {
-      const el = document.querySelector("main");
-      const top = el ? el.scrollTop : window.scrollY;
+      const mainEl = document.querySelector("main");
+      const top = Math.max(window.scrollY || 0, mainEl ? mainEl.scrollTop : 0);
       setShowTopButton(top > 400);
     };
-    const target = document.querySelector("main") ?? window;
-    target.addEventListener("scroll", onScroll, { passive: true });
-    return () => target.removeEventListener("scroll", onScroll);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const mainEl = document.querySelector("main");
+    mainEl?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mainEl?.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const scrollToTop = () => {
-    const el = document.querySelector("main");
-    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
-    else window.scrollTo({ top: 0, behavior: "smooth" });
+    const mainEl = document.querySelector("main");
+    if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   /** Back to the admin product search/list — preserves filters via history. */
@@ -484,16 +491,22 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           {/* Stato — inline with the header actions */}
-          <div role="group" aria-label="Stato del prodotto" className="flex items-center gap-4 text-sm">
-            <label className="flex cursor-pointer items-center gap-1.5 select-none" title="Visibile nel catalogo">
-              <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
-                className="rounded border-border" />
-              Pubblicato
+          <div role="group" aria-label="Stato del prodotto" className="flex items-start gap-5 text-sm">
+            <label className="flex cursor-pointer items-start gap-2 select-none">
+              <input type="checkbox" aria-label="Pubblicato" checked={published} onChange={(e) => setPublished(e.target.checked)}
+                className="mt-0.5 h-5 w-5 rounded border-border accent-primary" />
+              <span className="flex flex-col leading-tight">
+                <span className="font-medium">Pubblicato</span>
+                <span className="text-[11px] text-muted-foreground">Visibile nel catalogo</span>
+              </span>
             </label>
-            <label className="flex cursor-pointer items-center gap-1.5 select-none" title="Mostrato in homepage">
-              <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
-                className="rounded border-border" />
-              In evidenza
+            <label className="flex cursor-pointer items-start gap-2 select-none">
+              <input type="checkbox" aria-label="In evidenza" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
+                className="mt-0.5 h-5 w-5 rounded border-border accent-primary" />
+              <span className="flex flex-col leading-tight">
+                <span className="font-medium">In evidenza</span>
+                <span className="text-[11px] text-muted-foreground">Mostrato nella vetrina in homepage</span>
+              </span>
             </label>
           </div>
           <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
@@ -926,7 +939,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           onClick={scrollToTop}
           aria-label="Torna in alto"
           title="Torna in alto"
-          className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-all hover:border-primary hover:text-primary animate-in fade-in"
+          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_18px_rgba(255,12,60,0.45)] transition-all hover:bg-primary/90 hover:scale-105 animate-in fade-in"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="m18 15-6-6-6 6" />

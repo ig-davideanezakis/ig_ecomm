@@ -38,6 +38,17 @@ test.describe("Admin Products — authenticated", () => {
     await expect(page.getByLabel("In evidenza")).toBeVisible();
     // Back to search breadcrumb + scroll-to-top appear on the page
     await expect(page.getByRole("button", { name: "Torna alla ricerca" })).toBeVisible();
+
+    // Scroll-to-top arrow appears only after scrolling down
+    await expect(page.getByRole("button", { name: "Torna in alto" })).toHaveCount(0);
+    await page.evaluate(() => {
+      const mainEl = document.querySelector("main");
+      if (mainEl) mainEl.scrollTop = 900;
+      window.scrollTo(0, 900);
+    });
+    const topBtn = page.getByRole("button", { name: "Torna in alto" });
+    await expect(topBtn).toBeVisible();
+    await topBtn.click();
   });
 
   test("Icecat EAN lookup opens selection dialog and applies only chosen sections", async ({ page }) => {
