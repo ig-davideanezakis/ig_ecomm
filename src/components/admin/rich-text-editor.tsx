@@ -250,6 +250,11 @@ export default function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        // StarterKit ships link + underline; the standalone extensions below are
+        // configured (link styles, etc.), so disable the built-in copies to
+        // avoid the "Duplicate extension names" warning.
+        link: false,
+        underline: false,
       }),
       LinkExtension.configure({
         openOnClick: false,

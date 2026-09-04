@@ -2,13 +2,15 @@
 
 Each feature area has a corresponding Linear issue in the [Ig_ecomm project](https://linear.app/ig-ecomm/project/ig-ecomm-a56b8c556371).
 
+See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
+
 ## Layout & Navigation
 **Linear:** IG-5
 **Status:** ✅ Done
 
 - Navbar — logo, categories dropdown, search bar, cart icon, login/account link
 - Footer — contacts, info links, social links, newsletter signup
-- Homepage — hero section, featured categories grid, featured products carousel, promotions
+- Homepage — hero section + brand logos widget (featured categories grid / featured products carousel / promotions: 🚧 not yet implemented — see [roadmap](roadmap.md))
 - Info pages — about us, contact form, FAQ, privacy policy, terms of service
 - Custom 404 page with navigation
 - Floating **"Torna su"** button — bottom-right, appears after 300px of scroll (window or scrollable container), 200ms fade in/out, smooth scroll back to top, keyboard accessible

@@ -82,7 +82,7 @@
 
 ## Authentication & Authorization
 
-**Decision:** NextAuth.js v5 (Auth.js) with Magic Link + role-based access + selective 2FA (TOTP)
+**Decision:** NextAuth.js v5 (Auth.js) with Email/Password + role-based access + selective 2FA (TOTP)
 
 **Date:** 2026-05-28
 
@@ -99,7 +99,7 @@ Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit ro
 
 ### Authentication Flow
 
-1. **Magic Link** — user enters email on `/auth/login`, receives a one-time link via Resend
+1. **Email entry** — user enters email on `/auth/login`; `POST /api/auth/check-email` detects the role (new user / CUSTOMER / STAFF / ADMIN)
 2. **Session Creation** — NextAuth creates a JWT session with role and 2FA status
 3. **2FA Check** — if user is STAFF or ADMIN and has TOTP enabled, `needsTotp` flag is set in the JWT
 4. **2FA Verification** — user is redirected to `/auth/verify-2fa`, enters 6-digit code from authenticator app
@@ -125,7 +125,7 @@ Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit ro
 | Method | For | How |
 |--------|-----|-----|
 | **Google OAuth** | CUSTOMER | "Continua con Google" button → instant login |
-| **Magic Link** | CUSTOMER | Enter email → receive link via Resend → click to login |
+| **Email + Password** | CUSTOMER | Enter email → password form (or one-step registration if new) → login |
 | **Password + 2FA** | STAFF, ADMIN | Enter email → system detects role → password form → (if 2FA enabled) TOTP code |
 
 ### Login Flow
@@ -133,7 +133,8 @@ Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit ro
 1. User lands on `/auth/login` → sees "Continua con Google" button + email input
 2. If Google OAuth: redirects to Google → callback → user created/loaded as CUSTOMER
 3. If email entered: `POST /api/auth/check-email` checks the user's role:
-   - **Not found or CUSTOMER** → Magic Link sent via Resend
+   - **Not found** → one-step registration form (email + password) → auto-login
+   - **CUSTOMER** → password form (or Google OAuth)
    - **STAFF or ADMIN** → password form shown
 4. After password verification (Credentials provider, bcrypt): if 2FA enabled → `needsTotp` flag set
 5. 2FA verification at `/auth/verify-2fa` completes the session

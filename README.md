@@ -6,11 +6,11 @@ Full-stack e-commerce platform for **Infograf** (Palermo, IT — since 1992), bu
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15 (App Router, Turbopack) + TypeScript |
+| Framework | Next.js 16 (App Router) + TypeScript |
 | Styling | Tailwind CSS + shadcn/ui |
 | Database | Supabase (PostgreSQL) + Drizzle ORM |
 | Storage | Supabase Storage (bucket `product-images`, public) |
-| Auth | Auth.js v5 (NextAuth) — Google OAuth, Magic Link (Resend), Password + 2FA (TOTP) |
+| Auth | Auth.js v5 (NextAuth) — Google OAuth, Email + Password, token reset, 2FA (TOTP) |
 | Email | Resend |
 | Deploy | Vercel (via GitHub Actions CI/CD) |
 | Tests | Vitest (unit/component) + Playwright (E2E + aXe accessibility) |
@@ -58,7 +58,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `AUTH_SECRET` | Yes | NextAuth secret (`openssl rand -base64 32`) |
 | `AUTH_URL` | Yes | Deployed URL (e.g. `https://ig-ecomm.vercel.app`) |
 | `AUTH_RESEND_KEY` | Yes | Resend API key (magic links, emails) |
-| `GROQ_API_KEY` | No | AI SEO formatting in admin |
+| `DEEPSEEK_API_KEY` | No | AI SEO formatting (DeepSeek) in admin |
 | `ICECAT_KEY` / `ICECAT_USERNAME` | No | Icecat product data lookup by EAN |
 | `MYSQL_HOST/PORT/USER/PASSWORD/DATABASE` | No | PrestaShop migration source (defaults in `migration/README.md`) |
 | `PS_PREFIX` / `PS_LANG_ID` | No | PrestaShop table prefix (`pr_` in production) + language id (`2` = Italiano) |
@@ -114,18 +114,18 @@ docs/             → Project documentation (guides, decisions)
 GitHub Actions runs on every push to `main`:
 
 ```
-lint → test → build → e2e → deploy (Vercel)
-              ↘ a11y
+lint → test → build → e2e (→ cleanup users + products) → deploy (Vercel)
+                       ↘ a11y (aXe)
 ```
 
 The deploy job only runs if **all** of lint, test, build and e2e pass. Required GitHub secrets: `DATABASE_URL`, `AUTH_SECRET`, `VERCEL_DEPLOY_HOOK`, `VERCEL_TOKEN`, `VERCEL_PROJECT_ID` (see `.github/workflows/ci.yml`).
 
 ## Documentation
 
-- `docs/guides/` — feature-specific guides (admin, testing, accessibility, behavior)
+- `docs/guides/` — feature-specific guides (admin, testing, accessibility, behavior, roadmap)
 - `docs/decisions/architecture.md` — architectural decisions (living document)
 - `migration/README.md` — PrestaShop data migration instructions
 
 ## Contributing
 
-See `AGENTS.md` and `docs/GUIDELINES.md` before making changes.
+See `AGENTS.md` and `docs/guides/` before making changes.

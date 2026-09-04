@@ -45,7 +45,7 @@
 |-------|------|-------|
 | **Headings** (H1-H6) | **Space Grotesk** | Geometric, slightly condensed, tech-forward. Applied globally via CSS. Google Fonts. |
 | **Body text** | **Inter** | Clean, highly readable, modern. Standard for tech dashboards and e-commerce. Google Fonts. |
-| **Monospace** (specs, code) | `Geist Mono` | Clean monospace for technical specs and code blocks. |
+| **Monospace** (specs, code) | system monospace (`ui-monospace`, `SF Mono`) | Clean monospace for technical specs and code blocks. |
 
 **CSS variables defined:**
 - `--font-sans` → Inter (via Next.js font loader)
@@ -71,7 +71,7 @@
 || Component | Decision |
 ||-----------|----------|
 || Theme toggle | Simple click button (no dropdown). Toggles between dark and light. Sun/Moon icons with 300ms rotation + opacity transition. |
-|| Buttons | TBD (rounded? square? outline? filled?) |
+|| Buttons | Rounded (`rounded-lg`), via `@base-ui/react/button` |
 | Cards | TBD (bordered? shadow? radius?) |
 | Inputs | TBD |
 | Navigation | TBD |

@@ -26,10 +26,14 @@ ig_ecomm/
 ├── e2e/                         # Playwright E2E tests
 │   ├── auth.spec.ts             # Auth flows (login, register, forgot-password, logout, roles, API)
 │   ├── admin.spec.ts            # Admin redirect tests
+│   ├── admin-a11y.spec.ts       # Authenticated aXe scans (product page, Icecat dialog, lightbox)
+│   ├── admin-products.spec.ts   # Admin products CRUD + Icecat dialog
+│   ├── product-page.spec.ts     # PDP: JSON-LD, sticky bar, gallery/lightbox
+│   ├── scroll-top.spec.ts       # "Torna su" button (shop + admin)
+│   ├── spec-chips.spec.ts       # Spec chips on PDP and cards
 │   ├── smoke.spec.ts            # Core smoke tests
 │   ├── theme.spec.ts            # Theme toggle tests
-│   ├── accessibility.spec.ts    # aXe-core WCAG scans
-│   └── catalog.spec.ts         # Catalog browsing tests
+│   └── accessibility.spec.ts    # aXe-core WCAG scans (public pages)
 ├── vercel.json                  # Vercel config
 ├── src/
 │   ├── app/
@@ -84,11 +88,7 @@ ig_ecomm/
 │   │       ├── auth.ts          # Auth tables (user, account, session, verification_token)
 │   │       └── store.ts         # E-commerce tables (product, category, brand, order, etc.)
 │   ├── components/
-│   │   ├── __tests__/           # Component tests
-│   │   │   ├── infograf-logo.test.tsx
-│   │   │   ├── theme-toggle.test.tsx
-│   │   │   ├── password-setup.test.tsx
-│   │   │   └── totp-setup.test.tsx
+│   │   ├── __tests__/           # Component + utility tests (.test.tsx / .test.ts)
 │   │   ├── ui/                  # shadcn/ui base components
 │   │   ├── shop/                # Storefront components
 │   │   ├── totp-setup.tsx       # 2FA setup UI
@@ -124,7 +124,7 @@ ig_ecomm/
 - **Imports:** Use `@/` alias (e.g. `@/lib/db`, `@/components/ui/button`)
 - **CSS:** Tailwind utility classes. Custom CSS only as a last resort.
 - **Animations:** Framer Motion for scroll/UI animations
-- **Forms:** React Hook Form + Zod validation
+- **Forms:** Zod for schema validation (client + server)
 - **API routes:** Next.js Route Handlers (`route.ts`)
 - **Server Components by default** — only add `'use client'` when you need browser APIs, event handlers, or hooks
 
@@ -149,8 +149,8 @@ ig_ecomm/
 
 ## State Management
 
-- Server state: fetched in Server Components or React Query (for client data)
-- Client state: Zustand for global cart, auth state if needed
+- Server state: fetched in Server Components (no client-side data-fetching library)
+- Cart state: React Context + `useReducer`, persisted to `localStorage` (`src/lib/cart-store.tsx`)
 - URL state: search params for filters, pagination
 
 ## Auth Pattern
