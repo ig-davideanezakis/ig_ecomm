@@ -129,6 +129,31 @@ E2E tests create temporary users with the prefix `e2e-*`. The cleanup script del
 - The 3 seed test users (`admin@test.com`, `staff@test.com`, `customer@test.com`)
 - Their linked accounts, sessions, and verification tokens
 
+### ⚠️ Mandatory rule: clean the shared database after every E2E run
+
+The E2E specs also create **products** through `/api/admin/products` (titles
+`Monitor E2E *`, `Notebook Chip E2E *`, `Prodotto E2E *`, `Chip E2E *`) and rely
+on the **seed test users** above. The database is **shared** (remote Supabase):
+**every local E2E session MUST clean up after itself** before finishing — never
+leave test data behind, and never assume a previous run did:
+
+```bash
+# 1. Before running E2E locally: seed the test users
+npm run db:seed-test-users
+
+# 2. Run the tests (local: --workers=1)
+npx playwright test --workers=1
+
+# 3. After the run, ALWAYS clean BOTH users and products
+npm run db:cleanup            # @test.com users (script: cleanup-test-users.ts)
+npm run db:cleanup-products   # E2E products   (script: cleanup-e2e-products.ts)
+```
+
+CI applies the same rule automatically: the `e2e` job runs the user cleanup
+(`if: always()`) after the tests. The `a11y` job runs **without** seeding, so
+authenticated aXe scans live in `e2e/admin-a11y.spec.ts` (seeded `e2e` job),
+never in the standalone `a11y` job.
+
 ## CI Pipeline
 
 The CI workflow (`.github/workflows/ci.yml`) runs:
