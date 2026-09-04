@@ -149,20 +149,23 @@ npm run db:cleanup            # @test.com users (script: cleanup-test-users.ts)
 npm run db:cleanup-products   # E2E products   (script: cleanup-e2e-products.ts)
 ```
 
-CI applies the same rule automatically: the `e2e` job runs the user cleanup
-(`if: always()`) after the tests. The `a11y` job runs **without** seeding, so
-authenticated aXe scans live in `e2e/admin-a11y.spec.ts` (seeded `e2e` job),
-never in the standalone `a11y` job.
+CI applies the same rule automatically: the `e2e` job cleans up **both** users
+and products (`cleanup-test-users.ts` + `cleanup-e2e-products.ts`, both
+`if: always()`) after the tests, and it also removes stale E2E products
+**before** the run so the shared DB is self-healing even after a crashed run.
+The `a11y` job runs **without** seeding, so authenticated aXe scans live in
+`e2e/admin-a11y.spec.ts` (seeded `e2e` job), never in the standalone `a11y`
+job.
 
 ## CI Pipeline
 
 The CI workflow (`.github/workflows/ci.yml`) runs:
 
 ```
-lint → test (Vitest) → build → e2e (Playwright) → cleanup test users → a11y (aXe) → deploy
+lint → test (Vitest) → build → e2e (Playwright) → cleanup users + products → a11y (aXe) → deploy
 ```
 
-All test jobs must pass before deployment to Vercel. After E2E tests, the cleanup step always runs (even if tests fail) to remove temporary test users.
+All test jobs must pass before deployment to Vercel. After E2E tests, the cleanup steps always run (even if tests fail) to remove temporary test users and E2E products.
 
 ## Coverage Targets (MVP)
 

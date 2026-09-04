@@ -71,6 +71,8 @@ jobs:
       - run: npm ci
       - name: Install Playwright
         run: npx playwright install chromium --with-deps
+      - name: Cleanup stale E2E products (self-healing shared DB)
+        run: npx tsx scripts/cleanup-e2e-products.ts
       - name: Seed test users
         run: npx tsx scripts/seed-test-users.ts
       - name: Run E2E tests
@@ -81,6 +83,9 @@ jobs:
       - name: Cleanup test users
         if: always()
         run: npx tsx scripts/cleanup-test-users.ts
+      - name: Cleanup E2E products
+        if: always()
+        run: npx tsx scripts/cleanup-e2e-products.ts
 
   a11y:
     name: Accessibility (aXe)
