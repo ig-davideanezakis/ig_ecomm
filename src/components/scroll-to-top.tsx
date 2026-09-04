@@ -1,37 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Global "scroll back to top" floating button — mounted once in the root
- * layout so it works on the whole application (shop front + admin back).
+ * layout so it works on EVERY page of the application (shop front + admin
+ * back, whatever the scroll container is).
  *
- * The scrollable element depends on the layout: the shop scrolls the window,
- * the admin area scrolls <main> (overflow-auto). Listen to the window AND to
- * every scroll event at the document capture phase (scroll does not bubble),
- * then check both offsets.
+ * Strategy:
+ * - `scroll` events do not bubble, but they DO pass through the capture
+ *   phase (window → … → target). A capture listener on `document` therefore
+ *   sees the scroll of ANY scrollable element on the page.
+ * - The handler checks the event target's scrollTop plus the window and the
+ *   first <main> as fallbacks, so the arrow appears no matter which element
+ *   actually scrolls.
+ * - The last real scroller is remembered, so clicking the arrow scrolls the
+ *   right container back to the top.
  */
 export default function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const scrollerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const onScroll = () => {
-      const mainEl = document.querySelector("main");
-      const top = Math.max(window.scrollY || 0, mainEl ? mainEl.scrollTop : 0);
-      setVisible(top > 400);
+    const windowTop = () =>
+      window.scrollY || (document.scrollingElement ?? document.documentElement).scrollTop || 0;
+
+    const update = (top: number) => setVisible(top > 300);
+
+    const onWindowScroll = () => update(windowTop());
+
+    // Capture phase: fires for the window/document AND for any inner
+    // scrollable element (modal, table, custom container, …).
+    const onAnyScroll = (e: Event) => {
+      const target = e.target as HTMLElement | Document;
+      let targetTop = 0;
+      if (target !== document) {
+        targetTop = (target as HTMLElement).scrollTop || 0;
+        // Remember the deepest container that can actually scroll, so the
+        // click scrolls the element the user was looking at.
+        const el = target as HTMLElement;
+        if (targetTop > 0 || el.scrollHeight > el.clientHeight) {
+          scrollerRef.current = el;
+        }
+      }
+      const mainTop = document.querySelector("main")?.scrollTop ?? 0;
+      update(Math.max(targetTop, mainTop, windowTop()));
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+
+    onWindowScroll();
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    document.addEventListener("scroll", onAnyScroll, { capture: true, passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      document.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("scroll", onWindowScroll);
+      document.removeEventListener("scroll", onAnyScroll, true);
     };
   }, []);
 
   const scrollToTop = () => {
-    const mainEl = document.querySelector("main");
-    if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
+    const scroller = scrollerRef.current;
+    if (scroller && scroller.scrollTop > 0) {
+      scroller.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const mainEl = document.querySelector("main");
+      if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
