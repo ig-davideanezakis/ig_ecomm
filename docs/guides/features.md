@@ -19,6 +19,7 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 
 - Product listing with sidebar filters (category, brand, price range)
 - Product detail page with admin-editable rich HTML content
+- Product image gallery with click-to-zoom lightbox (desktop + mobile): prev/next, keyboard arrows, touch swipe, ESC/backdrop close, focus-managed dialog
 - Dynamic content sections (specs table, gallery, embedded video, custom HTML blocks)
 - Scroll-triggered animations (parallax, fade-in reveal, slide transitions)
 - Full-text product search

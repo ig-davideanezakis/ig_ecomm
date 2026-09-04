@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart-store";
+import { ProductGallery } from "@/components/shop/product-gallery";
 import SpecificationsView from "@/components/shop/specifications-view";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 import type { SpecChipValue } from "@/lib/spec-chips";
@@ -62,7 +62,6 @@ export function ProductDetailClient({ product, specChips = [] }: ProductDetailCl
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null,
   );
-  const [selectedImage, setSelectedImage] = useState(0);
 
   const { addItem } = useCart();
 
@@ -130,33 +129,13 @@ export function ProductDetailClient({ product, specChips = [] }: ProductDetailCl
         </ol>
       </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* ─── Images ───────────────────────────────────────────── */}
-        <div className="space-y-4">
-          {/* Main image — white frame: PrestaShop JPGs have a baked white background,
-              so images blend seamlessly and are never cropped (object-contain) */}
-          <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-white">
-            {images[selectedImage] ? (
-              <Image
-                src={images[selectedImage].url}
-                alt={images[selectedImage].alt ?? product.title}
-                className="h-full w-full object-contain p-3 transition-transform duration-500"
-                width={800}
-                height={800}
-                priority
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-muted-foreground">
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-              </div>
-            )}
-
-            {/* Badges */}
-            <div className="absolute left-3 top-3 flex flex-col gap-2">
+        <ProductGallery
+          images={images}
+          title={product.title}
+          badges={
+            <>
               {hasDiscount && (
                 <span className="rounded bg-primary px-2.5 py-1 text-xs font-bold text-white">
                   -{Math.round(((1 - currentPrice / product.compareAtPrice!) * 100))}%
@@ -167,34 +146,9 @@ export function ProductDetailClient({ product, specChips = [] }: ProductDetailCl
                   In evidenza
                 </span>
               )}
-            </div>
-          </div>
-
-          {/* Thumbnails */}
-          {images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {images.map((img, i) => (
-                <button
-                  key={img.id}
-                  onClick={() => setSelectedImage(i)}
-                  className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-all ${
-                    i === selectedImage
-                      ? "border-primary"
-                      : "border-border hover:border-muted-foreground"
-                  }`}
-                >
-                  <Image
-                    src={img.url}
-                    alt={img.alt ?? `${product.title} ${i + 1}`}
-                    className="h-full w-full object-contain p-0.5"
-                    width={80}
-                    height={80}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            </>
+          }
+        />
 
         {/* ─── Product Info ─────────────────────────────────────── */}
         <div className="flex flex-col gap-6">

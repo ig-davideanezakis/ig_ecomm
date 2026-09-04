@@ -52,6 +52,52 @@ test.describe("Accessibility — authenticated pages", () => {
     expect(critical).toEqual([]);
   });
 
+  test("product image lightbox should have no violations", async ({ page }) => {
+    // Create a published product with two images so the gallery lightbox opens
+    const res = await page.request.post("/api/admin/products", {
+      data: {
+        title: "Prodotto E2E Lightbox",
+        slug: `prodotto-e2e-lightbox-${Date.now().toString(36)}`,
+        barcode: "7627780914583",
+        description: "Prodotto per lo scan aXe del lightbox immagini",
+        basePrice: 129,
+        published: true,
+      },
+    });
+    const created = await res.json();
+    expect(created.success).toBe(true);
+
+    const png =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    for (const alt of ["Foto E2E 1", "Foto E2E 2"]) {
+      const up = await page.request.post("/api/admin/upload", {
+        multipart: {
+          productId: String(created.id),
+          alt,
+          file: { name: `${alt}.png`, mimeType: "image/png", buffer: Buffer.from(png, "base64") },
+        },
+      });
+      expect((await up.json()).success).toBe(true);
+    }
+
+    await page.goto(`/product/${created.slug}`);
+    await page.waitForLoadState("networkidle");
+
+    // Open the lightbox and scan ONLY the dialog content
+    await page.getByRole("button", { name: "Ingrandisci immagine" }).click();
+    const dlg = page.getByRole("dialog", { name: /Anteprima immagini/ });
+    await expect(dlg).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .include('[role="dialog"][aria-label*="Anteprima immagini"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(dlg).toHaveCount(0);
+  });
+
   test("admin Icecat selection dialog should have no violations", async ({ page }) => {
     // Intercept the Icecat lookup so the scan is network-independent
     await page.route("**/api/products/lookup-ean**", async (route) => {

@@ -81,4 +81,101 @@ test.describe("Product page (PDP) — authenticated setup", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(buyBar).toBeHidden();
   });
+
+  test("gallery: no horizontal overflow on mobile + click-to-zoom lightbox (buttons, keyboard, swipe)", async ({ page }) => {
+    const res = await page.request.post("/api/admin/products", {
+      data: {
+        title: "Monitor E2E Gallery",
+        slug: `monitor-e2e-gallery-${Date.now().toString(36)}`,
+        barcode: "7627780914582",
+        description: "Prodotto per testare la galleria immagini con lightbox",
+        basePrice: 249,
+        published: true,
+      },
+    });
+    const created = await res.json();
+    expect(created.success).toBe(true);
+
+    // Attach two tiny PNG images (multipart → Supabase Storage)
+    const redPng =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const bluePng =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+    for (const [b64, alt] of [
+      [redPng, "Fronte E2E"],
+      [bluePng, "Retro E2E"],
+    ] as const) {
+      const up = await page.request.post("/api/admin/upload", {
+        multipart: {
+          productId: String(created.id),
+          alt,
+          file: { name: `${alt}.png`, mimeType: "image/png", buffer: Buffer.from(b64, "base64") },
+        },
+      });
+      expect((await up.json()).success).toBe(true);
+    }
+
+    // Mobile: the page must NOT overflow horizontally (gallery regression)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/product/${created.slug}`);
+    await page.waitForLoadState("networkidle");
+    const noOverflow = await page.evaluate(
+      () => document.scrollingElement!.scrollWidth <= window.innerWidth + 1,
+    );
+    expect(noOverflow).toBe(true);
+
+    // Thumbnails + open the lightbox from the main image
+    await expect(page.getByRole("button", { name: "Mostra immagine 2" })).toBeVisible();
+    await page.getByRole("button", { name: "Ingrandisci immagine" }).click();
+    const dlg = page.getByRole("dialog", { name: /Anteprima immagini/ });
+    await expect(dlg).toBeVisible();
+    await expect(dlg.getByText(/1 \/ 2/)).toBeVisible();
+
+    // Buttons navigate back and forth
+    await dlg.getByRole("button", { name: "Immagine successiva" }).click();
+    await expect(dlg.getByText(/2 \/ 2/)).toBeVisible();
+    await expect(dlg.getByRole("img", { name: "Retro E2E" })).toBeVisible();
+    await dlg.getByRole("button", { name: "Immagine precedente" }).click();
+    await expect(dlg.getByText(/1 \/ 2/)).toBeVisible();
+
+    // Keyboard: arrows navigate, Escape closes and focus returns to the image
+    await page.keyboard.press("ArrowRight");
+    await expect(dlg.getByText(/2 \/ 2/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dlg).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Ingrandisci immagine" })).toBeFocused();
+
+    // Touch swipe left → next image (dialog reopens at the last viewed image,
+    // so "next" wraps back to image 1)
+    await page.getByRole("button", { name: "Ingrandisci immagine" }).click();
+    await expect(dlg).toBeVisible();
+    await expect(dlg.getByText(/2 \/ 2/)).toBeVisible();
+    const swiped = await page.evaluate(() => {
+      const stage = document.querySelector("[class*='touch-pan-y']");
+      if (!stage) return false;
+      const makeTouch = (x: number) =>
+        new Touch({ identifier: 1, target: stage as EventTarget, clientX: x, clientY: 400 });
+      stage.dispatchEvent(
+        new TouchEvent("touchstart", {
+          bubbles: true,
+          cancelable: true,
+          touches: [makeTouch(300)],
+          changedTouches: [makeTouch(300)],
+        }),
+      );
+      stage.dispatchEvent(
+        new TouchEvent("touchend", {
+          bubbles: true,
+          cancelable: true,
+          touches: [],
+          changedTouches: [makeTouch(120)],
+        }),
+      );
+      return true;
+    });
+    expect(swiped).toBe(true);
+    await expect(dlg.getByText(/1 \/ 2/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dlg).toHaveCount(0);
+  });
 });
