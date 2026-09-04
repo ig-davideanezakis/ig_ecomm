@@ -67,14 +67,17 @@ test.describe("Accessibility — authenticated pages", () => {
     const created = await res.json();
     expect(created.success).toBe(true);
 
-    const png =
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
-    for (const alt of ["Foto E2E 1", "Foto E2E 2"]) {
+    // Attach two image records via the URL-reference branch of /api/admin/upload
+    // (CI has no Supabase storage credentials — only DATABASE_URL — so the
+    // multipart/storage path cannot run there; images.icecat.biz is whitelisted
+    // in next.config for next/image).
+    const icecatBase = "https://images.icecat.biz/img/gallery/e2e-lightbox";
+    for (const [i, alt] of ["Foto E2E 1", "Foto E2E 2"].entries()) {
       const up = await page.request.post("/api/admin/upload", {
-        multipart: {
+        data: {
           productId: String(created.id),
           alt,
-          file: { name: `${alt}.png`, mimeType: "image/png", buffer: Buffer.from(png, "base64") },
+          url: `${icecatBase}-${i + 1}.jpg`,
         },
       });
       expect((await up.json()).success).toBe(true);
