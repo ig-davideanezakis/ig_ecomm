@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import RichTextEditor from "@/components/admin/rich-text-editor";
 import IcecatDialog from "@/components/admin/icecat-dialog";
 import SpecificationsView from "@/components/shop/specifications-view";
@@ -87,6 +88,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
+  const [showTopButton, setShowTopButton] = useState(false);
 
   // Fetch categories and brands
   useEffect(() => {
@@ -131,6 +133,30 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [initialImportError]);
+
+  // Scroll-to-top floating button: the admin scroll container is <main>
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.querySelector("main");
+      const top = el ? el.scrollTop : window.scrollY;
+      setShowTopButton(top > 400);
+    };
+    const target = document.querySelector("main") ?? window;
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    const el = document.querySelector("main");
+    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /** Back to the admin product search/list — preserves filters via history. */
+  const goBackToList = () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = "/admin/products";
+  };
 
   // Auto-generate slug from title
   const updateTitle = (v: string) => {
@@ -430,45 +456,79 @@ export default function ProductForm({ productId, initialImportError }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Breadcrumb / back to the product search */}
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
+        <button type="button" onClick={goBackToList}
+          className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+          title="Torna alla ricerca prodotti (mantiene filtri e pagina)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          Torna alla ricerca
+        </button>
+        <span aria-hidden="true" className="text-muted-foreground">/</span>
+        <Link href="/admin/products" className="text-muted-foreground hover:text-foreground transition-colors">
+          Prodotti
+        </Link>
+        <span aria-hidden="true" className="text-muted-foreground">/</span>
+        <span className="font-medium text-foreground truncate max-w-[280px]">
+          {isNew ? "Nuovo prodotto" : `Modifica: ${title || productId}`}
+        </span>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{isNew ? "Nuovo prodotto" : "Modifica prodotto"}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isNew ? "Inserisci i dati del nuovo prodotto" : `ID: ${productId}`}
           </p>
         </div>
-        <div className="flex gap-2">
-          {!isNew && slug && (
-            <a
-              href={`/product/${slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              title="Apre il prodotto nel negozio, in una nuova scheda"
-            >
-              👁️ Vedi nel negozio
-            </a>
-          )}
-          {!isNew && (
-            <button type="button" onClick={handleDuplicate} disabled={saving}
-              className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">
-              Duplica
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {/* Stato — inline with the header actions */}
+          <div role="group" aria-label="Stato del prodotto" className="flex items-center gap-4 text-sm">
+            <label className="flex cursor-pointer items-center gap-1.5 select-none" title="Visibile nel catalogo">
+              <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
+                className="rounded border-border" />
+              Pubblicato
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5 select-none" title="Mostrato in homepage">
+              <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
+                className="rounded border-border" />
+              In evidenza
+            </label>
+          </div>
+          <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
+          <div className="flex flex-wrap items-center gap-2">
+            {!isNew && slug && (
+              <a
+                href={`/product/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                title="Apre il prodotto nel negozio, in una nuova scheda"
+              >
+                👁️ Vedi nel negozio
+              </a>
+            )}
+            {!isNew && (
+              <button type="button" onClick={handleDuplicate} disabled={saving}
+                className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">
+                Duplica
+              </button>
+            )}
+            <button type="submit" disabled={saving}
+              className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+              {saving ? "Salvataggio..." : isNew ? "Crea prodotto" : "Salva modifiche"}
             </button>
-          )}
-          <button type="submit" disabled={saving}
-            className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-            {saving ? "Salvataggio..." : isNew ? "Crea prodotto" : "Salva modifiche"}
-          </button>
+          </div>
         </div>
       </div>
 
       {error && <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600">{error}</div>}
       {success && <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600">{success}</div>}
 
-      {/* Top bar: Icecat GTIN search + centralized AI SEO action */}
+      {/* Icecat search — GTIN lookup bar */}
       <section className="rounded-lg border bg-card p-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="flex flex-1 items-center gap-2">
             <label htmlFor="prod-gtin" className="sr-only">
               Cerca su Icecat per GTIN (EAN/UPC)
@@ -490,44 +550,36 @@ export default function ProductForm({ productId, initialImportError }: Props) {
               {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
             </button>
           </div>
-          <div className="flex items-center justify-end gap-3">
-            <p className="hidden text-xs text-muted-foreground lg:block">
-              Formatta la descrizione dettagliata e genera meta title/description.
-            </p>
-            <button type="button" onClick={handleSeoAll} disabled={!title.trim() || seoLoading}
-              title="Formatta la descrizione dettagliata e genera meta title/description con l'AI"
-              className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-primary to-purple-600 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap">
-              {seoLoading ? (
-                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              )}
-              {seoLoading ? "Formattazione..." : "Formatta SEO con AI"}
-            </button>
-          </div>
+          <p className="text-xs text-muted-foreground lg:max-w-xs lg:text-right">
+            Ricerca il prodotto su Icecat dal codice GTIN: titolo, immagini e specifiche si
+            applicano con la dialog di anteprima. Il campo EAN del prodotto resta indipendente.
+          </p>
         </div>
       </section>
 
-      {/* ── Part 1: Stato (30%) + Immagini (70%) ───────────────────── */}
-      <div className="grid gap-6 xl:grid-cols-10">
-        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-3 h-fit">
-          <h2 className="font-semibold">Stato</h2>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
-              className="rounded border-border" />
-            Pubblicato (visibile nel catalogo)
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)}
-              className="rounded border-border" />
-            In evidenza (mostrato in homepage)
-          </label>
-        </section>
+      {/* AI SEO formatting — separate bar */}
+      <section className="rounded-lg border bg-card p-3">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <p className="text-xs text-muted-foreground">
+            Formatta la descrizione dettagliata e genera meta title/description.
+          </p>
+          <button type="button" onClick={handleSeoAll} disabled={!title.trim() || seoLoading}
+            title="Formatta la descrizione dettagliata e genera meta title/description con l'AI"
+            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-primary to-purple-600 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap">
+            {seoLoading ? (
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            )}
+            {seoLoading ? "Formattazione..." : "Formatta SEO con AI"}
+          </button>
+        </div>
+      </section>
 
-        {/* Images */}
-        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-7">
+      {/* Immagini (100%) */}
+      <section className="rounded-lg border bg-card p-5 space-y-4">
           <h2 className="font-semibold">Immagini</h2>
 
           {/* Drop zone + URL fallback */}
@@ -671,7 +723,6 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             </div>
           )}
         </section>
-      </div>
 
       {/* ── Part 2: Informazioni di base (100%) — include prezzi, peso, organizzazione, varianti ── */}
       <section className="rounded-lg border bg-card p-5 space-y-5">
@@ -867,6 +918,21 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           )}
         </div>
       </section>
+
+      {/* Scroll-to-top — appears only after scrolling down */}
+      {showTopButton && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          aria-label="Torna in alto"
+          title="Torna in alto"
+          className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg transition-all hover:border-primary hover:text-primary animate-in fade-in"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m18 15-6-6-6 6" />
+          </svg>
+        </button>
+      )}
 
       <IcecatDialog
         open={icecatOpen}

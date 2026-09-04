@@ -29,11 +29,15 @@ test.describe("Admin Products — authenticated", () => {
     await expect(page.getByRole("heading", { name: "Prezzi" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Immagini" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Varianti" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Stato" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Organizzazione" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "SEO" })).toBeVisible();
     await expect(page.locator("#prod-title")).toBeVisible();
     await expect(page.locator("#prod-price")).toBeVisible();
+    // Stato lives inline in the header (no dedicated section)
+    await expect(page.getByLabel("Pubblicato")).toBeVisible();
+    await expect(page.getByLabel("In evidenza")).toBeVisible();
+    // Back to search breadcrumb + scroll-to-top appear on the page
+    await expect(page.getByRole("button", { name: "Torna alla ricerca" })).toBeVisible();
   });
 
   test("Icecat EAN lookup opens selection dialog and applies only chosen sections", async ({ page }) => {

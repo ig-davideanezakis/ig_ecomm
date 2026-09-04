@@ -89,11 +89,14 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 ### Sezioni del form
 
 Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
-1. **In alto** — barra Icecat (input GTIN con placeholder "GTIN (EAN/UPC)") + bottone centralizzato **"✨ Formatta SEO con AI"** (formatta la descrizione dettagliata e genera meta title/description);
-2. **Parte 1** — due colonne: **Stato** (30%) e **Immagini** (70%);
-3. **Parte 2** — **Informazioni di base** al 100%: dati anagrafici, e dentro la stessa card **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
-4. **Parte 3** — **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
-5. **Parte 4** — **Specifiche tecniche** al 100% (JSON + anteprima).
+1. **Breadcrumb** in alto: **"← Torna alla ricerca"** (history back, mantiene filtri/pagina della lista) + link Prodotti + nome pagina;
+2. **Header** con titolo e azioni (Vedi nel negozio, Duplica, Salva): lo **Stato** (Pubblicato / In evidenza) è inline accanto ai bottoni, non più una sezione;
+3. **Due barre separate in alto**: (a) ricerca **Icecat** GTIN (placeholder "GTIN (EAN/UPC)"); (b) bottone centralizzato **"✨ Formatta SEO con AI"** (formatta la descrizione dettagliata e genera meta title/description);
+4. **Immagini** al 100%;
+5. **Informazioni di base** al 100%: dati anagrafici, e dentro la stessa card **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
+6. **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
+7. **Specifiche tecniche** al 100% (JSON + anteprima);
+8. **Pulsante "Torna in alto"** flottante in basso a destra, visibile solo dopo lo scroll.
 
 #### 1. Informazioni di base
 
