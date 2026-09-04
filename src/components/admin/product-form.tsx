@@ -378,7 +378,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -446,19 +446,19 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         </div>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-5">
+      <div className="grid gap-6 xl:grid-cols-12">
         {/* Left: Main info */}
-        <div className="xl:col-span-3 space-y-6">
+        <div className="xl:col-span-8 space-y-5">
           {/* Basic info */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Informazioni di base</h2>
-            <div>
-              <label htmlFor="prod-title" className="block text-sm font-medium mb-1">Titolo *</label>
-              <input id="prod-title" type="text" value={title} onChange={(e) => updateTitle(e.target.value)}
-                required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
+            <div className="grid gap-4 md:grid-cols-12">
+              <div className="md:col-span-12">
+                <label htmlFor="prod-title" className="block text-sm font-medium mb-1">Titolo *</label>
+                <input id="prod-title" type="text" value={title} onChange={(e) => updateTitle(e.target.value)}
+                  required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+              <div className="md:col-span-6">
                 <label htmlFor="prod-slug" className="block text-sm font-medium mb-1">Slug</label>
                 <div className="flex gap-2">
                   <input id="prod-slug" type="text" value={slug} onChange={(e) => { setSlug(e.target.value); setAutoSlug(false); }}
@@ -467,41 +467,44 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                     className="rounded-md border border-border px-2 text-xs hover:bg-muted transition-colors" title="Auto-genera">↻</button>
                 </div>
               </div>
-              <div>
+              <div className="md:col-span-6">
+                <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / GTIN *</label>
+                <input
+                  id="prod-barcode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value.replace(/\D/g, "").slice(0, 14))}
+                  placeholder="es. 4719512030394"
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio e indipendente
+                  dalla ricerca Icecat.
+                </p>
+              </div>
+              <div className="md:col-span-6">
                 <label htmlFor="prod-identifier" className="block text-sm font-medium mb-1">Identificativo</label>
                 <input id="prod-identifier" type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
               </div>
-            </div>
-            <div>
-              <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">
-                EAN / GTIN *
-              </label>
-              <input
-                id="prod-barcode"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                placeholder="es. 4719512030394"
-                required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio: identifica il
-                prodotto in catalogo ed è indipendente dalla ricerca Icecat.
-              </p>
-            </div>
-            <div>
-              <label htmlFor="prod-desc" className="block text-sm font-medium mb-1">Descrizione breve</label>
-              <textarea id="prod-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              <div className="md:col-span-6">
+                <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
+                <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+              <div className="md:col-span-12">
+                <label htmlFor="prod-desc" className="block text-sm font-medium mb-1">Descrizione breve</label>
+                <textarea id="prod-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
             </div>
           </section>
 
           {/* Content */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Descrizione dettagliata</h2>
             <RichTextEditor
                 value={content}
@@ -515,7 +518,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </section>
 
           {/* Technical specifications — dedicated field, populated by Icecat */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Specifiche tecniche</h2>
             <div>
               <label htmlFor="prod-specs" className="sr-only">Specifiche tecniche (JSON)</label>
@@ -541,7 +544,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </section>
 
           {/* Images */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Immagini</h2>
 
             {/* Drop zone + URL fallback */}
@@ -686,44 +689,12 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             )}
           </section>
 
-          {/* Variants */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">Varianti</h2>
-            {variants.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nessuna variante. Il prodotto avrà una variante predefinita.</p>
-            ) : (
-              <div className="space-y-3">
-                {variants.map((v, i) => (
-                  <div key={i} className="flex flex-wrap gap-2 rounded-md border bg-muted/30 p-3">
-                    <input value={v.name} onChange={(e) => {
-                      const next = [...variants]; next[i] = { ...next[i], name: e.target.value }; setVariants(next);
-                    }} placeholder="Nome variante" className="w-32 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                    <input type="number" value={v.price} onChange={(e) => {
-                      const next = [...variants]; next[i] = { ...next[i], price: Number(e.target.value) }; setVariants(next);
-                    }} placeholder="Prezzo" step="0.01" className="w-24 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                    <input type="number" value={v.stock} onChange={(e) => {
-                      const next = [...variants]; next[i] = { ...next[i], stock: Number(e.target.value) }; setVariants(next);
-                    }} placeholder="Stock" className="w-20 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                    <input value={v.sku} onChange={(e) => {
-                      const next = [...variants]; next[i] = { ...next[i], sku: e.target.value }; setVariants(next);
-                    }} placeholder="SKU" className="w-28 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                    <button type="button" onClick={() => setVariants(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-destructive text-xs hover:underline">Rimuovi</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button type="button" onClick={() => setVariants(prev => [...prev, { name: "", sku: "", price: 0, stock: 0, lowStock: 5, image: "", sortOrder: prev.length }])}
-              className="text-sm text-primary hover:underline">
-              + Aggiungi variante
-            </button>
-          </section>
         </div>
 
         {/* Right sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Status */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Stato</h2>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)}
@@ -738,7 +709,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </section>
 
           {/* Pricing */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Prezzi</h2>
             <div>
               <label htmlFor="prod-price" className="block text-sm font-medium mb-1">Prezzo base (€) *</label>
@@ -757,16 +728,6 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
               </div>
             </div>
-          </section>
-
-          {/* Inventory */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">Inventario e logistica</h2>
-            <div>
-              <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
-              <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
             <div>
               <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>
               <input id="prod-weight" type="number" step="0.01" min="0" value={weight} onChange={(e) => setWeight(e.target.value)}
@@ -775,7 +736,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </section>
 
           {/* Organization */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <h2 className="font-semibold">Organizzazione</h2>
             <div>
               <label htmlFor="prod-cat" className="block text-sm font-medium mb-1">Categoria</label>
@@ -796,7 +757,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </section>
 
           {/* SEO */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
+          <section className="rounded-lg border bg-card p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">SEO</h2>
               <button type="button" onClick={async () => {
@@ -829,6 +790,39 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             </div>
           </section>
         </div>
+
+        {/* Variants — full width, below the two columns */}
+        <section className="rounded-lg border bg-card p-5 space-y-4 xl:col-span-12">
+          <h2 className="font-semibold">Varianti</h2>
+          {variants.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nessuna variante. Il prodotto avrà una variante predefinita.</p>
+          ) : (
+            <div className="space-y-3">
+              {variants.map((v, i) => (
+                <div key={i} className="flex flex-wrap gap-2 rounded-md border bg-muted/30 p-3">
+                  <input value={v.name} onChange={(e) => {
+                    const next = [...variants]; next[i] = { ...next[i], name: e.target.value }; setVariants(next);
+                  }} placeholder="Nome variante" className="w-40 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <input type="number" value={v.price} onChange={(e) => {
+                    const next = [...variants]; next[i] = { ...next[i], price: Number(e.target.value) }; setVariants(next);
+                  }} placeholder="Prezzo" step="0.01" className="w-28 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <input type="number" value={v.stock} onChange={(e) => {
+                    const next = [...variants]; next[i] = { ...next[i], stock: Number(e.target.value) }; setVariants(next);
+                  }} placeholder="Stock" className="w-24 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <input value={v.sku} onChange={(e) => {
+                    const next = [...variants]; next[i] = { ...next[i], sku: e.target.value }; setVariants(next);
+                  }} placeholder="SKU" className="w-36 rounded border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+                  <button type="button" onClick={() => setVariants(prev => prev.filter((_, idx) => idx !== i))}
+                    className="text-destructive text-xs hover:underline">Rimuovi</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button type="button" onClick={() => setVariants(prev => [...prev, { name: "", sku: "", price: 0, stock: 0, lowStock: 5, image: "", sortOrder: prev.length }])}
+            className="text-sm text-primary hover:underline">
+            + Aggiungi variante
+          </button>
+        </section>
       </div>
 
       <IcecatDialog

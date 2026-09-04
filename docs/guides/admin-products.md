@@ -88,7 +88,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 
 ### Sezioni del form
 
-Layout su due colonne (5/2): a sinistra **Informazioni di base**, **Descrizione dettagliata**, **Specifiche tecniche**, **Immagini** e **Varianti**; a destra **Stato**, **Prezzi**, **Inventario e logistica**, **Organizzazione** e **SEO**. Sopra il form, in alto, la barra **ricerca Icecat** (input GTIN dedicato).
+Layout a tutta larghezza (area admin, max ~1680px) su due colonne: a sinistra **Informazioni di base**, **Descrizione dettagliata**, **Specifiche tecniche** e **Immagini**; a destra **Stato**, **Prezzi**, **Organizzazione** e **SEO**. **Varianti** in basso a tutta larghezza. Sopra il form, in alto, la barra **ricerca Icecat** (input GTIN dedicato).
 
 #### 1. Informazioni di base
 
@@ -97,6 +97,7 @@ Layout su due colonne (5/2): a sinistra **Informazioni di base**, **Descrizione 
 | Titolo | `text` | ✅ | Nome pubblico del prodotto |
 | Slug | `text` | ❌ | Auto-generato dal titolo, modificabile + pulsante ripristino |
 | Identificativo | `text` | ❌ | Codice interno (auto-generato se vuoto) |
+| SKU | `text` | ❌ | Stock Keeping Unit, codice univoco interno |
 | **EAN / GTIN** | `text` | ✅ | Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…), 8-14 cifre. **Obbligatorio** e indipendente dalla ricerca Icecat: campo libero, accetta solo cifre. In assenza di GTIN valido il salvataggio viene rifiutato (client + API) |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
@@ -109,12 +110,6 @@ Layout su due colonne (5/2): a sinistra **Informazioni di base**, **Descrizione 
 | Prezzo base | `number` | ✅ | Prezzo standard di vendita, IVA esclusa |
 | Prezzo in offerta | `number` | ❌ | Prezzo scontato (compare_at_price) |
 | Prezzo di costo | `number` | ❌ | Visibile solo all'admin per calcolo margine |
-
-#### 3. Inventario e logistica
-
-| Campo | Tipo | Obbligatorio | Note |
-|-------|------|-------------|------|
-| SKU | `text` | ❌ | Stock Keeping Unit, codice univoco interno |
 | Peso (kg) | `number` | ❌ | Per calcolo spedizioni |
 
 ##### Enrichment via Icecat (barra di ricerca GTIN, in alto)
