@@ -95,7 +95,7 @@ Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 4. **Immagini** al 100%;
 5. **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
 6. **Specifiche tecniche** al 100% (JSON + anteprima);
-7. **Pulsante "Torna in alto"** globale in tutta l'applicazione (front shop + back admin), visibile dopo lo scroll.
+7. **Pulsante "Torna su"** globale in tutta l'applicazione (front shop + back admin): compare dopo 300px di scroll (finestra o contenitore), fade 200ms, scroll liscio in cima, accessibile da tastiera.
 
 #### 1. Informazioni di base
 

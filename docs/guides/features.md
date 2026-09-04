@@ -11,6 +11,7 @@ Each feature area has a corresponding Linear issue in the [Ig_ecomm project](htt
 - Homepage — hero section, featured categories grid, featured products carousel, promotions
 - Info pages — about us, contact form, FAQ, privacy policy, terms of service
 - Custom 404 page with navigation
+- Floating **"Torna su"** button — bottom-right, appears after 300px of scroll (window or scrollable container), 200ms fade in/out, smooth scroll back to top, keyboard accessible
 
 ## Catalog
 **Linear:** IG-6

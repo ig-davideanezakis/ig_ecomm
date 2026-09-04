@@ -40,13 +40,13 @@ test.describe("Admin Products — authenticated", () => {
     await expect(page.getByRole("button", { name: "Torna alla ricerca" })).toBeVisible();
 
     // Scroll-to-top arrow appears only after scrolling down
-    await expect(page.getByRole("button", { name: "Torna in alto" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Torna su" })).toHaveCount(0);
     await page.evaluate(() => {
       const mainEl = document.querySelector("main");
       if (mainEl) mainEl.scrollTop = 900;
       window.scrollTo(0, 900);
     });
-    const topBtn = page.getByRole("button", { name: "Torna in alto" });
+    const topBtn = page.getByRole("button", { name: "Torna su" });
     await expect(topBtn).toBeVisible();
     await topBtn.click();
   });
