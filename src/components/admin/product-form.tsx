@@ -88,7 +88,6 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
-  const [showTopButton, setShowTopButton] = useState(false);
 
   // Fetch categories and brands
   useEffect(() => {
@@ -134,30 +133,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     }
   }, [initialImportError]);
 
-  // Scroll-to-top floating button. Depending on the admin layout the
-  // scrollable element is <main> (overflow-auto) or the window itself —
-  // listen to both and react to whichever actually scrolls.
-  useEffect(() => {
-    const onScroll = () => {
-      const mainEl = document.querySelector("main");
-      const top = Math.max(window.scrollY || 0, mainEl ? mainEl.scrollTop : 0);
-      setShowTopButton(top > 400);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    const mainEl = document.querySelector("main");
-    mainEl?.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      mainEl?.removeEventListener("scroll", onScroll);
-    };
-  }, []);
-
-  const scrollToTop = () => {
-    const mainEl = document.querySelector("main");
-    if (mainEl) mainEl.scrollTo({ top: 0, behavior: "smooth" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // Scroll-to-top is handled app-wide by <ScrollToTop /> (root layout).
 
   /** Back to the admin product search/list — preserves filters via history. */
   const goBackToList = () => {
@@ -511,6 +487,18 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           </div>
           <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
           <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={handleSeoAll} disabled={!title.trim() || seoLoading}
+              title="Formatta la descrizione dettagliata e genera meta title/description con l'AI"
+              className="inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-primary to-purple-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap">
+              {seoLoading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              )}
+              {seoLoading ? "Formattazione..." : "Formatta SEO con AI"}
+            </button>
             {!isNew && slug && (
               <a
                 href={`/product/${slug}`}
@@ -539,207 +527,39 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       {error && <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600">{error}</div>}
       {success && <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600">{success}</div>}
 
-      {/* Icecat search — GTIN lookup bar */}
-      <section className="rounded-lg border bg-card p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex flex-1 items-center gap-2">
-            <label htmlFor="prod-gtin" className="sr-only">
-              Cerca su Icecat per GTIN (EAN/UPC)
-            </label>
-            <input
-              id="prod-gtin"
-              type="text"
-              value={gtinQuery}
-              onChange={(e) => setGtinQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIcecatLookup(); } }}
-              placeholder="GTIN (EAN/UPC)"
-              autoComplete="off"
-              className="max-w-sm flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <button type="button" onClick={handleIcecatLookup}
-              disabled={gtinQuery.trim().length < 8 || eanLoading}
-              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-              {eanLoading ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
-              {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground lg:max-w-xs lg:text-right">
-            Ricerca il prodotto su Icecat dal codice GTIN: titolo, immagini e specifiche si
-            applicano con la dialog di anteprima. Il campo EAN del prodotto resta indipendente.
-          </p>
-        </div>
-      </section>
-
-      {/* AI SEO formatting — separate bar */}
-      <section className="rounded-lg border bg-card p-3">
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          <p className="text-xs text-muted-foreground">
-            Formatta la descrizione dettagliata e genera meta title/description.
-          </p>
-          <button type="button" onClick={handleSeoAll} disabled={!title.trim() || seoLoading}
-            title="Formatta la descrizione dettagliata e genera meta title/description con l'AI"
-            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-primary to-purple-600 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50 whitespace-nowrap">
-            {seoLoading ? (
-              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-            )}
-            {seoLoading ? "Formattazione..." : "Formatta SEO con AI"}
-          </button>
-        </div>
-      </section>
-
-      {/* Immagini (100%) */}
-      <section className="rounded-lg border bg-card p-5 space-y-4">
-          <h2 className="font-semibold">Immagini</h2>
-
-          {/* Drop zone + URL fallback */}
-          <div className="space-y-3">
-            {/* File upload via drag & drop */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
-              onDragLeave={(e) => { e.currentTarget.classList.remove('border-primary'); }}
-              onDrop={async (e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('border-primary');
-                const file = e.dataTransfer.files[0];
-                if (!file || !productId) return;
-                await uploadFile(file);
-              }}
-              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground mb-2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <p className="text-sm font-medium">Trascina un&apos;immagine qui</p>
-              <p className="text-xs text-muted-foreground mt-1">o clicca per selezionare (JPG, PNG, WebP, AVIF — max 5MB)</p>
+      {/* ── Part 1: Informazioni di base (100%) — include prezzi, peso, organizzazione, varianti ── */}
+      <section className="rounded-lg border bg-card p-5 space-y-5">
+        {/* Section header: title left, Icecat import on the right */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <h2 className="font-semibold">Informazioni di base</h2>
+          <div className="flex w-full max-w-xl flex-col gap-1.5 md:items-end">
+            <div className="flex w-full items-center gap-2">
+              <label htmlFor="prod-gtin" className="sr-only">
+                Importa dati da Icecat per GTIN (EAN/UPC)
+              </label>
               <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif"
-                className="hidden"
-                id="file-upload"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !productId) return;
-                  await uploadFile(file);
-                  e.target.value = "";
-                }}
+                id="prod-gtin"
+                type="text"
+                value={gtinQuery}
+                onChange={(e) => setGtinQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIcecatLookup(); } }}
+                placeholder="GTIN (EAN/UPC)"
+                autoComplete="off"
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
               />
-            </div>
-
-            {/* URL fallback */}
-            <div className="flex gap-2">
-              <input type="text" placeholder="o incolla URL immagine..." value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              <input type="text" placeholder="Testo alt" value={imageAlt}
-                onChange={(e) => setImageAlt(e.target.value)}
-                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              <button type="button" onClick={async () => {
-                if (!imageUrl || !productId) return;
-                const res = await fetch("/api/admin/upload", {
-                  method: "POST", headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
-                });
-                const json = await res.json();
-                if (json.success) {
-                  setImages(prev => [...prev, json.image]);
-                  setImageUrl(""); setImageAlt("");
-                }
-              }} disabled={!imageUrl || isNew}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                Aggiungi
+              <button type="button" onClick={handleIcecatLookup}
+                disabled={gtinQuery.trim().length < 8 || eanLoading}
+                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+                {eanLoading ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
+                {eanLoading ? "Caricamento..." : "Importa dati da Icecat"}
               </button>
             </div>
+            <p className="text-[11px] text-muted-foreground md:text-right">
+              Importa da Icecat titolo, immagini e specifiche a partire dal codice GTIN.
+              Il campo EAN del prodotto resta indipendente.
+            </p>
           </div>
-
-          {/* Icecat lookup images — pending copy to Storage */}
-          {eanImages.length > 0 && (
-            <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">
-                  {eanImages.length} {eanImages.length > 1 ? "immagini" : "immagine"} {eanImages.length > 1 ? "trovate" : "trovata"} su Icecat
-                </p>
-                {!isNew && (
-                  <button type="button" onClick={importEanImages} disabled={importingEanImages}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap">
-                    {importingEanImages ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "⬇️"}
-                    {importingEanImages ? "Importazione..." : `Importa su Storage (${eanImages.length})`}
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {eanImages.map((img, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={img.url} alt={img.alt || "Anteprima Icecat"} className="h-16 w-16 rounded-md border object-cover" />
-                ))}
-              </div>
-              {isNew && (
-                <p className="text-xs text-muted-foreground">
-                  Le immagini verranno copiate su Storage automaticamente al salvataggio del prodotto.
-                </p>
-              )}
-              {importError && <p className="text-xs text-red-600">{importError}</p>}
-            </div>
-          )}
-
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Carica dal computer
-          </label>
-
-          {isNew && <p className="text-xs text-muted-foreground">Salva prima il prodotto per poter aggiungere immagini.</p>}
-
-          {/* Image list */}
-          {images.length > 0 && (
-            <div className="flex flex-wrap gap-3">
-              {images.map((img, i) => (
-                <div key={img.id || i} className="relative group w-24">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt={img.alt || ""} className="h-24 w-24 rounded-md border object-cover" />
-                  {i === 0 && (
-                    <span className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                      Copertina
-                    </span>
-                  )}
-                  <button type="button" onClick={async () => {
-                    if (img.id) await fetch(`/api/admin/upload?id=${img.id}`, { method: "DELETE" });
-                    setImages(prev => prev.filter((_, idx) => idx !== i));
-                  }}
-                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Rimuovi immagine ${i + 1}`}>
-                    ×
-                  </button>
-                  {/* Reorder + cover controls */}
-                  <div className="mt-1 flex items-center justify-between rounded-md border bg-background px-1 py-0.5">
-                    <button type="button" onClick={() => moveImage(i, i - 1)} disabled={i === 0}
-                      className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                      aria-label={`Sposta immagine ${i + 1} prima`} title="Sposta prima">
-                      ↑
-                    </button>
-                    <button type="button" onClick={() => setCoverImage(i)} disabled={i === 0}
-                      className={`px-1 text-xs hover:text-amber-500 disabled:opacity-30 disabled:hover:text-muted-foreground ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`}
-                      aria-label={i === 0 ? "Immagine di copertina" : `Imposta immagine ${i + 1} come copertina`}
-                      title={i === 0 ? "Copertina" : "Imposta come copertina"}>
-                      ★
-                    </button>
-                    <button type="button" onClick={() => moveImage(i, i + 1)} disabled={i === images.length - 1}
-                      className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
-                      aria-label={`Sposta immagine ${i + 1} dopo`} title="Sposta dopo">
-                      ↓
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-      {/* ── Part 2: Informazioni di base (100%) — include prezzi, peso, organizzazione, varianti ── */}
-      <section className="rounded-lg border bg-card p-5 space-y-5">
-        <h2 className="font-semibold">Informazioni di base</h2>
+        </div>
         <div className="grid gap-4 md:grid-cols-12">
           <div className="md:col-span-12">
             <label htmlFor="prod-title" className="block text-sm font-medium mb-1">Titolo *</label>
@@ -874,6 +694,152 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         </div>
       </section>
 
+      {/* Immagini (100%) */}
+      <section className="rounded-lg border bg-card p-5 space-y-4">
+        <h2 className="font-semibold">Immagini</h2>
+
+        {/* Drop zone + URL fallback */}
+        <div className="space-y-3">
+          {/* File upload via drag & drop */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-primary'); }}
+            onDragLeave={(e) => { e.currentTarget.classList.remove('border-primary'); }}
+            onDrop={async (e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove('border-primary');
+              const file = e.dataTransfer.files[0];
+              if (!file || !productId) return;
+              await uploadFile(file);
+            }}
+            className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground mb-2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p className="text-sm font-medium">Trascina un&apos;immagine qui</p>
+            <p className="text-xs text-muted-foreground mt-1">o clicca per selezionare (JPG, PNG, WebP, AVIF — max 5MB)</p>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              id="file-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !productId) return;
+                await uploadFile(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          {/* URL fallback */}
+          <div className="flex gap-2">
+            <input type="text" placeholder="o incolla URL immagine..." value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+            <input type="text" placeholder="Testo alt" value={imageAlt}
+              onChange={(e) => setImageAlt(e.target.value)}
+              className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+            <button type="button" onClick={async () => {
+              if (!imageUrl || !productId) return;
+              const res = await fetch("/api/admin/upload", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: imageUrl, alt: imageAlt, productId }),
+              });
+              const json = await res.json();
+              if (json.success) {
+                setImages(prev => [...prev, json.image]);
+                setImageUrl(""); setImageAlt("");
+              }
+            }} disabled={!imageUrl || isNew}
+              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              Aggiungi
+            </button>
+          </div>
+        </div>
+
+        {/* Icecat lookup images — pending copy to Storage */}
+        {eanImages.length > 0 && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">
+                {eanImages.length} {eanImages.length > 1 ? "immagini" : "immagine"} {eanImages.length > 1 ? "trovate" : "trovata"} su Icecat
+              </p>
+              {!isNew && (
+                <button type="button" onClick={importEanImages} disabled={importingEanImages}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap">
+                  {importingEanImages ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "⬇️"}
+                  {importingEanImages ? "Importazione..." : `Importa su Storage (${eanImages.length})`}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {eanImages.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={img.url} alt={img.alt || "Anteprima Icecat"} className="h-16 w-16 rounded-md border object-cover" />
+              ))}
+            </div>
+            {isNew && (
+              <p className="text-xs text-muted-foreground">
+                Le immagini verranno copiate su Storage automaticamente al salvataggio del prodotto.
+              </p>
+            )}
+            {importError && <p className="text-xs text-red-600">{importError}</p>}
+          </div>
+        )}
+
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer" htmlFor="file-upload">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Carica dal computer
+        </label>
+
+        {isNew && <p className="text-xs text-muted-foreground">Salva prima il prodotto per poter aggiungere immagini.</p>}
+
+        {/* Image list */}
+        {images.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {images.map((img, i) => (
+              <div key={img.id || i} className="relative group w-24">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt={img.alt || ""} className="h-24 w-24 rounded-md border object-cover" />
+                {i === 0 && (
+                  <span className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    Copertina
+                  </span>
+                )}
+                <button type="button" onClick={async () => {
+                  if (img.id) await fetch(`/api/admin/upload?id=${img.id}`, { method: "DELETE" });
+                  setImages(prev => prev.filter((_, idx) => idx !== i));
+                }}
+                  className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Rimuovi immagine ${i + 1}`}>
+                  ×
+                </button>
+                {/* Reorder + cover controls */}
+                <div className="mt-1 flex items-center justify-between rounded-md border bg-background px-1 py-0.5">
+                  <button type="button" onClick={() => moveImage(i, i - 1)} disabled={i === 0}
+                    className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                    aria-label={`Sposta immagine ${i + 1} prima`} title="Sposta prima">
+                    ↑
+                  </button>
+                  <button type="button" onClick={() => setCoverImage(i)} disabled={i === 0}
+                    className={`px-1 text-xs hover:text-amber-500 disabled:opacity-30 disabled:hover:text-muted-foreground ${i === 0 ? "text-amber-500" : "text-muted-foreground"}`}
+                    aria-label={i === 0 ? "Immagine di copertina" : `Imposta immagine ${i + 1} come copertina`}
+                    title={i === 0 ? "Copertina" : "Imposta come copertina"}>
+                    ★
+                  </button>
+                  <button type="button" onClick={() => moveImage(i, i + 1)} disabled={i === images.length - 1}
+                    className="px-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
+                    aria-label={`Sposta immagine ${i + 1} dopo`} title="Sposta dopo">
+                    ↓
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ── Part 3: Descrizione dettagliata (100%) + meta SEO ──────── */}
       <section className="rounded-lg border bg-card p-5 space-y-4">
         <h2 className="font-semibold">Descrizione dettagliata</h2>
@@ -931,21 +897,6 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           )}
         </div>
       </section>
-
-      {/* Scroll-to-top — appears only after scrolling down */}
-      {showTopButton && (
-        <button
-          type="button"
-          onClick={scrollToTop}
-          aria-label="Torna in alto"
-          title="Torna in alto"
-          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_0_18px_rgba(255,12,60,0.45)] transition-all hover:bg-primary/90 hover:scale-105 animate-in fade-in"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m18 15-6-6-6 6" />
-          </svg>
-        </button>
-      )}
 
       <IcecatDialog
         open={icecatOpen}

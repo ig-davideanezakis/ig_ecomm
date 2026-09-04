@@ -92,7 +92,7 @@ test.describe("Admin Products — authenticated", () => {
 
     await page.goto("/admin/products/new");
     await page.locator("#prod-gtin").fill("4711636454414");
-    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+    await page.getByRole("button", { name: "Importa dati da Icecat" }).click();
 
     // The selection dialog opens instead of auto-filling the form
     const dialog = page.getByRole("dialog");
@@ -209,7 +209,7 @@ test.describe("Admin Products — authenticated", () => {
 
     await page.goto("/admin/products/new");
     await page.locator("#prod-gtin").fill("4711636454414");
-    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+    await page.getByRole("button", { name: "Importa dati da Icecat" }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
@@ -262,7 +262,7 @@ test.describe("Admin Products — authenticated", () => {
 
     await page.goto("/admin/products/new");
     await page.locator("#prod-gtin").fill("4711636454414");
-    await page.getByRole("button", { name: "Cerca su Icecat" }).click();
+    await page.getByRole("button", { name: "Importa dati da Icecat" }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();

@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SkipNav } from "@/components/skip-nav";
+import ScrollToTop from "@/components/scroll-to-top";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
           <div id="main-content" tabIndex={-1} className="flex flex-col flex-1 outline-none">
             {children}
           </div>
+          <ScrollToTop />
         </Providers>
       </body>
     </html>
