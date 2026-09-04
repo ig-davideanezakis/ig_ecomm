@@ -44,6 +44,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [costPrice, setCostPrice] = useState("");
   const [sku, setSku] = useState("");
   const [barcode, setBarcode] = useState("");
+  const [gtinQuery, setGtinQuery] = useState("");
   const [weight, setWeight] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
@@ -197,13 +198,18 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   };
 
   const handleIcecatLookup = async () => {
-    if (!barcode || eanLoading) return;
+    const gtin = gtinQuery.trim();
+    if (!gtin || eanLoading) return;
     setEanLoading(true); setError("");
     try {
-      const res = await fetch(`/api/products/lookup-ean?ean=${encodeURIComponent(barcode)}`);
+      const res = await fetch(`/api/products/lookup-ean?ean=${encodeURIComponent(gtin)}`);
       if (!res.ok) { const e = await res.json(); setError(e.error || "Prodotto non trovato."); setEanLoading(false); return; }
       const data = await res.json();
       if (data.found) {
+        // Prefill the (required) product EAN only when empty: the GTIN used
+        // for the lookup is normally the product code itself. The EAN field
+        // stays independent and editable — no hard link to Icecat.
+        if (!barcode.trim()) setBarcode(gtin.replace(/\D/g, ""));
         setIcecatData(data);
         setIcecatOpen(true);
       }
@@ -310,7 +316,10 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setSuccess("");
+    const ean = barcode.trim();
     if (!title.trim()) { setError("Il titolo è obbligatorio."); return; }
+    if (!ean) { setError("Il GTIN (EAN/UPC) è obbligatorio."); return; }
+    if (!/^\d{8,14}$/.test(ean)) { setError("GTIN non valido: deve contenere 8-14 cifre."); return; }
     if (!basePrice || isNaN(Number(basePrice))) { setError("Prezzo base non valido."); return; }
     setSaving(true);
 
@@ -321,7 +330,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       basePrice: parseFloat(basePrice),
       compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       costPrice: costPrice ? parseFloat(costPrice) : null,
-      sku: sku || null, barcode: barcode || null,
+      sku: sku || null, barcode: ean,
       weight: weight ? parseFloat(weight) : null,
       seoTitle: seoTitle || null, seoDescription: seoDescription || null,
       published, featured,
@@ -406,9 +415,40 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       {error && <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600">{error}</div>}
       {success && <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600">{success}</div>}
 
-      <div className="grid gap-8 xl:grid-cols-3">
+      {/* Icecat search — separate GTIN lookup bar (product EAN is independent) */}
+      <section className="rounded-lg border bg-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-1 items-center gap-2">
+            <label htmlFor="prod-gtin" className="sr-only">
+              Cerca su Icecat per GTIN (EAN/UPC)
+            </label>
+            <input
+              id="prod-gtin"
+              type="text"
+              value={gtinQuery}
+              onChange={(e) => setGtinQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIcecatLookup(); } }}
+              placeholder="GTIN (EAN/UPC)"
+              autoComplete="off"
+              className="max-w-sm flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <button type="button" onClick={handleIcecatLookup}
+              disabled={gtinQuery.trim().length < 8 || eanLoading}
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
+              {eanLoading ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
+              {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground lg:max-w-xs lg:text-right">
+            Ricerca il prodotto su Icecat dal codice GTIN: titolo, immagini e specifiche si
+            applicano con la dialog di anteprima. Il campo EAN del prodotto resta indipendente.
+          </p>
+        </div>
+      </section>
+
+      <div className="grid gap-8 xl:grid-cols-5">
         {/* Left: Main info */}
-        <div className="xl:col-span-2 space-y-6">
+        <div className="xl:col-span-3 space-y-6">
           {/* Basic info */}
           <section className="rounded-lg border bg-card p-6 space-y-4">
             <h2 className="font-semibold">Informazioni di base</h2>
@@ -434,13 +474,36 @@ export default function ProductForm({ productId, initialImportError }: Props) {
               </div>
             </div>
             <div>
+              <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">
+                EAN / GTIN *
+              </label>
+              <input
+                id="prod-barcode"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value.replace(/\D/g, "").slice(0, 14))}
+                placeholder="es. 4719512030394"
+                required
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio: identifica il
+                prodotto in catalogo ed è indipendente dalla ricerca Icecat.
+              </p>
+            </div>
+            <div>
               <label htmlFor="prod-desc" className="block text-sm font-medium mb-1">Descrizione breve</label>
               <textarea id="prod-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
-            <div>
-              <p className="block text-sm font-medium mb-1">Descrizione dettagliata</p>
-              <RichTextEditor
+          </section>
+
+          {/* Content */}
+          <section className="rounded-lg border bg-card p-6 space-y-4">
+            <h2 className="font-semibold">Descrizione dettagliata</h2>
+            <RichTextEditor
                 value={content}
                 onChange={setContent}
                 placeholder="Scrivi qui la descrizione dettagliata del prodotto..."
@@ -449,13 +512,13 @@ export default function ProductForm({ productId, initialImportError }: Props) {
               <p className="mt-1 text-xs text-muted-foreground">
                 Formatta il contenuto con grassetti, elenchi, tabelle, immagini e link. Il font rimane sempre quello del sito.
               </p>
-            </div>
+          </section>
 
-            {/* Technical specifications — dedicated field, populated by Icecat */}
+          {/* Technical specifications — dedicated field, populated by Icecat */}
+          <section className="rounded-lg border bg-card p-6 space-y-4">
+            <h2 className="font-semibold">Specifiche tecniche</h2>
             <div>
-              <label htmlFor="prod-specs" className="block text-sm font-medium mb-1">
-                Specifiche tecniche
-              </label>
+              <label htmlFor="prod-specs" className="sr-only">Specifiche tecniche (JSON)</label>
               <textarea
                 id="prod-specs"
                 value={specifications}
@@ -474,58 +537,6 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                   Compilato automaticamente scegliendo &quot;Specifiche tecniche&quot; nella dialog Icecat. Visibile nella pagina prodotto lato utente.
                 </p>
               )}
-            </div>
-          </section>
-
-          {/* Pricing */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">Prezzi</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label htmlFor="prod-price" className="block text-sm font-medium mb-1">Prezzo base (€) *</label>
-                <input id="prod-price" type="number" step="0.01" min="0" value={basePrice} onChange={(e) => setBasePrice(e.target.value)}
-                  required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div>
-                <label htmlFor="prod-sale" className="block text-sm font-medium mb-1">Prezzo in offerta (€)</label>
-                <input id="prod-sale" type="number" step="0.01" min="0" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div>
-                <label htmlFor="prod-cost" className="block text-sm font-medium mb-1">Prezzo di costo (€)</label>
-                <input id="prod-cost" type="number" step="0.01" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-            </div>
-          </section>
-
-          {/* Inventory */}
-          <section className="rounded-lg border bg-card p-6 space-y-4">
-            <h2 className="font-semibold">Inventario e logistica</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
-                <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div>
-                <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>
-                <input id="prod-weight" type="number" step="0.01" min="0" value={weight} onChange={(e) => setWeight(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="prod-barcode" className="block text-sm font-medium mb-1">EAN / Codice a barre — cerca su Icecat</label>
-              <div className="flex gap-2">
-                <input id="prod-barcode" type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)}
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
-                <button type="button" onClick={handleIcecatLookup} disabled={!barcode || barcode.length < 8 || eanLoading}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 flex items-center gap-1.5 whitespace-nowrap">
-                  {eanLoading ? <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
-                  {eanLoading ? "Caricamento..." : "Cerca su Icecat"}
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">Apre l&apos;anteprima Icecat: scegli quali sezioni importare. Prezzo e stock rimangono manuali.</p>
             </div>
           </section>
 
@@ -724,6 +735,43 @@ export default function ProductForm({ productId, initialImportError }: Props) {
                 className="rounded border-border" />
               In evidenza (mostrato in homepage)
             </label>
+          </section>
+
+          {/* Pricing */}
+          <section className="rounded-lg border bg-card p-6 space-y-4">
+            <h2 className="font-semibold">Prezzi</h2>
+            <div>
+              <label htmlFor="prod-price" className="block text-sm font-medium mb-1">Prezzo base (€) *</label>
+              <input id="prod-price" type="number" step="0.01" min="0" value={basePrice} onChange={(e) => setBasePrice(e.target.value)}
+                required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="prod-sale" className="block text-sm font-medium mb-1">In offerta (€)</label>
+                <input id="prod-sale" type="number" step="0.01" min="0" value={compareAtPrice} onChange={(e) => setCompareAtPrice(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+              <div>
+                <label htmlFor="prod-cost" className="block text-sm font-medium mb-1">Di costo (€)</label>
+                <input id="prod-cost" type="number" step="0.01" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+            </div>
+          </section>
+
+          {/* Inventory */}
+          <section className="rounded-lg border bg-card p-6 space-y-4">
+            <h2 className="font-semibold">Inventario e logistica</h2>
+            <div>
+              <label htmlFor="prod-sku" className="block text-sm font-medium mb-1">SKU</label>
+              <input id="prod-sku" type="text" value={sku} onChange={(e) => setSku(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
+            <div>
+              <label htmlFor="prod-weight" className="block text-sm font-medium mb-1">Peso (kg)</label>
+              <input id="prod-weight" type="number" step="0.01" min="0" value={weight} onChange={(e) => setWeight(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
+            </div>
           </section>
 
           {/* Organization */}

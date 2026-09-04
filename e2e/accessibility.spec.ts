@@ -40,6 +40,44 @@ test.describe("Accessibility — axe-core scans", () => {
     expect(critical).toEqual([]);
   });
 
+  test("product detail page should have no critical violations", async ({ page }) => {
+    // Authenticate to create a published product with content/specs
+    await page.goto("/auth/login");
+    await page.getByPlaceholder("tua@email.it").fill("admin@test.com");
+    await page.getByRole("button", { name: "Continua", exact: true }).click();
+    await page.getByPlaceholder("••••••••").fill("TestPass123!");
+    await page.getByText("Accedi").click();
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+
+    const slug = `prodotto-e2e-a11y-${Date.now().toString(36)}`;
+    const res = await page.request.post("/api/admin/products", {
+      data: {
+        title: "Prodotto E2E Accessibilità",
+        slug,
+        barcode: "0761345117586",
+        description: "Prodotto per lo scan di accessibilità",
+        content: "<p>Descrizione dettagliata del prodotto di test.</p>",
+        specifications: JSON.stringify([
+          { group: "Display", rows: [{ label: "Risoluzione", value: "3440x1440" }] },
+        ]),
+        basePrice: 199,
+        published: true,
+      },
+    });
+    const created = await res.json();
+    expect(created.success).toBe(true);
+
+    await page.goto(`/product/${slug}`);
+    await page.waitForLoadState("networkidle");
+
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+
+    const critical = results.violations.filter((v) => v.impact === "critical");
+    expect(critical).toEqual([]);
+  });
+
   test("admin Icecat selection dialog should have no violations", async ({ page }) => {
     // Authenticate as admin
     await page.goto("/auth/login");
@@ -76,7 +114,7 @@ test.describe("Accessibility — axe-core scans", () => {
     });
 
     await page.goto("/admin/products/new");
-    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.locator("#prod-gtin").fill("4711636454414");
     await page.getByRole("button", { name: "Cerca su Icecat" }).click();
 
     const dialog = page.getByRole("dialog");

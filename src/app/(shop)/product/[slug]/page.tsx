@@ -30,7 +30,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 /** Schema.org Product JSON-LD — powers rich snippets in Google results. */
 function buildProductJsonLd(product: ProductDetail) {
-  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  // A product without variants is sold as a single base item (the PDP shows
+  // "Pronto per la spedizione" and the buy bar is active) — so it must not be
+  // marked OutOfStock just because the variants sum is 0.
+  const totalStock = product.variants.length
+    ? product.variants.reduce((sum, v) => sum + v.stock, 0)
+    : 1;
   const availability =
     totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 

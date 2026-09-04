@@ -76,7 +76,7 @@ test.describe("Admin Products — authenticated", () => {
     });
 
     await page.goto("/admin/products/new");
-    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.locator("#prod-gtin").fill("4711636454414");
     await page.getByRole("button", { name: "Cerca su Icecat" }).click();
 
     // The selection dialog opens instead of auto-filling the form
@@ -144,6 +144,7 @@ test.describe("Admin Products — authenticated", () => {
       data: {
         title: "Prodotto E2E Vista",
         slug: "prodotto-e2e-vista",
+        barcode: "843591058094",
         basePrice: 10,
         published: true,
       },
@@ -199,7 +200,7 @@ test.describe("Admin Products — authenticated", () => {
     });
 
     await page.goto("/admin/products/new");
-    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.locator("#prod-gtin").fill("4711636454414");
     await page.getByRole("button", { name: "Cerca su Icecat" }).click();
 
     const dialog = page.getByRole("dialog");
@@ -252,7 +253,7 @@ test.describe("Admin Products — authenticated", () => {
     });
 
     await page.goto("/admin/products/new");
-    await page.locator("#prod-barcode").fill("4711636454414");
+    await page.locator("#prod-gtin").fill("4711636454414");
     await page.getByRole("button", { name: "Cerca su Icecat" }).click();
 
     const dialog = page.getByRole("dialog");

@@ -88,6 +88,8 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 
 ### Sezioni del form
 
+Layout su due colonne (5/2): a sinistra **Informazioni di base**, **Descrizione dettagliata**, **Specifiche tecniche**, **Immagini** e **Varianti**; a destra **Stato**, **Prezzi**, **Inventario e logistica**, **Organizzazione** e **SEO**. Sopra il form, in alto, la barra **ricerca Icecat** (input GTIN dedicato).
+
 #### 1. Informazioni di base
 
 | Campo | Tipo | Obbligatorio | Note |
@@ -95,6 +97,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | Titolo | `text` | ✅ | Nome pubblico del prodotto |
 | Slug | `text` | ❌ | Auto-generato dal titolo, modificabile + pulsante ripristino |
 | Identificativo | `text` | ❌ | Codice interno (auto-generato se vuoto) |
+| **EAN / GTIN** | `text` | ✅ | Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…), 8-14 cifre. **Obbligatorio** e indipendente dalla ricerca Icecat: campo libero, accetta solo cifre. In assenza di GTIN valido il salvataggio viene rifiutato (client + API) |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
 | Specifiche tecniche | `textarea` (JSON) | ❌ | Specifiche **raggruppate** in JSON: `[{ "group": "Display", "rows": [{ "label": "Risoluzione", "value": "3440x1440" }] }]` — compilate da Icecat preservando i `FeaturesGroups`, renderizzate con heading per gruppo. Il formato permette il futuro **confronto prodotti**. I dati legacy (tabella HTML piatta) continuano a essere renderizzati |
@@ -112,12 +115,11 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 | Campo | Tipo | Obbligatorio | Note |
 |-------|------|-------------|------|
 | SKU | `text` | ❌ | Stock Keeping Unit, codice univoco interno |
-| EAN / Codice a barre | `text` | ❌ | GTIN per fatturazione e Google Shopping |
 | Peso (kg) | `number` | ❌ | Per calcolo spedizioni |
 
-##### Enrichment via Icecat (dialog di selezione)
+##### Enrichment via Icecat (barra di ricerca GTIN, in alto)
 
-Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), il pulsante **"📦 Cerca su Icecat"** accanto al campo EAN interroga `GET /api/products/lookup-ean?ean=xxx`. Se il prodotto esiste nel catalogo, si apre una **dialog "Dati trovati su Icecat"** con tutte le sezioni restituite, ciascuna con checkbox e anteprima:
+Con `ICECAT_USERNAME` + `ICECAT_KEY` configurati (vedi `.env.example`), l'input **"GTIN (EAN/UPC)"** nella barra in cima al form (pulsante **"📦 Cerca su Icecat"**) interroga `GET /api/products/lookup-ean?ean=xxx`. La ricerca è **separata** dal campo EAN del prodotto: il campo EAN resta un dato obbligatorio e indipendente da Icecat (viene precompilato dal GTIN cercato solo se ancora vuoto, ed è sempre modificabile). Se il prodotto esiste nel catalogo, si apre una **dialog "Dati trovati su Icecat"** con tutte le sezioni restituite, ciascuna con checkbox e anteprima:
 
 | Sezione | Fonte Icecat (Live API `live.icecat.biz/api`) |
 |---------|-----------------------------------------------|
@@ -213,7 +215,7 @@ Lista prodotti con filtri.
 
 Crea un nuovo prodotto.
 
-**Body:** `{ title, basePrice, description?, content?, compareAtPrice?, costPrice?, sku?, barcode?, weight?, seoTitle?, seoDescription?, published?, featured?, categoryId?, brandId? }`
+**Body:** `{ title, basePrice, barcode, description?, content?, compareAtPrice?, costPrice?, sku?, weight?, seoTitle?, seoDescription?, published?, featured?, categoryId?, brandId? }` — `barcode` (GTIN/EAN, 8-14 cifre) è **obbligatorio** e validato sia in POST che in PUT (Zod, `productSchema`).
 
 ### `GET /api/admin/products/[id]`
 

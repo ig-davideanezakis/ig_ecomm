@@ -46,6 +46,7 @@ test.describe("Spec chips — PDP and product list", () => {
       data: {
         title: TITLE,
         slug: "chip-e2e-laptop",
+        barcode: "4719512030394",
         description: "Laptop creato per il test E2E delle chip specifiche",
         specifications: SPECS,
         basePrice: 999,

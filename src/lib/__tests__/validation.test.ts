@@ -14,27 +14,28 @@ describe("productSchema", () => {
     const result = productSchema.safeParse({
       title: "PC Gaming",
       basePrice: 999.99,
+      barcode: "4719512030394",
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects empty title", () => {
-    const result = productSchema.safeParse({ title: "", basePrice: 10 });
+    const result = productSchema.safeParse({ title: "", basePrice: 10, barcode: "4719512030394" });
     expect(result.success).toBe(false);
   });
 
   it("rejects negative price", () => {
-    const result = productSchema.safeParse({ title: "Test", basePrice: -5 });
+    const result = productSchema.safeParse({ title: "Test", basePrice: -5, barcode: "4719512030394" });
     expect(result.success).toBe(false);
   });
 
   it("allows zero price", () => {
-    const result = productSchema.safeParse({ title: "Test", basePrice: 0 });
+    const result = productSchema.safeParse({ title: "Test", basePrice: 0, barcode: "4719512030394" });
     expect(result.success).toBe(true);
   });
 
   it("applies default values", () => {
-    const result = productSchema.parse({ title: "Test", basePrice: 50 });
+    const result = productSchema.parse({ title: "Test", basePrice: 50, barcode: "4719512030394" });
     expect(result.published).toBe(false);
     expect(result.featured).toBe(false);
     expect(result.description).toBe("");
@@ -54,6 +55,26 @@ describe("productSchema", () => {
       brandId: "brand-1",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("rejects a product without a GTIN (EAN/UPC)", () => {
+    const result = productSchema.safeParse({ title: "Test", basePrice: 10 });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toContain("obbligatorio");
+  });
+
+  it("rejects malformed GTIN values (letters, too short, too long)", () => {
+    for (const bad of ["471951203039A", "1234567", "123456789012345", "  ", "ean-123456789"]) {
+      const result = productSchema.safeParse({ title: "Test", basePrice: 10, barcode: bad });
+      expect(result.success).toBe(false);
+    }
+  });
+
+  it("accepts every GTIN length (8/12/13/14 digits) and trims spaces", () => {
+    for (const barcode of ["12345678", "471163645441", "4719512030394", "12345678901234", "  4719512030394  "]) {
+      const result = productSchema.safeParse({ title: "Test", basePrice: 10, barcode });
+      expect(result.success).toBe(true);
+    }
   });
 });
 
@@ -146,7 +167,7 @@ describe("auth schemas", () => {
 
 describe("validate helper", () => {
   it("returns success with data", () => {
-    const result = validate(productSchema, { title: "Test", basePrice: 10 });
+    const result = validate(productSchema, { title: "Test", basePrice: 10, barcode: "4719512030394" });
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
   });
