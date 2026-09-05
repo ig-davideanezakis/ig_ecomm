@@ -68,6 +68,8 @@ export const products = pgTable("product", {
   costPrice: decimal("cost_price", { precision: 10, scale: 2 }),
   sku: varchar("sku", { length: 255 }),
   barcode: varchar("barcode", { length: 255 }),
+  /** GTIN last used for the Icecat lookup/import — may differ from the real product EAN. */
+  icecatCode: varchar("icecat_code", { length: 255 }),
   weight: decimal("weight", { precision: 8, scale: 2 }),
   seoTitle: varchar("seo_title", { length: 255 }),
   seoDescription: text("seo_description"),

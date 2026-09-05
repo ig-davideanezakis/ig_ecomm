@@ -105,7 +105,8 @@ Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 | Slug | `text` | ❌ | Auto-generato dal titolo, modificabile + pulsante ripristino |
 | Identificativo | `text` | ❌ | Codice interno (auto-generato se vuoto) |
 | SKU | `text` | ❌ | Stock Keeping Unit, codice univoco interno |
-| **EAN / GTIN** | `text` | ✅ | Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…), 8-14 cifre. **Obbligatorio** e indipendente dalla ricerca Icecat: campo libero, accetta solo cifre. In assenza di GTIN valido il salvataggio viene rifiutato (client + API) |
+| EAN / GTIN | `text` | ✅ | Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…), 8-14 cifre. **Obbligatorio** e indipendente dalla ricerca Icecat: può non coincidere con il codice usato per l'importazione da Icecat. In assenza di GTIN valido il salvataggio viene rifiutato (client + API) |
+| Codice Icecat | `text` | ❌ | GTIN usato per l'ultima importazione da Icecat — **salvato sul prodotto** (`icecat_code`) così non va ricercato di nuovo; alla riapertura del form precompila il campo di ricerca Icecat e viene mostrato sotto di esso |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
 | Specifiche tecniche | `textarea` (JSON) | ❌ | Specifiche **raggruppate** in JSON: `[{ "group": "Display", "rows": [{ "label": "Risoluzione", "value": "3440x1440" }] }]` — compilate da Icecat preservando i `FeaturesGroups`, renderizzate con heading per gruppo. Il formato permette il futuro **confronto prodotti**. I dati legacy (tabella HTML piatta) continuano a essere renderizzati |

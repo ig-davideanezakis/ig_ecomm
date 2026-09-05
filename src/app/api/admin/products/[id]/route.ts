@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const result = await pool.query(
       `SELECT p.id, p.identifier, p.title, p.slug, p.description, p.content, p.specifications,
         p."base_price"::float as "basePrice", p."compare_at_price"::float as "compareAtPrice",
-        p."cost_price"::float as "costPrice", p.sku, p.barcode, p.weight::float,
+        p."cost_price"::float as "costPrice", p.sku, p.barcode, p."icecat_code" as "icecatCode", p.weight::float,
         p."seo_title" as "seoTitle", p."seo_description" as "seoDescription",
         p.featured, p.published, p."created_at", p."updated_at",
         p."category_id" as "categoryId", p."brand_id" as "brandId",
@@ -47,12 +47,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       `UPDATE "product" SET identifier=$1, title=$2, slug=$3, description=$4, content=$5, specifications=$6,
         base_price=$7, compare_at_price=$8, cost_price=$9, sku=$10, barcode=$11,
         weight=$12, seo_title=$13, seo_description=$14, published=$15, featured=$16,
-        category_id=$17, brand_id=$18, updated_at=NOW()
-       WHERE id=$19`,
+        category_id=$17, brand_id=$18, icecat_code=$19, updated_at=NOW()
+       WHERE id=$20`,
       [data.identifier || `PROD-${Date.now().toString(36).toUpperCase()}`, data.title, productSlug,
         data.description, data.content, data.specifications, data.basePrice, data.compareAtPrice, data.costPrice,
         data.sku, data.barcode, data.weight, data.seoTitle, data.seoDescription,
-        data.published, data.featured, data.categoryId, data.brandId, id]);
+        data.published, data.featured, data.categoryId, data.brandId, data.icecatCode, id]);
 
     return NextResponse.json({ success: true });
   } catch (err) {

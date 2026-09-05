@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
+import { lowestDisplayPrice } from "@/lib/product-price";
 import type { SpecChipValue } from "@/lib/spec-chips";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 
@@ -29,9 +30,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const image = product.images?.[0];
-  const lowestPrice = product.variants?.length
-    ? Math.min(...product.variants.map((v) => v.price))
-    : product.basePrice;
+  // Legacy "Default" variants carry price 0 → the base price wins (see product-price.ts)
+  const lowestPrice = lowestDisplayPrice(product.variants, product.basePrice);
   const hasDiscount = product.compareAtPrice && product.compareAtPrice > lowestPrice;
 
   return (

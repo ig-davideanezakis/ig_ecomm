@@ -45,6 +45,8 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [costPrice, setCostPrice] = useState("");
   const [sku, setSku] = useState("");
   const [barcode, setBarcode] = useState("");
+  /** GTIN used for the Icecat import — saved on the product so it never has to be searched again. */
+  const [icecatCode, setIcecatCode] = useState("");
   const [gtinQuery, setGtinQuery] = useState("");
   const [weight, setWeight] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
@@ -116,6 +118,10 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       setSpecifications(p.specifications || "");
       setBasePrice(String(p.basePrice)); setCompareAtPrice(String(p.compareAtPrice || ""));
       setCostPrice(String(p.costPrice || "")); setSku(p.sku || ""); setBarcode(p.barcode || "");
+      setIcecatCode(p.icecatCode || "");
+      // Prefill the Icecat search with the code already used for this product
+      // (falling back to the EAN), so the data never has to be looked up again.
+      setGtinQuery(p.icecatCode || p.barcode || "");
       setWeight(String(p.weight || ""));
       setSeoTitle(p.seoTitle || ""); setSeoDescription(p.seoDescription || "");
       setPublished(p.published); setFeatured(p.featured);
@@ -219,6 +225,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         // for the lookup is normally the product code itself. The EAN field
         // stays independent and editable — no hard link to Icecat.
         if (!barcode.trim()) setBarcode(gtin.replace(/\D/g, ""));
+        // Remember the code that actually found data, so the same import can
+        // be re-run later without retyping it.
+        setIcecatCode(gtin.replace(/\D/g, ""));
         setIcecatData(data);
         setIcecatOpen(true);
       }
@@ -339,7 +348,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       basePrice: parseFloat(basePrice),
       compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       costPrice: costPrice ? parseFloat(costPrice) : null,
-      sku: sku || null, barcode: ean,
+      sku: sku || null, barcode: ean, icecatCode: icecatCode || null,
       weight: weight ? parseFloat(weight) : null,
       seoTitle: seoTitle || null, seoDescription: seoDescription || null,
       published, featured,
@@ -556,8 +565,15 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             </div>
             <p className="text-[11px] text-muted-foreground md:text-right">
               Importa da Icecat titolo, immagini e specifiche a partire dal codice GTIN.
-              Il campo EAN del prodotto resta indipendente.
+              Il codice usato viene salvato sul prodotto e{" "}
+              <span className="font-medium text-foreground/75">può non coincidere con il vero EAN</span>{" "}
+              (campo EAN / GTIN).
             </p>
+            {icecatCode && (
+              <p className="text-[11px] text-muted-foreground md:text-right">
+                Codice Icecat usato: <span className="font-semibold text-foreground/85">{icecatCode}</span>
+              </p>
+            )}
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-12">
@@ -590,7 +606,8 @@ export default function ProductForm({ productId, initialImportError }: Props) {
             />
             <p className="mt-1 text-xs text-muted-foreground">
               Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…). Obbligatorio e indipendente
-              dalla ricerca Icecat.
+              dalla ricerca Icecat: <span className="font-medium text-foreground/75">può non coincidere</span> con il codice
+              usato per l&apos;importazione da Icecat.
             </p>
           </div>
           <div className="md:col-span-6">

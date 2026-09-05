@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
+import { effectiveVariantPrice } from "@/lib/product-price";
 import { useCart } from "@/lib/cart-store";
 import { ProductGallery } from "@/components/shop/product-gallery";
 import SpecificationsView from "@/components/shop/specifications-view";
@@ -65,7 +66,10 @@ export function ProductDetailClient({ product, specChips = [] }: ProductDetailCl
 
   const { addItem } = useCart();
 
-  const currentPrice = selectedVariant?.price ?? product.basePrice;
+  // Variant price 0 means "not set" (legacy Default variants) → base price wins
+  const currentPrice = selectedVariant
+    ? effectiveVariantPrice(selectedVariant.price, product.basePrice)
+    : product.basePrice;
   const hasDiscount =
     product.compareAtPrice && product.compareAtPrice > currentPrice;
   const inStock = selectedVariant ? selectedVariant.stock > 0 : true;
