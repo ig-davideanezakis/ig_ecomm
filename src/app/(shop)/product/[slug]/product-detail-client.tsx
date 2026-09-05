@@ -6,7 +6,8 @@ import { formatPrice } from "@/lib/utils";
 import { effectiveVariantPrice } from "@/lib/product-price";
 import { useCart } from "@/lib/cart-store";
 import { ProductGallery } from "@/components/shop/product-gallery";
-import SpecificationsView from "@/components/shop/specifications-view";
+import { ProductTabs } from "@/components/shop/product-tabs";
+import type { ProductInfoTabs } from "@/lib/product-tabs";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 import type { SpecChipValue } from "@/lib/spec-chips";
 
@@ -37,6 +38,8 @@ interface ProductDetail {
   slug: string;
   description: string | null;
   content: string | null;
+  /** Marketing/overview rich HTML (rendered in the "Panoramica" tab). */
+  overview: string | null;
   specifications: string | null;
   basePrice: number;
   compareAtPrice: number | null;
@@ -55,11 +58,13 @@ interface ProductDetailClientProps {
   product: ProductDetail;
   /** Key specs extracted server-side — rendered as icon+value chips. */
   specChips?: SpecChipValue[];
+  /** Store-wide content for the Come acquista / Garanzia / Recesso tabs. */
+  infoTabs: ProductInfoTabs;
 }
 
 // ─── Main Component ───────────────────────────────────────────────
 
-export function ProductDetailClient({ product, specChips = [] }: ProductDetailClientProps) {
+export function ProductDetailClient({ product, specChips = [], infoTabs }: ProductDetailClientProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants?.[0] ?? null,
   );
@@ -331,27 +336,14 @@ export function ProductDetailClient({ product, specChips = [] }: ProductDetailCl
         </div>
       </div>
 
-      {/* ─── Rich HTML Content ──────────────────────────────────── */}
-      {product.content && (
-        <SectionAnimation className="mt-16">
-          <div className="mx-auto max-w-3xl">
-            <div
-              className="product-rich-content"
-              dangerouslySetInnerHTML={{ __html: product.content }}
-            />
-          </div>
-        </SectionAnimation>
-      )}
-
-      {/* ─── Technical Specifications ────────────────────────────── */}
-      {product.specifications && (
-        <SectionAnimation className="mt-16">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="mb-6 text-2xl font-bold">Specifiche tecniche</h2>
-            <SpecificationsView value={product.specifications} />
-          </div>
-        </SectionAnimation>
-      )}
+      {/* ─── Tabbed content: Panoramica / Descrizione / Specifiche / info ── */}
+      <ProductTabs
+        productTitle={product.title}
+        overviewHtml={product.overview}
+        contentHtml={product.content}
+        specificationsJson={product.specifications}
+        infoTabs={infoTabs}
+      />
 
       {/* ─── Related Products (placeholder) ─────────────────────── */}
       <SectionAnimation className="mt-20">

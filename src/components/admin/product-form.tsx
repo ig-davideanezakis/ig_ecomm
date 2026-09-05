@@ -6,6 +6,7 @@ import Link from "next/link";
 import RichTextEditor from "@/components/admin/rich-text-editor";
 import IcecatDialog from "@/components/admin/icecat-dialog";
 import SpecificationsView from "@/components/shop/specifications-view";
+import { SpecificationsEditor } from "@/components/admin/specifications-editor";
 import type { IcecatProductData } from "@/lib/icecat";
 import {
   applyIcecatSelection,
@@ -39,6 +40,8 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   const [identifier, setIdentifier] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
+  /** Marketing/overview rich HTML — rendered in the "Panoramica" product tab. */
+  const [overview, setOverview] = useState("");
   const [specifications, setSpecifications] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [compareAtPrice, setCompareAtPrice] = useState("");
@@ -120,6 +123,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       const p = await res.json();
       setTitle(p.title); setSlug(p.slug); setIdentifier(p.identifier || "");
       setDescription(p.description || ""); setContent(p.content || "");
+      setOverview(p.overview || "");
       setSpecifications(p.specifications || "");
       setBasePrice(String(p.basePrice)); setCompareAtPrice(String(p.compareAtPrice || ""));
       setCostPrice(String(p.costPrice || "")); setSku(p.sku || ""); setBarcode(p.barcode || "");
@@ -172,7 +176,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           identifier, title: `${title} (copia)`, slug: `${slug}-copia`,
-          description, content, specifications, basePrice: parseFloat(basePrice),
+          description, content, overview, specifications, basePrice: parseFloat(basePrice),
           compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
           costPrice: costPrice ? parseFloat(costPrice) : null,
           sku: sku ? `${sku}-COPY` : null, barcode, weight: weight ? parseFloat(weight) : null,
@@ -383,7 +387,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
     const body = {
       identifier: identifier || undefined,
       title: title.trim(), slug: slug || undefined,
-      description, content, specifications,
+      description, content, overview, specifications,
       basePrice: parseFloat(basePrice),
       compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       costPrice: costPrice ? parseFloat(costPrice) : null,
@@ -982,19 +986,27 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         </div>
       </section>
 
+      {/* ── Part 3b: Panoramica (contenuti marketing) ──────────────── */}
+      <section className="rounded-lg border bg-card p-5 space-y-4">
+        <h2 className="font-semibold">Panoramica — contenuti marketing</h2>
+        <RichTextEditor
+          value={overview}
+          onChange={setOverview}
+          placeholder="Contenuti marketing del prodotto: punti di forza, storytelling, immagini, video..."
+          minHeight={220}
+          showSeoFormatButton={false}
+        />
+        <p className="text-xs text-muted-foreground">
+          Contenuto libero mostrato nella tab <strong>Panoramica</strong> della pagina prodotto (se compilato).
+          Ottimo per immagini in evidenza, video e messaggi promozionali.
+        </p>
+      </section>
+
       {/* ── Part 4: Specifiche tecniche (100%) ─────────────────────── */}
       <section className="rounded-lg border bg-card p-5 space-y-4">
         <h2 className="font-semibold">Specifiche tecniche</h2>
         <div>
-          <label htmlFor="prod-specs" className="sr-only">Specifiche tecniche (JSON)</label>
-          <textarea
-            id="prod-specs"
-            value={specifications}
-            onChange={(e) => setSpecifications(e.target.value)}
-            rows={6}
-            placeholder='Specifiche in JSON raggruppate (es. [{"group":"Display","rows":[{"label":"Risoluzione","value":"3440x1440"}]}]) — compilato automaticamente da Icecat'
-            className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs focus-visible:ring-2 focus-visible:ring-ring"
-          />
+          <SpecificationsEditor value={specifications} onChange={setSpecifications} />
           {specifications.trim() ? (
             <div className="mt-2 rounded-md border bg-muted/30 p-3 overflow-x-auto">
               <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Anteprima</p>

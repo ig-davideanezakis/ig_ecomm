@@ -21,6 +21,7 @@ See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
 
 - Product listing with sidebar filters (category, brand, price range)
 - Product detail page with admin-editable rich HTML content
+- **Tabbed product page**: *Panoramica* (contenuti marketing, campo `overview`), *Descrizione*, *Specifiche tecniche* (solo se compilate) + *Come acquista / Garanzia / Recesso* (contenuti di store editabili in Impostazioni: `product_tab_come_acquista`, `product_tab_garanzia`, `product_tab_recesso`, con testi di default nel codice); tab accessibili (roving tabindex, frecce/Home/End), pannelli nascosti ma presenti nel DOM (SEO)
 - Product image gallery with click-to-zoom lightbox (desktop + mobile): prev/next, keyboard arrows, touch swipe, ESC/backdrop close, focus-managed dialog
 - Dynamic content sections (specs table, gallery, embedded video, custom HTML blocks)
 - Scroll-triggered animations (parallax, fade-in reveal, slide transitions)

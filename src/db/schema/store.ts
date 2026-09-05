@@ -62,6 +62,8 @@ export const products = pgTable("product", {
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
   content: text("content"),
+  /** Marketing/overview rich HTML — rendered in the "Panoramica" product tab. */
+  overview: text("overview"),
   specifications: text("specifications"),
   basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
   compareAtPrice: decimal("compare_at_price", { precision: 10, scale: 2 }),

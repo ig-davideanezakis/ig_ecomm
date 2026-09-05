@@ -123,8 +123,11 @@ test.describe("Admin Products — authenticated", () => {
     const editor = page.locator('[contenteditable="true"]').first();
     await expect(editor).toContainText("Descrizione lunga dal catalogo Icecat");
     // The technical specifications land in their dedicated field (grouped JSON)
-    await expect(page.locator("#prod-specs")).toHaveValue(/Risoluzione/);
-    await expect(page.locator("#prod-specs")).toHaveValue(/3440x1440/);
+    // — inspect them via the expanded JSON view of the new visual editor
+    await page.getByRole("button", { name: "JSON", exact: true }).click();
+    const jsonArea = page.locator("#prod-specs-json");
+    await expect(jsonArea).toHaveValue(/Risoluzione/);
+    await expect(jsonArea).toHaveValue(/3440x1440/);
     // And the live preview renders the grouped table with the group heading
     await expect(page.getByText("Anteprima", { exact: true })).toBeVisible();
     await expect(page.getByText("Display", { exact: true })).toBeVisible();

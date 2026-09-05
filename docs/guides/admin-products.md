@@ -94,8 +94,9 @@ Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 3. **Informazioni di base** (prima sezione, 100%): nell'header della card, in alto a destra, l'importazione dati con **selettore sorgente** **GTIN (Icecat)** / **URL (AI)**. Il ramo URL estrae con DeepSeek **gli stessi dati di Icecat** (titolo, descrizioni, specifiche, immagini) da una pagina produttore, riusando lo stesso dialog di selezione sezioni; il prompt è personalizzabile in Impostazioni (`url_import_prompt`). Dentro la card: dati anagrafici, **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
 4. **Immagini** al 100%;
 5. **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
-6. **Specifiche tecniche** al 100% (JSON + anteprima);
-7. **Pulsante "Torna su"** globale in tutta l'applicazione (front shop + back admin): compare dopo 300px di scroll (finestra o contenitore), fade 200ms, scroll liscio in cima, accessibile da tastiera.
+6. **Panoramica — contenuti marketing** al 100% (editor rich): contenuti liberi per la tab *Panoramica* del PDP;
+7. **Specifiche tecniche** con **editor visuale** (gruppi e righe editabili) + **vista JSON estesa** + anteprima live;
+8. **Pulsante "Torna su"** globale in tutta l'applicazione (front shop + back admin): compare dopo 300px di scroll (finestra o contenitore), fade 200ms, scroll liscio in cima, accessibile da tastiera.
 
 #### 1. Informazioni di base
 
@@ -110,7 +111,8 @@ Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 | URL import | `text` | ❌ | URL del produttore usato per l'ultima importazione AI — **salvato sul prodotto** (`import_url`); alla riapertura del form precompila il campo URL (selettore "URL (AI)") |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
-| Specifiche tecniche | `textarea` (JSON) | ❌ | Specifiche **raggruppate** in JSON: `[{ "group": "Display", "rows": [{ "label": "Risoluzione", "value": "3440x1440" }] }]` — compilate da Icecat preservando i `FeaturesGroups`, renderizzate con heading per gruppo. Il formato permette il futuro **confronto prodotti**. I dati legacy (tabella HTML piatta) continuano a essere renderizzati |
+| Panoramica | editor rich | ❌ | **Contenuti marketing** mostrati nella tab *Panoramica* della pagina prodotto (se compilati): storytelling, immagini in evidenza, video |
+| Specifiche tecniche | `textarea` (JSON) | ❌ | Specifiche **raggruppate** in JSON: `[{ "group": "Display", "rows": [{ "label": "Risoluzione", "value": "3440x1440" }] }]` — compilate da Icecat preservando i `FeaturesGroups`, renderizzate con heading per gruppo. Il formato permette il futuro **confronto prodotti**. I dati legacy (tabella HTML piatta) continuano a essere renderizzati. Nell'admin si gestiscono con un **editor visuale** (aggiungi/rimuovi gruppi e righe) o con la **vista JSON estesa** |
 
 #### 2. Prezzi
 

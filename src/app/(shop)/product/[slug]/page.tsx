@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getSpecChipsConfig, type ProductDetail } from "@/db/queries";
+import { getProductBySlug, getSpecChipsConfig, getProductInfoTabs, type ProductDetail } from "@/db/queries";
 import { ProductDetailClient } from "./product-detail-client";
 import { extractSpecChips } from "@/lib/spec-chips";
 import type { Metadata } from "next";
@@ -71,9 +71,10 @@ function buildProductJsonLd(product: ProductDetail) {
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const [product, chipsConfig] = await Promise.all([
+  const [product, chipsConfig, infoTabs] = await Promise.all([
     getProductBySlug(slug),
     getSpecChipsConfig(),
+    getProductInfoTabs(),
   ]);
 
   if (!product) {
@@ -86,12 +87,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ProductDetailClient
         product={product}
         specChips={extractSpecChips(product.specifications, chipsConfig)}
+        infoTabs={infoTabs}
       />
     </>
   );

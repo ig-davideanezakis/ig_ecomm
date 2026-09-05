@@ -41,13 +41,14 @@ test.describe("Product page (PDP) — authenticated setup", () => {
     expect(String(JSON.stringify(parsed.offers))).toContain("InStock");
 
     // Availability traffic light
-    await expect(page.getByText("Pronto per la spedizione")).toBeVisible();
+    await expect(page.getByText("Pronto per la spedizione", { exact: true })).toBeVisible();
 
     // Trust bar: local assistance with phone + pickup in store
-    await expect(page.getByText("Assistenza locale")).toBeVisible();
+    // (exact matches: the info tabs duplicate these phrases in hidden panels)
+    await expect(page.getByText("Assistenza locale", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: /091 342171/ })).toHaveAttribute("href", "tel:+39091342171");
-    await expect(page.getByText("Ritiro in sede")).toBeVisible();
-    await expect(page.getByText("Garanzia 24 mesi")).toBeVisible();
+    await expect(page.getByText("Ritiro in sede", { exact: true })).toBeVisible();
+    await expect(page.getByText("Garanzia 24 mesi", { exact: true })).toBeVisible();
   });
 
   test("shows the sticky buy bar on mobile with price and CTA", async ({ page }) => {
@@ -174,5 +175,52 @@ test.describe("Product page (PDP) — authenticated setup", () => {
     await expect(dlg.getByText(/1 \/ 2/)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dlg).toHaveCount(0);
+  });
+
+  test("tabs: Panoramica default, then Descrizione / Specifiche / Garanzia switch", async ({ page }) => {
+    const res = await page.request.post("/api/admin/products", {
+      data: {
+        title: "Monitor E2E Tabs",
+        slug: `monitor-e2e-tabs-${Date.now().toString(36)}`,
+        barcode: "7627780914584",
+        description: "Prodotto per testare i tab della pagina prodotto",
+        overview: "<h2>Marketing</h2><p>Testo panoramica marketing</p>",
+        content: "<p>Testo descrizione dettagliata</p>",
+        specifications: JSON.stringify([
+          { group: "Display", rows: [{ label: "Risoluzione", value: "3440 x 1440" }] },
+        ]),
+        basePrice: 199,
+        published: true,
+      },
+    });
+    const created = await res.json();
+    expect(created.success).toBe(true);
+
+    await page.goto(`/product/${created.slug}`);
+    await page.waitForLoadState("networkidle");
+
+    // Six tabs, Panoramica active by default with the marketing content
+    const tablist = page.getByRole("tablist", { name: "Contenuti del prodotto" });
+    await expect(tablist.getByRole("tab")).toHaveCount(6);
+    await expect(tablist.getByRole("tab", { name: "Panoramica" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText("Testo panoramica marketing")).toBeVisible();
+
+    // Switch to Descrizione
+    await tablist.getByRole("tab", { name: "Descrizione" }).click();
+    await expect(tablist.getByRole("tab", { name: "Descrizione" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText("Testo descrizione dettagliata")).toBeVisible();
+
+    // Specifiche tecniche shows the grouped table
+    await tablist.getByRole("tab", { name: "Specifiche tecniche" }).click();
+    await expect(page.getByText("Risoluzione")).toBeVisible();
+
+    // Info tab with the store-wide default content
+    await tablist.getByRole("tab", { name: "Garanzia" }).click();
+    await expect(page.getByText(/garanzia legale di conformità di 24 mesi/i)).toBeVisible();
+
+    // Keyboard navigation moves between tabs
+    await page.keyboard.press("ArrowRight");
+    await expect(tablist.getByRole("tab", { name: "Recesso" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText(/recedere dall'acquisto entro 14 giorni/i)).toBeVisible();
   });
 });
