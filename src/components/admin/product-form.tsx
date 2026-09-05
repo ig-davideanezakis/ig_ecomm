@@ -48,6 +48,11 @@ export default function ProductForm({ productId, initialImportError }: Props) {
   /** GTIN used for the Icecat import — saved on the product so it never has to be searched again. */
   const [icecatCode, setIcecatCode] = useState("");
   const [gtinQuery, setGtinQuery] = useState("");
+  /** Import source selector: GTIN (Icecat) vs URL (AI extraction). */
+  const [importSource, setImportSource] = useState<"gtin" | "url">("gtin");
+  const [urlQuery, setUrlQuery] = useState("");
+  /** Manufacturer URL last used for the AI import — saved on the product. */
+  const [importUrl, setImportUrl] = useState("");
   const [weight, setWeight] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
@@ -122,6 +127,9 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       // Prefill the Icecat search with the code already used for this product
       // (falling back to the EAN), so the data never has to be looked up again.
       setGtinQuery(p.icecatCode || p.barcode || "");
+      // Same for the AI URL import: restore the last source URL.
+      setImportUrl(p.importUrl || "");
+      setUrlQuery(p.importUrl || "");
       setWeight(String(p.weight || ""));
       setSeoTitle(p.seoTitle || ""); setSeoDescription(p.seoDescription || "");
       setPublished(p.published); setFeatured(p.featured);
@@ -232,6 +240,37 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         setIcecatOpen(true);
       }
     } catch { setError("Errore di connessione."); }
+    setEanLoading(false);
+  };
+
+  /** AI import from a manufacturer/campaign URL — extracts the same data Icecat returns. */
+  const handleUrlLookup = async () => {
+    const url = urlQuery.trim();
+    if (!url || eanLoading) return;
+    setEanLoading(true); setError("");
+    try {
+      const res = await fetch("/api/products/lookup-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        setError(e.error || "Importazione fallita.");
+        setEanLoading(false);
+        return;
+      }
+      const data = await res.json();
+      if (data.found) {
+        setImportUrl(url);
+        setIcecatData(data);
+        setIcecatOpen(true);
+      } else {
+        setError(data.error || "Nessun dato estratto dalla pagina.");
+      }
+    } catch {
+      setError("Errore di connessione.");
+    }
     setEanLoading(false);
   };
 
@@ -348,7 +387,7 @@ export default function ProductForm({ productId, initialImportError }: Props) {
       basePrice: parseFloat(basePrice),
       compareAtPrice: compareAtPrice ? parseFloat(compareAtPrice) : null,
       costPrice: costPrice ? parseFloat(costPrice) : null,
-      sku: sku || null, barcode: ean, icecatCode: icecatCode || null,
+      sku: sku || null, barcode: ean, icecatCode: icecatCode || null, importUrl: importUrl || null,
       weight: weight ? parseFloat(weight) : null,
       seoTitle: seoTitle || null, seoDescription: seoDescription || null,
       published, featured,
@@ -542,38 +581,92 @@ export default function ProductForm({ productId, initialImportError }: Props) {
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <h2 className="font-semibold">Informazioni di base</h2>
           <div className="flex w-full max-w-xl flex-col gap-1.5 md:items-end">
-            <div className="flex w-full items-center gap-2">
-              <label htmlFor="prod-gtin" className="sr-only">
-                Importa dati da Icecat per GTIN (EAN/UPC)
-              </label>
-              <input
-                id="prod-gtin"
-                type="text"
-                value={gtinQuery}
-                onChange={(e) => setGtinQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleIcecatLookup(); } }}
-                placeholder="GTIN (EAN/UPC)"
-                autoComplete="off"
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <button type="button" onClick={handleIcecatLookup}
-                disabled={gtinQuery.trim().length < 8 || eanLoading}
-                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50">
-                {eanLoading ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "📦"}
-                {eanLoading ? "Caricamento..." : "Importa dati da Icecat"}
-              </button>
+            <div className="flex w-full flex-col gap-1.5 md:items-end">
+              {/* Import source toggle */}
+              <div className="flex w-full max-w-xl items-center gap-1 rounded-md border border-border bg-muted/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setImportSource("gtin")}
+                  aria-pressed={importSource === "gtin"}
+                  className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${importSource === "gtin" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  GTIN (Icecat)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportSource("url")}
+                  aria-pressed={importSource === "url"}
+                  className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${importSource === "url" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  URL (AI)
+                </button>
+              </div>
+
+              <div className="flex w-full items-center gap-2">
+                <label htmlFor={importSource === "gtin" ? "prod-gtin" : "prod-import-url"} className="sr-only">
+                  {importSource === "gtin"
+                    ? "Importa dati da Icecat per GTIN (EAN/UPC)"
+                    : "Importa dati da URL con AI"}
+                </label>
+                <input
+                  id={importSource === "gtin" ? "prod-gtin" : "prod-import-url"}
+                  type="text"
+                  value={importSource === "gtin" ? gtinQuery : urlQuery}
+                  onChange={(e) => (importSource === "gtin" ? setGtinQuery(e.target.value) : setUrlQuery(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (importSource === "gtin") handleIcecatLookup();
+                      else handleUrlLookup();
+                    }
+                  }}
+                  placeholder={importSource === "gtin" ? "GTIN (EAN/UPC)" : "https://www.asus.com/..."}
+                  autoComplete="off"
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={importSource === "gtin" ? handleIcecatLookup : handleUrlLookup}
+                  disabled={
+                    (importSource === "gtin" ? gtinQuery.trim().length < 8 : !/^https?:\/\//i.test(urlQuery.trim())) ||
+                    eanLoading
+                  }
+                  className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {eanLoading ? <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : importSource === "gtin" ? "📦" : "🤖"}
+                  {eanLoading ? "Caricamento..." : importSource === "gtin" ? "Importa dati da Icecat" : "Importa da URL"}
+                </button>
+              </div>
+
+              {importSource === "gtin" ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground md:text-right">
+                    Importa da Icecat titolo, immagini e specifiche a partire dal codice GTIN.
+                    Il codice usato viene salvato sul prodotto e{" "}
+                    <span className="font-medium text-foreground/75">può non coincidere con il vero EAN</span>{" "}
+                    (campo EAN / GTIN).
+                  </p>
+                  {icecatCode && (
+                    <p className="text-[11px] text-muted-foreground md:text-right">
+                      Codice Icecat usato: <span className="font-semibold text-foreground/85">{icecatCode}</span>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] text-muted-foreground md:text-right">
+                    Estrae con l&apos;AI dalla pagina gli <span className="font-medium text-foreground/75">stessi dati di Icecat</span>
+                    (titolo, descrizioni, specifiche, immagini) riusando lo stesso template. Il prompt è personalizzabile
+                    in Impostazioni.
+                  </p>
+                  {importUrl && (
+                    <p className="text-[11px] text-muted-foreground md:text-right">
+                      URL import usato: <span className="font-semibold text-foreground/85 break-all">{importUrl}</span>
+                    </p>
+                  )}
+                </>
+              )}
             </div>
-            <p className="text-[11px] text-muted-foreground md:text-right">
-              Importa da Icecat titolo, immagini e specifiche a partire dal codice GTIN.
-              Il codice usato viene salvato sul prodotto e{" "}
-              <span className="font-medium text-foreground/75">può non coincidere con il vero EAN</span>{" "}
-              (campo EAN / GTIN).
-            </p>
-            {icecatCode && (
-              <p className="text-[11px] text-muted-foreground md:text-right">
-                Codice Icecat usato: <span className="font-semibold text-foreground/85">{icecatCode}</span>
-              </p>
-            )}
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-12">

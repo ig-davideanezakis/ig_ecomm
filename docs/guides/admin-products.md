@@ -91,7 +91,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 1. **Breadcrumb** in alto: **"← Torna alla ricerca"** (history back, mantiene filtri/pagina della lista) + link Prodotti + nome pagina;
 2. **Header** con titolo e azioni: lo **Stato** (Pubblicato / In evidenza) è inline, poi **"✨ Formatta SEO con AI"** (formatta la descrizione dettagliata e genera meta title/description), Vedi nel negozio, Duplica, Salva;
-3. **Informazioni di base** (prima sezione, 100%): nell'header della card, in alto a destra, la ricerca **"📦 Importa dati da Icecat"** (input GTIN + bottone + descrizione). Dentro la card: dati anagrafici, **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
+3. **Informazioni di base** (prima sezione, 100%): nell'header della card, in alto a destra, l'importazione dati con **selettore sorgente** **GTIN (Icecat)** / **URL (AI)**. Il ramo URL estrae con DeepSeek **gli stessi dati di Icecat** (titolo, descrizioni, specifiche, immagini) da una pagina produttore, riusando lo stesso dialog di selezione sezioni; il prompt è personalizzabile in Impostazioni (`url_import_prompt`). Dentro la card: dati anagrafici, **Prezzi** (con Peso), **Organizzazione** (categoria/marca) e **Varianti**;
 4. **Immagini** al 100%;
 5. **Descrizione dettagliata** al 100% (editor) con i campi **SEO** (meta title/description) sotto l'editor;
 6. **Specifiche tecniche** al 100% (JSON + anteprima);
@@ -107,6 +107,7 @@ Layout a blocco unico a tutta larghezza (area admin, max ~1680px):
 | SKU | `text` | ❌ | Stock Keeping Unit, codice univoco interno |
 | EAN / GTIN | `text` | ✅ | Codice GTIN del prodotto (EAN-13, UPC-A, EAN-8…), 8-14 cifre. **Obbligatorio** e indipendente dalla ricerca Icecat: può non coincidere con il codice usato per l'importazione da Icecat. In assenza di GTIN valido il salvataggio viene rifiutato (client + API) |
 | Codice Icecat | `text` | ❌ | GTIN usato per l'ultima importazione da Icecat — **salvato sul prodotto** (`icecat_code`) così non va ricercato di nuovo; alla riapertura del form precompila il campo di ricerca Icecat e viene mostrato sotto di esso |
+| URL import | `text` | ❌ | URL del produttore usato per l'ultima importazione AI — **salvato sul prodotto** (`import_url`); alla riapertura del form precompila il campo URL (selettore "URL (AI)") |
 | Descrizione breve | `textarea` | ❌ | Riassunto visibile nel catalogo |
 | Descrizione dettagliata | `textarea` (HTML) | ❌ | Contenuto formattato (grassetti, tabelle, immagini, video). Il pulsante **"Formatta SEO"** nella toolbar riformatta il contenuto con l'AI — è **disabilitato finché l'editor è vuoto** |
 | Specifiche tecniche | `textarea` (JSON) | ❌ | Specifiche **raggruppate** in JSON: `[{ "group": "Display", "rows": [{ "label": "Risoluzione", "value": "3440x1440" }] }]` — compilate da Icecat preservando i `FeaturesGroups`, renderizzate con heading per gruppo. Il formato permette il futuro **confronto prodotti**. I dati legacy (tabella HTML piatta) continuano a essere renderizzati |

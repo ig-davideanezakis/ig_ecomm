@@ -20,6 +20,8 @@ export const productSchema = z.object({
     .regex(/^\d{8,14}$/, "GTIN non valido: deve contenere 8-14 cifre."),
   /** GTIN used for the Icecat import — may differ from the real product EAN (barcode). */
   icecatCode: z.string().max(255).nullable().optional().default(null),
+  /** Manufacturer URL last used for the AI import. */
+  importUrl: z.string().max(1000).nullable().optional().default(null),
   weight: z.number().min(0).nullable().optional().default(null),
   seoTitle: z.string().max(255).nullable().optional().default(null),
   seoDescription: z.string().nullable().optional().default(null),

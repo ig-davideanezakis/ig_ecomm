@@ -27,6 +27,7 @@ const SETTING_FIELDS = [
   { key: "social_youtube", label: "YouTube URL", type: "text" },
   { key: "copyright_text", label: "Testo copyright", type: "text" },
   { key: "seo_format_prompt", label: "✨ Prompt AI formattazione SEO", type: "seo-prompt" },
+  { key: "url_import_prompt", label: "🤖 Prompt AI importazione da URL", type: "seo-prompt" },
   { key: "__payments", label: "Pagamenti", type: "section" },
   { key: "bank_intestatario", label: "Bonifico — Intestatario", type: "text" },
   { key: "bank_iban", label: "Bonifico — IBAN", type: "text" },
@@ -192,7 +193,7 @@ export default function AdminSettingsPage() {
                   rows={12}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono focus-visible:ring-2 focus-visible:ring-ring" />
                 <p className="text-xs text-muted-foreground">
-                  Questo prompt viene inviato a DeepSeek AI per formattare il contenuto. Modificalo per personalizzare lo stile, il tono e le regole SEO.
+                  Questo prompt viene inviato a DeepSeek AI. Modificalo per personalizzare stile, tono e regole.
                   Lascia vuoto per usare il prompt predefinito.
                 </p>
               </div>

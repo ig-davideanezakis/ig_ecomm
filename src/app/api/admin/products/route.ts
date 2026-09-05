@@ -100,13 +100,13 @@ export async function POST(request: Request) {
 
     const result = await pool.query(
       `INSERT INTO "product" (identifier, title, slug, description, content, specifications,
-        base_price, compare_at_price, cost_price, sku, barcode, icecat_code, weight,
+        base_price, compare_at_price, cost_price, sku, barcode, icecat_code, import_url, weight,
         seo_title, seo_description, published, featured, category_id, brand_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING id`,
       [ident, data.title, slug, data.description || null, data.content || null, data.specifications || null,
         data.basePrice, data.compareAtPrice, data.costPrice,
-        data.sku, data.barcode, data.icecatCode, data.weight,
+        data.sku, data.barcode, data.icecatCode, data.importUrl, data.weight,
         data.seoTitle, data.seoDescription,
         data.published, data.featured,
         data.categoryId, data.brandId],
