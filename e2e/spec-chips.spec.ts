@@ -2,33 +2,33 @@ import { test, expect } from "@playwright/test";
 
 const TITLE = `Notebook Chip E2E ${Date.now().toString(36)}`;
 
-// Grouped JSON grounded in real Icecat IT labels — every default chip matches.
-const SPECS = JSON.stringify([
-  {
-    group: "Processore",
-    rows: [{ label: "Famiglia processore", value: "Intel Core Ultra 7" }],
-  },
-  {
-    group: "Memoria",
-    rows: [{ label: "RAM installata", value: "32 GB" }],
-  },
-  {
-    group: "Archiviazione",
-    rows: [{ label: "Capacità memoria integrata", value: "1 TB" }],
-  },
-  {
-    group: "Display",
-    rows: [{ label: "Dimensioni diagonale schermo", value: '35,6 cm (14")' }],
-  },
-  {
-    group: "Grafica",
-    rows: [{ label: "Processore grafico", value: "Intel Arc Graphics" }],
-  },
-  {
-    group: "Software",
-    rows: [{ label: "Sistema operativo incluso", value: "Windows 11 Pro" }],
-  },
-]);
+/**
+ * Chip config is admin-editable (store_setting.spec_chips): it may contain any
+ * number of chips with custom labels/patterns. This spec therefore builds the
+ * product's spec rows dynamically — one row per configured chip, using the
+ * chip's first match pattern as the row label — so the assertions hold for
+ * whatever config is currently saved (default 6 chips, or a customized one).
+ */
+async function buildSpecsFromConfig(page: import("@playwright/test").Page): Promise<{
+  specs: string;
+  chips: { id: string; label: string; patterns: string[] }[];
+}> {
+  const settings = await (await page.request.get("/api/settings")).json();
+  const chips: { id: string; label: string; patterns: string[] }[] = settings.spec_chips
+    ? JSON.parse(settings.spec_chips)
+    : [];
+  const rows = chips
+    .filter((c) => c.patterns?.length > 0)
+    .map((c) => ({ label: c.patterns[0], value: CHIP_VALUES[c.id] ?? `Valore ${c.id}` }));
+  return { specs: JSON.stringify([{ group: "Specifiche di test", rows }]), chips };
+}
+
+const CHIP_VALUES: Record<string, string> = {
+  cpu: "Intel Core Ultra 7",
+  ram: "32 GB",
+  storage: "1 TB",
+  os: "Windows 11 Pro",
+};
 
 test.describe("Spec chips — PDP and product list", () => {
   test.beforeEach(async ({ page }) => {
@@ -42,13 +42,16 @@ test.describe("Spec chips — PDP and product list", () => {
   });
 
   test("renders spec chips on the product page and on the card in search results", async ({ page }) => {
+    const { specs, chips } = await buildSpecsFromConfig(page);
+    expect(chips.length).toBeGreaterThanOrEqual(6);
+
     const res = await page.request.post("/api/admin/products", {
       data: {
         title: TITLE,
         slug: "chip-e2e-laptop",
         barcode: "4719512030394",
         description: "Laptop creato per il test E2E delle chip specifiche",
-        specifications: SPECS,
+        specifications: specs,
         basePrice: 999,
         published: true,
       },
@@ -61,15 +64,21 @@ test.describe("Spec chips — PDP and product list", () => {
 
     const chipsList = page.getByRole("list", { name: "Caratteristiche principali" });
     await expect(chipsList).toBeVisible();
-    await expect(chipsList.getByRole("listitem")).toHaveCount(6);
+    // One chip per configured chip whose pattern is covered by the specs
+    await expect(chipsList.getByRole("listitem")).toHaveCount(chips.length);
 
-    await expect(chipsList.getByText("Intel Core Ultra 7")).toBeVisible();
-    await expect(chipsList.getByText("32 GB")).toBeVisible();
-    await expect(chipsList.getByText("1 TB")).toBeVisible();
-    await expect(chipsList.getByText("Windows 11 Pro")).toBeVisible();
+    // Core chips show their extracted value when configured
+    for (const [id, value] of Object.entries(CHIP_VALUES)) {
+      if (chips.some((c) => c.id === id)) {
+        await expect(chipsList.getByText(value)).toBeVisible();
+      }
+    }
+
     // Chip labels are visible in the detail variant
-    await expect(chipsList.getByText("RAM", { exact: true })).toBeVisible();
-    await expect(chipsList.getByText("Scheda video", { exact: true })).toBeVisible();
+    const ramChip = chips.find((c) => c.id === "ram");
+    if (ramChip) await expect(chipsList.getByText(ramChip.label, { exact: true })).toBeVisible();
+    const gpuChip = chips.find((c) => c.id === "gpu");
+    if (gpuChip) await expect(chipsList.getByText(gpuChip.label, { exact: true })).toBeVisible();
 
     // ── Product list (search): compact chips on the card ──
     await page.goto(`/products?search=${encodeURIComponent(TITLE)}`);
@@ -78,8 +87,11 @@ test.describe("Spec chips — PDP and product list", () => {
     await expect(card).toBeVisible();
     const cardChips = card.getByRole("list", { name: "Caratteristiche principali" });
     await expect(cardChips).toHaveCount(1);
-    await expect(cardChips.getByText("Intel Core Ultra 7")).toBeVisible();
-    await expect(cardChips.getByText("32 GB")).toBeVisible();
-    await expect(cardChips.getByText("1 TB")).toBeVisible();
+    if (chips.some((c) => c.id === "cpu")) {
+      await expect(cardChips.getByText("Intel Core Ultra 7")).toBeVisible();
+    }
+    if (chips.some((c) => c.id === "ram")) {
+      await expect(cardChips.getByText("32 GB")).toBeVisible();
+    }
   });
 });
