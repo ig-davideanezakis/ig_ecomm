@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 import { SpecChipIcon } from "@/components/shop/spec-chip-icon";
-import type { SpecChipValue } from "@/lib/spec-chips";
+import type { ChipValue } from "@/lib/filter-values";
 
-const chips: SpecChipValue[] = [
+const chips: ChipValue[] = [
   { id: "cpu", label: "CPU", icon: "cpu", value: "Intel Core Ultra 9" },
   { id: "ram", label: "RAM", icon: "memory-stick", value: "32 GB" },
   { id: "storage", label: "Archiviazione", icon: "hard-drive", value: "1 TB" },

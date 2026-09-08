@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { SPEC_ICON_OPTIONS, SpecChipIcon } from "@/components/shop/spec-chip-icon";
 
 interface FilterOption {
   id: string;
@@ -19,15 +20,42 @@ interface Filter {
   is_global: boolean;
   is_system: boolean;
   sort_order: number;
+  value_mode: "auto" | "manual";
+  icon: string | null;
+  patterns: string | null; // JSON string array
+  exclude: string | null; // JSON string array
+  show_as_chip: boolean;
+  use_as_filter: boolean;
   options: FilterOption[];
 }
+
+function splitTokens(text: string): string[] {
+  return text.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+function parseTokensJson(raw: string | null): string {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.join(", ") : "";
+  } catch {
+    return "";
+  }
+}
+
+const emptyForm = {
+  name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0,
+  valueMode: "manual" as "manual" | "auto",
+  icon: "tag", patternsText: "", excludeText: "",
+  showAsChip: false, useAsFilter: true,
+};
 
 export default function AdminFiltersPage() {
   const [filters, setFilters] = useState<Filter[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 });
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -45,12 +73,21 @@ export default function AdminFiltersPage() {
     setError(""); setSaving(true);
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `/api/admin/filters/${editingId}` : "/api/admin/filters";
+    const payload = {
+      name: form.name, slug: form.slug, type: form.type, isGlobal: form.isGlobal, sortOrder: form.sortOrder,
+      valueMode: form.valueMode,
+      icon: form.valueMode === "auto" ? form.icon : null,
+      patterns: form.valueMode === "auto" ? splitTokens(form.patternsText) : [],
+      exclude: form.valueMode === "auto" ? splitTokens(form.excludeText) : [],
+      showAsChip: form.showAsChip,
+      useAsFilter: form.useAsFilter,
+    };
     const res = await fetch(url, {
       method, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     const json = await res.json();
-    if (json.success) { setShowForm(false); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); fetchFilters(); }
+    if (json.success) { setShowForm(false); setEditingId(null); setForm(emptyForm); fetchFilters(); }
     else setError(json.error || "Errore");
     setSaving(false);
   };
@@ -110,7 +147,15 @@ export default function AdminFiltersPage() {
   };
 
   const editFilter = (f: Filter) => {
-    setForm({ name: f.name, slug: f.slug, type: f.type, isGlobal: f.is_global, sortOrder: f.sort_order });
+    setForm({
+      name: f.name, slug: f.slug, type: f.type, isGlobal: f.is_global, sortOrder: f.sort_order,
+      valueMode: f.value_mode || "manual",
+      icon: f.icon || "tag",
+      patternsText: parseTokensJson(f.patterns),
+      excludeText: parseTokensJson(f.exclude),
+      showAsChip: f.show_as_chip ?? false,
+      useAsFilter: f.use_as_filter ?? true,
+    });
     setEditingId(f.id);
     setShowForm(true);
   };
@@ -121,7 +166,7 @@ export default function AdminFiltersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Filtri</h1>
-        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ name: "", slug: "", type: "checkbox", isGlobal: false, sortOrder: 0 }); }}
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(emptyForm); }}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
           {showForm ? "Annulla" : "+ Nuovo filtro"}
         </button>
@@ -160,12 +205,78 @@ export default function AdminFiltersPage() {
                 className="rounded border-border" />
               Filtro globale
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.useAsFilter} onChange={e => setForm({ ...form, useAsFilter: e.target.checked })}
+                className="rounded border-border" />
+              Usa come filtro (sidebar catalogo)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.showAsChip} onChange={e => setForm({ ...form, showAsChip: e.target.checked })}
+                className="rounded border-border" />
+              Mostra come chip (card + scheda prodotto)
+            </label>
             <div className="flex items-center gap-2">
               <label htmlFor="f-order" className="text-sm">Ordine:</label>
               <input id="f-order" type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: Number(e.target.value) })}
                 className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
           </div>
+
+          {/* Value origin */}
+          <div className="rounded-md border border-border p-4 space-y-3">
+            <div className="flex items-center gap-6">
+              <span className="text-sm font-medium">Origine valori:</span>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="valueMode" checked={form.valueMode === "manual"}
+                  onChange={() => setForm({ ...form, valueMode: "manual" })} />
+                Manuale (opzioni curate)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="radio" name="valueMode" checked={form.valueMode === "auto"}
+                  onChange={() => setForm({ ...form, valueMode: "auto" })} />
+                Automatico da specifiche (Icecat)
+              </label>
+            </div>
+
+            {form.valueMode === "manual" ? (
+              <p className="text-xs text-muted-foreground">
+                Le opzioni si gestiscono nella lista sotto, dopo aver salvato il filtro
+                (&quot;+ Aggiungi opzione&quot;).
+              </p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-[auto_1fr_1fr]">
+                <div>
+                  <label className="mb-0.5 block text-xs font-medium" htmlFor="f-icon">Icona (per la chip)</label>
+                  <div className="flex items-center gap-2">
+                    <SpecChipIcon name={form.icon} className="h-5 w-5 shrink-0 text-primary" />
+                    <select id="f-icon" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}
+                      className="rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+                      {SPEC_ICON_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-xs font-medium" htmlFor="f-patterns">
+                    Etichette Icecat da abbinare (virgole)
+                  </label>
+                  <input id="f-patterns" type="text" value={form.patternsText}
+                    onChange={e => setForm({ ...form, patternsText: e.target.value })}
+                    placeholder="es. famiglia processore, modello del processore"
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-xs font-medium" htmlFor="f-exclude">
+                    Da escludere (opzionale)
+                  </label>
+                  <input id="f-exclude" type="text" value={form.excludeText}
+                    onChange={e => setForm({ ...form, excludeText: e.target.value })}
+                    placeholder="es. frequenza, produttore"
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm" />
+                </div>
+              </div>
+            )}
+          </div>
+
           <button type="submit" disabled={saving}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
             {saving ? "Salvataggio..." : editingId ? "Salva modifiche" : "Crea filtro"}
@@ -185,6 +296,9 @@ export default function AdminFiltersPage() {
                   <span className="font-medium">{f.name}</span>
                   {f.is_global && <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-400">Globale</span>}
                   {f.is_system && <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">Sistema</span>}
+                  {f.value_mode === "auto" && <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 text-[10px] font-medium text-purple-700 dark:text-purple-400">Auto</span>}
+                  {f.show_as_chip && <span className="ml-2 inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-400">Chip</span>}
+                  {!f.use_as_filter && <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:text-gray-400">Non filtro</span>}
                   <span className="ml-2 text-xs text-muted-foreground">slug: {f.slug}</span>
                   <span className="ml-2 text-xs text-muted-foreground">{f.type}</span>
                 </div>
@@ -201,7 +315,18 @@ export default function AdminFiltersPage() {
               </div>
             </div>
 
-            {!collapsed[f.id] && (
+            {!collapsed[f.id] && f.value_mode === "auto" ? (
+              <div className="border-t px-4 py-3 space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Valori derivati automaticamente dalle specifiche tecniche (Icecat) di ogni
+                  prodotto — nessuna opzione da curare qui.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Etichette abbinate: <span className="italic">{parseTokensJson(f.patterns) || "—"}</span>
+                  {f.exclude && <> · escluse: <span className="italic">{parseTokensJson(f.exclude)}</span></>}
+                </p>
+              </div>
+            ) : !collapsed[f.id] && (
               <div className="border-t px-4 py-3 space-y-3">
                 {/* Options list */}
                 <div className="flex flex-wrap gap-2">

@@ -1,4 +1,4 @@
-import type { SpecChipValue } from "@/lib/spec-chips";
+import type { ChipValue } from "@/lib/filter-values";
 import { SpecChipIcon } from "./spec-chip-icon";
 
 /**
@@ -12,7 +12,7 @@ import { SpecChipIcon } from "./spec-chip-icon";
  */
 
 interface ProductSpecChipsProps {
-  chips: SpecChipValue[];
+  chips: ChipValue[];
   variant?: "detail" | "card";
   className?: string;
 }

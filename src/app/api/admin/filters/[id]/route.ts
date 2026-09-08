@@ -38,13 +38,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (existing.rows.length === 0) return NextResponse.json({ error: "Filtro non trovato." }, { status: 404 });
     if (existing.rows[0].is_system) return NextResponse.json({ error: "Impossibile modificare un filtro di sistema." }, { status: 403 });
 
-    const { name, slug, type, isGlobal, sortOrder } = await request.json();
+    const {
+      name, slug, type, isGlobal, sortOrder,
+      valueMode, icon, patterns, exclude, showAsChip, useAsFilter,
+    } = await request.json();
     const result = await pool.query(
       `UPDATE "filter" SET name = COALESCE($1, name), slug = COALESCE($2, slug),
        type = COALESCE($3, type), is_global = COALESCE($4, is_global),
-       sort_order = COALESCE($5, sort_order), updated_at = NOW()
-       WHERE id = $6 RETURNING *`,
-      [name, slug, type, isGlobal, sortOrder, id]
+       sort_order = COALESCE($5, sort_order),
+       value_mode = COALESCE($6, value_mode), icon = COALESCE($7, icon),
+       patterns = COALESCE($8, patterns), exclude = COALESCE($9, exclude),
+       show_as_chip = COALESCE($10, show_as_chip), use_as_filter = COALESCE($11, use_as_filter),
+       updated_at = NOW()
+       WHERE id = $12 RETURNING *`,
+      [name, slug, type, isGlobal, sortOrder,
+        valueMode === "auto" || valueMode === "manual" ? valueMode : null,
+        icon ?? null,
+        Array.isArray(patterns) ? JSON.stringify(patterns) : null,
+        Array.isArray(exclude) ? JSON.stringify(exclude) : null,
+        typeof showAsChip === "boolean" ? showAsChip : null,
+        typeof useAsFilter === "boolean" ? useAsFilter : null,
+        id]
     );
     return NextResponse.json({ success: true, filter: result.rows[0] });
   } catch (err) {

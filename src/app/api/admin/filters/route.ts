@@ -33,14 +33,22 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try { await authorize("ADMIN"); } catch { return NextResponse.json({ error: "Non autorizzato." }, { status: 401 }); }
   try {
-    const { name, slug, type, isGlobal, sortOrder } = await request.json();
+    const {
+      name, slug, type, isGlobal, sortOrder,
+      valueMode, icon, patterns, exclude, showAsChip, useAsFilter,
+    } = await request.json();
     if (!name || !slug) {
       return NextResponse.json({ error: "name e slug sono obbligatori." }, { status: 400 });
     }
     const result = await pool.query(
-      `INSERT INTO "filter" (name, slug, type, is_global, sort_order)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, slug, type || "checkbox", isGlobal || false, sortOrder || 0]
+      `INSERT INTO "filter" (name, slug, type, is_global, sort_order,
+         value_mode, icon, patterns, exclude, show_as_chip, use_as_filter)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [name, slug, type || "checkbox", isGlobal || false, sortOrder || 0,
+        valueMode === "auto" ? "auto" : "manual", icon || null,
+        Array.isArray(patterns) ? JSON.stringify(patterns) : null,
+        Array.isArray(exclude) ? JSON.stringify(exclude) : null,
+        Boolean(showAsChip), useAsFilter !== false]
     );
     return NextResponse.json({ success: true, filter: result.rows[0] });
   } catch (e: unknown) {

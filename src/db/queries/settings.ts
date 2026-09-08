@@ -1,35 +1,9 @@
 import { pool } from "@/lib/db";
-import {
-  DEFAULT_SPEC_CHIPS,
-  parseSpecChipsConfig,
-  type SpecChipConfig,
-} from "@/lib/spec-chips";
 import { parseTokenArray, type ChipFilterConfig } from "@/lib/filter-values";
 import {
   DEFAULT_INFO_TABS,
   type ProductInfoTabs,
 } from "@/lib/product-tabs";
-
-// ─── Spec chips configuration (store_setting key "spec_chips") ────
-//
-// Deprecated — superseded by getChipFilterConfigs() below, which reads the
-// unified `filter` table (showAsChip) instead of this store_setting blob.
-// Kept only until the admin settings-page chip editor is retired (it still
-// reads/writes this key) and every `spec_chips` value has been migrated to
-// `filter` rows via scripts/migrate-spec-chips-to-filters.ts.
-
-/**
- * Load the admin-configured spec chip definitions.
- * Falls back to the built-in defaults (CPU, RAM, storage, display, GPU, OS)
- * while no `spec_chips` setting has been saved yet.
- */
-export async function getSpecChipsConfig(): Promise<SpecChipConfig[]> {
-  const result = await pool.query(
-    `SELECT value FROM store_setting WHERE key = 'spec_chips'`,
-  );
-  const parsed = parseSpecChipsConfig(result.rows[0]?.value ?? null);
-  return parsed ?? DEFAULT_SPEC_CHIPS;
-}
 
 // ─── Chip filters (unified `filter` table, showAsChip = true) ─────
 

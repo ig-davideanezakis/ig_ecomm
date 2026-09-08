@@ -24,7 +24,8 @@
     "db:check": "npx tsx -e \"const {Pool}=require('pg');const pool=new Pool({connectionString:process.env.DATABASE_URL});pool.query('SELECT 1').then(()=>{console.log('DB OK');process.exit(0)}).catch(e=>{console.log('DB ERROR:',e.message);process.exit(1)})\"",
     "db:cleanup": "npx tsx scripts/cleanup-test-users.ts",
     "db:cleanup-products": "npx tsx scripts/cleanup-e2e-products.ts",
-    "db:migrate-images": "npx tsx migration/scripts/migrate-images.ts"
+    "db:migrate-images": "npx tsx migration/scripts/migrate-images.ts",
+    "db:migrate-spec-chips": "npx tsx scripts/migrate-spec-chips-to-filters.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

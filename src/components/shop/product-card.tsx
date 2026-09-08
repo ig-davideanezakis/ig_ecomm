@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { lowestDisplayPrice } from "@/lib/product-price";
-import type { SpecChipValue } from "@/lib/spec-chips";
+import type { ChipValue } from "@/lib/filter-values";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
 
 export interface ProductCardData {
@@ -20,7 +20,7 @@ export interface ProductCardData {
   category: { id: string; name: string; slug: string } | null;
   brand: { id: string; name: string; slug: string } | null;
   /** Key specs extracted from product.specifications — rendered as chips. */
-  specChips?: SpecChipValue[];
+  specChips?: ChipValue[];
 }
 
 interface ProductCardProps {

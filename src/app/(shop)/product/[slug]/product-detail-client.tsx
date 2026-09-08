@@ -9,7 +9,7 @@ import { ProductGallery } from "@/components/shop/product-gallery";
 import { ProductTabs } from "@/components/shop/product-tabs";
 import type { ProductInfoTabs } from "@/lib/product-tabs";
 import { ProductSpecChips } from "@/components/shop/product-spec-chips";
-import type { SpecChipValue } from "@/lib/spec-chips";
+import type { ChipValue } from "@/lib/filter-values";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ interface ProductDetail {
 interface ProductDetailClientProps {
   product: ProductDetail;
   /** Key specs extracted server-side — rendered as icon+value chips. */
-  specChips?: SpecChipValue[];
+  specChips?: ChipValue[];
   /** Store-wide content for the Come acquista / Garanzia / Recesso tabs. */
   infoTabs: ProductInfoTabs;
 }
