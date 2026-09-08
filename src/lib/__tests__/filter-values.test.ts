@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   extractFilterValues,
   extractFilterValue,
+  extractChipValues,
   normalizeSpecLabel,
   syncAutoFilterValues,
 } from "@/lib/filter-values";
@@ -92,6 +93,25 @@ describe("extractFilterValue", () => {
   it("returns the single matched value, or null when nothing matches", () => {
     expect(extractFilterValue(laptopSpecs, CPU)).toBe("Intel Core Ultra 9");
     expect(extractFilterValue(laptopSpecs, { id: "x", patterns: ["nope"] })).toBeNull();
+  });
+});
+
+describe("extractChipValues", () => {
+  it("returns chip display data in config order, not document order", () => {
+    const configs = [
+      { id: "os", label: "OS", icon: "app-window", patterns: ["sistema operativo"] },
+      { id: "cpu", label: "CPU", icon: "cpu", patterns: ["famiglia processore"] },
+    ];
+    const chips = extractChipValues(laptopSpecs, configs);
+    expect(chips.map((c) => c.id)).toEqual(["cpu"]); // no "sistema operativo" row in this fixture
+    expect(chips[0]).toEqual({ id: "cpu", label: "CPU", icon: "cpu", value: "Intel Core Ultra 9" });
+  });
+
+  it("omits a chip with no match instead of an empty value", () => {
+    const chips = extractChipValues(laptopSpecs, [
+      { id: "x", label: "X", icon: "tag", patterns: ["nonexistent"] },
+    ]);
+    expect(chips).toEqual([]);
   });
 });
 

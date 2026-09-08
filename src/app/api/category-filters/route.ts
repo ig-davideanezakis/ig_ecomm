@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 
 // GET /api/category-filters?categorySlug=xxx
-// Returns all filters for a category, with inheritance walked up the tree + global filters
+// Returns all filters for a category, with inheritance walked up the tree + global filters.
+//
+// Option values come from one of two places, depending on filter.value_mode:
+// - "manual": the curated filter_option list (unchanged from before).
+// - "auto": the distinct product_filter_value.value rows actually present
+//   among real (published) products — scoped to this category when one is
+//   given, so the sidebar never offers a value nothing in view actually has.
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,20 +25,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Auto-mode option values, optionally scoped to one category's products.
+    const autoOptionsSubquery = (productScopeSql: string) => `
+      COALESCE(
+        (SELECT jsonb_agg(jsonb_build_object('id', t.v, 'value', t.v, 'label', t.v, 'slug', t.v, 'color', null))
+         FROM (
+           SELECT DISTINCT pfv.value as v
+           FROM "product_filter_value" pfv
+           JOIN "product" p ON p.id = pfv."product_id"
+           WHERE pfv."filter_id" = f.id AND p.published = true ${productScopeSql}
+         ) t),
+        '[]'::jsonb
+      )`;
+
+    const manualOptionsSubquery = `
+      COALESCE(
+        (SELECT jsonb_agg(jsonb_build_object(
+          'id', fo.id, 'value', fo.value, 'label', fo.label,
+          'slug', fo.slug, 'color', fo.color
+        ) ORDER BY fo.sort_order ASC)
+        FROM "filter_option" fo WHERE fo.filter_id = f.id),
+        '[]'::jsonb
+      )`;
+
     // 1. Get all global filters (price, stock, brand are built-in + any isGlobal=true)
     const globalFilters = await pool.query(`
-      SELECT f.id, f.name, f.slug, f.type, f.sort_order,
-        COALESCE(
-          (SELECT jsonb_agg(jsonb_build_object(
-            'id', fo.id, 'value', fo.value, 'label', fo.label,
-            'slug', fo.slug, 'color', fo.color
-          ) ORDER BY fo.sort_order ASC)
-          FROM "filter_option" fo WHERE fo.filter_id = f.id),
-          '[]'::jsonb
-        ) as options
-      FROM "filter" f WHERE f.is_global = true
+      SELECT f.id, f.name, f.slug, f.type, f.value_mode, f.sort_order,
+        CASE WHEN f.value_mode = 'auto'
+          THEN (${autoOptionsSubquery(categoryId ? `AND p."category_id" = $1` : "")})
+          ELSE (${manualOptionsSubquery})
+        END as options
+      FROM "filter" f WHERE f.is_global = true AND f.use_as_filter = true
       ORDER BY f.sort_order ASC
-    `);
+    `, categoryId ? [categoryId] : []);
 
     // 2. Get category-specific filters with inheritance
     const categoryFilters: Array<Record<string, unknown>> = [];
@@ -58,22 +83,18 @@ export async function GET(request: NextRequest) {
       // where inherit = true (or the filter is assigned directly to this category)
       const filtersResult = await pool.query(`
         SELECT cf.category_id, cf.filter_id, cf.inherit, cf.sort_order as cf_sort,
-          f.name, f.slug, f.type, f.sort_order as f_sort,
+          f.name, f.slug, f.type, f.value_mode, f.sort_order as f_sort,
           c.name as cat_name, c.slug as cat_slug,
-          COALESCE(
-            (SELECT jsonb_agg(jsonb_build_object(
-              'id', fo.id, 'value', fo.value, 'label', fo.label,
-              'slug', fo.slug, 'color', fo.color
-            ) ORDER BY fo.sort_order ASC)
-            FROM "filter_option" fo WHERE fo.filter_id = f.id),
-            '[]'::jsonb
-          ) as options
+          CASE WHEN f.value_mode = 'auto'
+            THEN (${autoOptionsSubquery(`AND p."category_id" = $2`)})
+            ELSE (${manualOptionsSubquery})
+          END as options
         FROM "category_filter" cf
         JOIN "filter" f ON f.id = cf.filter_id
         JOIN "category" c ON c.id = cf.category_id
-        WHERE cf.category_id = ANY($1) AND cf.inherit = true
+        WHERE cf.category_id = ANY($1) AND cf.inherit = true AND f.use_as_filter = true
         ORDER BY cf.sort_order ASC, f.sort_order ASC
-      `, [ancestorIds]);
+      `, [ancestorIds, categoryId]);
 
       // Build the filter list with source info, avoid duplicates
       const seenFilterIds = new Set<string>();

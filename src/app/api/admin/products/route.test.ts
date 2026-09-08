@@ -1,18 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { authorizeMock, queryMock } = vi.hoisted(() => ({
+const { authorizeMock, queryMock, syncAutoFilterValuesMock } = vi.hoisted(() => ({
   authorizeMock: vi.fn(),
   queryMock: vi.fn(),
+  syncAutoFilterValuesMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth-helpers", () => ({ authorize: authorizeMock }));
 vi.mock("@/lib/db", () => ({ pool: { query: queryMock } }));
+vi.mock("@/lib/filter-values", () => ({ syncAutoFilterValues: syncAutoFilterValuesMock }));
 
-import { GET } from "./route";
+import { GET, POST } from "./route";
 
 function makeRequest(query: string) {
   return new Request(`http://localhost/api/admin/products?${query}`) as unknown as import("next/server").NextRequest;
 }
+
+function makePostRequest(body: unknown) {
+  return new Request("http://localhost/api/admin/products", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+const validProduct = { title: "Notebook Test", basePrice: 999, barcode: "12345678" };
 
 function mockListResponses() {
   queryMock
@@ -67,5 +79,28 @@ describe("GET /api/admin/products", () => {
     const [, listParams] = queryMock.mock.calls[1];
     expect(listParams.slice(-2)).toEqual([10, 10]); // LIMIT 10 OFFSET 10 (page 2)
     expect(json.pagination).toMatchObject({ page: 2, limit: 10 });
+  });
+});
+
+describe("POST /api/admin/products", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authorizeMock.mockResolvedValue({ id: "admin1", role: "ADMIN", email: "a@a.it" });
+  });
+
+  it("syncs auto-filter values from the new product's specifications after insert", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: "prod1" }] }); // INSERT ... RETURNING id
+    syncAutoFilterValuesMock.mockResolvedValue(undefined);
+
+    const res = await POST(makePostRequest({ ...validProduct, specifications: "[]" }));
+    expect(res.status).toBe(200);
+
+    expect(syncAutoFilterValuesMock).toHaveBeenCalledWith(expect.anything(), "prod1", "[]");
+  });
+
+  it("does not touch filter values when creation fails validation", async () => {
+    const res = await POST(makePostRequest({ title: "" })); // missing required fields
+    expect(res.status).toBe(400);
+    expect(syncAutoFilterValuesMock).not.toHaveBeenCalled();
   });
 });

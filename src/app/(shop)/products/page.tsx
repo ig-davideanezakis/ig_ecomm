@@ -1,7 +1,7 @@
-import { getProductList, getSpecChipsConfig } from "@/db/queries";
+import { getProductList, getChipFilterConfigs } from "@/db/queries";
 import { ProductCard, type ProductCardData } from "@/components/shop/product-card";
 import { ProductFilters } from "@/components/shop/product-filters";
-import { extractSpecChips } from "@/lib/spec-chips";
+import { extractChipValues } from "@/lib/filter-values";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -27,18 +27,28 @@ interface PageProps {
 export default async function ProductsPage({ searchParams }: PageProps) {
   const resolved = await searchParams;
 
-  const [data, chipsConfig] = await Promise.all([
+  // Every other f_<slug>=value (checkbox/select/color filters) — price's
+  // own f_price_min/f_price_max are handled separately just below, as before.
+  const filterSelections: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(resolved)) {
+    if (!key.startsWith("f_") || key === "f_price_min" || key === "f_price_max") continue;
+    const values = Array.isArray(value) ? value : value ? [value] : [];
+    if (values.length > 0) filterSelections[key.slice(2)] = values;
+  }
+
+  const [data, chipConfigs] = await Promise.all([
     getProductList({
       search: resolved.search?.trim() || "",
       category: resolved.category?.trim() || "",
       brand: resolved.brand?.trim() || "",
       minPrice: resolved.f_price_min ? Number(resolved.f_price_min) : undefined,
       maxPrice: resolved.f_price_max ? Number(resolved.f_price_max) : undefined,
+      filters: filterSelections,
       sort: resolved.sort?.trim() || "newest",
       page: Math.max(1, Number(resolved.page) || 1),
       limit: 12,
     }),
-    getSpecChipsConfig(),
+    getChipFilterConfigs(),
   ]);
 
   const currentSearch = resolved.search?.trim() || "";
@@ -105,7 +115,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                         key={product.id}
                         product={{
                           ...(product as ProductCardData),
-                          specChips: extractSpecChips(product.specifications, chipsConfig),
+                          specChips: extractChipValues(product.specifications, chipConfigs),
                         }}
                         priority={i < 6}
                       />

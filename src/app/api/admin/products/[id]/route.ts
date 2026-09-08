@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { authorize } from "@/lib/auth-helpers";
 import { productSchema, validateOrThrow } from "@/lib/validation";
+import { syncAutoFilterValues } from "@/lib/filter-values";
 
 // ─── GET /api/admin/products/[id] ─────────────────────────────────
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -54,6 +55,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         data.sku, data.barcode, data.weight, data.seoTitle, data.seoDescription,
         data.published, data.featured, data.categoryId, data.brandId, data.icecatCode, data.importUrl,
         data.overview || null, id]);
+
+    await syncAutoFilterValues(pool, id, data.specifications);
 
     return NextResponse.json({ success: true });
   } catch (err) {

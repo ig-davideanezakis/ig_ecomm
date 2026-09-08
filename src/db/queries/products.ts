@@ -67,6 +67,8 @@ interface ProductListParams {
   brand?: string;
   minPrice?: number;
   maxPrice?: number;
+  /** filter.slug -> selected values (OR within a filter, AND across filters). */
+  filters?: Record<string, string[]>;
   sort?: string;
   page?: number;
   limit?: number;
@@ -81,6 +83,7 @@ export async function getProductList(params: ProductListParams = {}) {
     brand: brandSlug = "",
     minPrice,
     maxPrice,
+    filters = {},
     sort = "newest",
     page = 1,
     limit = 12,
@@ -121,6 +124,21 @@ export async function getProductList(params: ProductListParams = {}) {
     paramIdx++;
     conditions.push(`p."base_price" <= $${paramIdx}`);
     queryParams.push(maxPrice);
+  }
+
+  // Dynamic filters (f_<slug>=value1&f_<slug>=value2 in the URL) — a
+  // product must have at least one selected value for each filter
+  // (OR within a filter, AND across different filters).
+  for (const [slug, values] of Object.entries(filters)) {
+    if (!values || values.length === 0) continue;
+    const slugParam = ++paramIdx;
+    const valuesParam = ++paramIdx;
+    conditions.push(`EXISTS (
+      SELECT 1 FROM "product_filter_value" pfv
+      JOIN "filter" f ON f.id = pfv."filter_id"
+      WHERE pfv."product_id" = p.id AND f.slug = $${slugParam} AND pfv.value = ANY($${valuesParam})
+    )`);
+    queryParams.push(slug, values);
   }
 
   const whereClause = conditions.join(" AND ");

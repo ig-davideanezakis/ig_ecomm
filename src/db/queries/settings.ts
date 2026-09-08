@@ -4,12 +4,19 @@ import {
   parseSpecChipsConfig,
   type SpecChipConfig,
 } from "@/lib/spec-chips";
+import { parseTokenArray, type ChipFilterConfig } from "@/lib/filter-values";
 import {
   DEFAULT_INFO_TABS,
   type ProductInfoTabs,
 } from "@/lib/product-tabs";
 
 // ─── Spec chips configuration (store_setting key "spec_chips") ────
+//
+// Deprecated — superseded by getChipFilterConfigs() below, which reads the
+// unified `filter` table (showAsChip) instead of this store_setting blob.
+// Kept only until the admin settings-page chip editor is retired (it still
+// reads/writes this key) and every `spec_chips` value has been migrated to
+// `filter` rows via scripts/migrate-spec-chips-to-filters.ts.
 
 /**
  * Load the admin-configured spec chip definitions.
@@ -22,6 +29,30 @@ export async function getSpecChipsConfig(): Promise<SpecChipConfig[]> {
   );
   const parsed = parseSpecChipsConfig(result.rows[0]?.value ?? null);
   return parsed ?? DEFAULT_SPEC_CHIPS;
+}
+
+// ─── Chip filters (unified `filter` table, showAsChip = true) ─────
+
+/**
+ * Load every "auto" filter configured to render as a compact icon+value
+ * chip on product cards and the PDP, in display order. Values are derived
+ * per product from `product.specifications` via extractChipValues().
+ */
+export async function getChipFilterConfigs(): Promise<ChipFilterConfig[]> {
+  const result = await pool.query(
+    `SELECT id, name, icon, patterns, exclude FROM "filter"
+     WHERE show_as_chip = true AND value_mode = 'auto'
+     ORDER BY sort_order ASC`,
+  );
+  return result.rows
+    .map((r) => ({
+      id: r.id as string,
+      label: r.name as string,
+      icon: (r.icon as string | null) || "tag",
+      patterns: parseTokenArray(r.patterns as string | null),
+      exclude: parseTokenArray(r.exclude as string | null),
+    }))
+    .filter((c) => c.patterns.length > 0);
 }
 
 // ─── Product info tabs (store-wide content, admin-editable) ───────

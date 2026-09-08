@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { authorize } from "@/lib/auth-helpers";
 import { productSchema, validateOrThrow } from "@/lib/validation";
+import { syncAutoFilterValues } from "@/lib/filter-values";
 
 // ─── GET /api/admin/products ─────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -115,7 +116,10 @@ export async function POST(request: Request) {
         data.categoryId, data.brandId, data.overview || null],
     );
 
-    return NextResponse.json({ success: true, id: result.rows[0].id, slug });
+    const productId = result.rows[0].id;
+    await syncAutoFilterValues(pool, productId, data.specifications);
+
+    return NextResponse.json({ success: true, id: productId, slug });
   } catch (err) {
     if (err instanceof Response) {
       const text = await err.text();

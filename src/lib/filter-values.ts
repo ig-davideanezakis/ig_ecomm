@@ -139,9 +139,43 @@ export function extractFilterValue(
   return values.get("_") ?? null;
 }
 
+// ─── Chip rendering (showAsChip filters) ─────────────────────────
+
+export interface ChipFilterConfig extends AutoFilterConfig {
+  label: string;
+  icon: string;
+}
+
+export interface ChipValue {
+  id: string;
+  label: string;
+  icon: string;
+  value: string;
+}
+
+/**
+ * Compact icon+value pills for product cards/PDP — same derivation as
+ * extractFilterValues, reshaped into display data and returned in
+ * *config* order (not document order), matching the previous spec-chips
+ * behavior.
+ */
+export function extractChipValues(
+  specifications: string | null | undefined,
+  configs: ChipFilterConfig[],
+): ChipValue[] {
+  const values = extractFilterValues(specifications, configs);
+  const result: ChipValue[] = [];
+  for (const config of configs) {
+    const value = values.get(config.id);
+    if (value) result.push({ id: config.id, label: config.label, icon: config.icon, value });
+  }
+  return result;
+}
+
 // ─── Config parsing (filter.patterns / filter.exclude JSON columns) ──
 
-function parseTokenArray(raw: string | null | undefined): string[] {
+/** Parse a `filter.patterns`/`filter.exclude` JSON-string-array column. */
+export function parseTokenArray(raw: string | null | undefined): string[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;

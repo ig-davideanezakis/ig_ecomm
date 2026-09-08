@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getSpecChipsConfig, getProductInfoTabs, type ProductDetail } from "@/db/queries";
+import { getProductBySlug, getChipFilterConfigs, getProductInfoTabs, type ProductDetail } from "@/db/queries";
 import { ProductDetailClient } from "./product-detail-client";
-import { extractSpecChips } from "@/lib/spec-chips";
+import { extractChipValues } from "@/lib/filter-values";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -71,9 +71,9 @@ function buildProductJsonLd(product: ProductDetail) {
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const [product, chipsConfig, infoTabs] = await Promise.all([
+  const [product, chipConfigs, infoTabs] = await Promise.all([
     getProductBySlug(slug),
-    getSpecChipsConfig(),
+    getChipFilterConfigs(),
     getProductInfoTabs(),
   ]);
 
@@ -91,7 +91,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       />
       <ProductDetailClient
         product={product}
-        specChips={extractSpecChips(product.specifications, chipsConfig)}
+        specChips={extractChipValues(product.specifications, chipConfigs)}
         infoTabs={infoTabs}
       />
     </>

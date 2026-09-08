@@ -1,8 +1,8 @@
-import { getProductList, getSpecChipsConfig } from "@/db/queries";
+import { getProductList, getChipFilterConfigs } from "@/db/queries";
 import { ProductCard, type ProductCardData } from "@/components/shop/product-card";
 import { notFound } from "next/navigation";
 import { pool } from "@/lib/db";
-import { extractSpecChips } from "@/lib/spec-chips";
+import { extractChipValues } from "@/lib/filter-values";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -30,14 +30,14 @@ export default async function BrandPage({ params, searchParams }: PageProps) {
   const brand = await pool.query(`SELECT * FROM "brand" WHERE slug = $1`, [slug]);
   if (!brand.rows[0]) notFound();
 
-  const [data, chipsConfig] = await Promise.all([
+  const [data, chipConfigs] = await Promise.all([
     getProductList({
       brand: slug,
       sort: resolved.sort?.trim() || "newest",
       page: Math.max(1, Number(resolved.page) || 1),
       limit: 12,
     }),
-    getSpecChipsConfig(),
+    getChipFilterConfigs(),
   ]);
 
   const b = brand.rows[0];
@@ -73,7 +73,7 @@ export default async function BrandPage({ params, searchParams }: PageProps) {
               <ProductCard
                 product={{
                   ...(product as ProductCardData),
-                  specChips: extractSpecChips(product.specifications, chipsConfig),
+                  specChips: extractChipValues(product.specifications, chipConfigs),
                 }}
                 priority={i < 6}
               />
