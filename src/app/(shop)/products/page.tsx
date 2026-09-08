@@ -20,7 +20,7 @@ interface PageProps {
     brand?: string;
     sort?: string;
     page?: string;
-    [key: string]: string | undefined;
+    [key: string]: string | string[] | undefined;
   }>;
 }
 
@@ -118,6 +118,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                 <Pagination
                   currentPage={data.pagination.page}
                   totalPages={data.pagination.totalPages}
+                  searchParams={resolved}
                 />
               )}
             </>
@@ -183,12 +184,33 @@ function MobileFilters() {
   );
 }
 
+// Preserve every current query param (search, category, brand, sort, f_*
+// filters) when changing page — only "page" itself gets overridden.
+export function buildProductsPageHref(
+  searchParams: Record<string, string | string[] | undefined>,
+  page: number,
+) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "page" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) params.append(key, v);
+    } else {
+      params.append(key, value);
+    }
+  }
+  params.set("page", String(page));
+  return `/products?${params.toString()}`;
+}
+
 function Pagination({
   currentPage,
   totalPages,
+  searchParams,
 }: {
   currentPage: number;
   totalPages: number;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
   const pages: (number | "ellipsis")[] = [];
 
@@ -212,7 +234,7 @@ function Pagination({
         ) : (
           <a
             key={p}
-            href={`/products?page=${p}`}
+            href={buildProductsPageHref(searchParams, p)}
             className={
               p === currentPage
                 ? "flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground"
