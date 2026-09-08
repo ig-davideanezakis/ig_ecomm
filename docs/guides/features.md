@@ -36,15 +36,25 @@ See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
 - Brand filter linked to the dynamic filter system
 - Product → brand relationship (brand shown on product cards and detail pages)
 
-## Spec Chips — Caratteristiche in evidenza
+## Filters & Chips — Unified Catalog Attributes
+**Linear:** IG-6
 **Status:** ✅ Done
-**Docs:** [docs/guides/spec-chips.md](spec-chips.md)
+**Docs:** [docs/guides/filters.md](filters.md)
 
-- Global, admin-editable chip config (`store_setting.spec_chips`) with curated icons
-- Default chips: CPU, RAM, Archiviazione, Schermo, Scheda video, Sistema operativo
-- Chips on product cards (list, search results, brand pages) and on the product detail page
-- Values derived at render time from Icecat grouped specifications — no per-product storage
-- Unit + component + E2E coverage (`spec-chips`, `product-spec-chips`, `spec-chips-editor`)
+- Unified admin page (`/admin/filters`): each filter can be shown as a chip
+  (icon, product cards + PDP), used as a real shop sidebar filter, or both
+- `valueMode`: `auto` (derived per product from Icecat `specifications` via
+  patterns/exclude — CPU, RAM, storage, display, GPU, OS by default) or
+  `manual` (curated options, assigned per product)
+- Per-product editor in the product form ("Attributi & filtri"): shows the
+  current value, lets an admin override an auto-derived one (survives
+  re-import until reset) or assign a manual one
+- Real catalog filtering: sidebar options are the values that actually
+  exist among real products; `f_<slug>=value` in the URL filters the list
+- Category assignment with inheritance (unchanged), system filters
+  (price/stock/brand)
+- Unit + component coverage (`filter-values`, `product-filter-values-editor`,
+  category-filters/products query tests)
 
 ## Authentication & Authorization
 **Status:** ✅ Done

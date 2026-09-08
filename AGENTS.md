@@ -21,6 +21,7 @@
 | [docs/guides/accessibility.md](docs/guides/accessibility.md) | EAA compliance, WCAG, aria, focus, aXe testing |
 | [docs/guides/guest-checkout.md](docs/guides/guest-checkout.md) | Guest checkout flow, cart, post-purchase registration |
 | [docs/guides/admin-products.md](docs/guides/admin-products.md) | Admin products CRUD, form, API reference |
+| [docs/guides/filters.md](docs/guides/filters.md) | Unified filters + chips: auto/manual value modes, per-product overrides |
 | [db/schema/index.ts](src/db/schema/index.ts) | Full database schema (Drizzle ORM) |
 
 ## ⚠️ CRITICAL: Pre-push Checklist
@@ -59,7 +60,7 @@ Only push when all three pass. Never skip this — GitHub Actions will fail and 
 | CMS — Pages & Settings | ✅ Done | Custom footer data, static pages (chi siamo, privacy, faq), rich text editor, nav/footer visibility |
 | Typography — Inter + Space Grotesk | ✅ Done | Body: Inter, Headings: Space Grotesk |
 | AI SEO Formatting (RichTextEditor) | ✅ Done | DeepSeek-powered "Formatta SEO" button in Tiptap editor, editable prompt in settings |
-| Dynamic Product Filters | ✅ Done | IG-6 — filter DB, admin CRUD, category assignment with inheritance, system filters (price/stock/brand), ProductFilters frontend with checkbox/select/range/color |
+| Filters & Chips (unified) | ✅ Done | IG-6 — filter DB doubles as chip config (`valueMode` auto/manual, `showAsChip`/`useAsFilter`), category assignment with inheritance, system filters (price/stock/brand), real catalog filtering, per-product override in the product form — see [docs/guides/filters.md](docs/guides/filters.md) |
 | Brand Management | ✅ Done | Admin CRUD with logo preview, brand detail page /brand/[slug], BrandLogoWidget (grid/carousel) for homepage/footer |
 | Test Coverage | ✅ Done | 129 tests across 11 test files (utils, validation, SEO, cart, dashboard, theme) |
 |
