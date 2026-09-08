@@ -68,10 +68,10 @@
 
 *Design decisions for specific UI elements.*
 
-|| Component | Decision |
-||-----------|----------|
-|| Theme toggle | Simple click button (no dropdown). Toggles between dark and light. Sun/Moon icons with 300ms rotation + opacity transition. |
-|| Buttons | Rounded (`rounded-lg`), via `@base-ui/react/button` |
+| Component | Decision |
+|-----------|----------|
+| Theme toggle | Simple click button (no dropdown). Toggles between dark and light. Sun/Moon icons with 300ms rotation + opacity transition. |
+| Buttons | Rounded (`rounded-lg`), via `@base-ui/react/button` |
 | Cards | TBD (bordered? shadow? radius?) |
 | Inputs | TBD |
 | Navigation | TBD |

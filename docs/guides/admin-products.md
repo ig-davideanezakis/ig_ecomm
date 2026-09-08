@@ -274,11 +274,7 @@ Copia immagini esterne (Icecat) su **Supabase Storage** e salva i record in `pro
 }
 ```
 
-**Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only).
-
-**Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only).
-
-**Env vars richieste per l'upload:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only, vedi `src/lib/supabase-admin.ts`).
+**Env vars richieste:** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (server-side only, vedi `src/lib/supabase-admin.ts`).
 
 ### `POST /api/admin/product-images/reorder`
 

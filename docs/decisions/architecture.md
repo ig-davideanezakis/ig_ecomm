@@ -90,10 +90,10 @@
 
 | Role | Level | Access | 2FA Required |
 |------|-------|--------|-------------|
-| GUEST | 0 | Public pages only | N/A |
-| CUSTOMER | 1 | Account area, shop features | No |
-| STAFF | 2 | `/staff/*` routes | Yes |
-| ADMIN | 3 | `/admin/*` routes | Yes |
+| GUEST | implicit (not in DB) | Public pages only | N/A |
+| CUSTOMER | 0 | Account area, shop features | No |
+| STAFF | 1 | `/staff/*` routes | Yes |
+| ADMIN | 2 | `/admin/*` routes | Yes |
 
 Roles are stored in the `user.role` column as varchar. `GUEST` is an implicit role for unauthenticated users (not stored in DB).
 

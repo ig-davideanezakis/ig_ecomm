@@ -40,13 +40,16 @@ src/
 │   └── (shop)/
 │       └── __tests__/      # Page-level component tests
 e2e/
-├── auth.spec.ts            # Auth flows (login, register, forgot-password, logout, API)
+├── auth.spec.ts            # Auth flows (login, register, forgot-password, logout, roles, API)
 ├── admin.spec.ts           # Admin redirect/access tests
+├── admin-a11y.spec.ts      # Authenticated aXe scans (product page, Icecat dialog, lightbox)
 ├── admin-products.spec.ts  # Admin products CRUD (create, edit, duplicate, delete, list)
+├── product-page.spec.ts    # PDP: JSON-LD, sticky bar, gallery/lightbox
+├── scroll-top.spec.ts      # "Torna su" button (shop + admin)
+├── spec-chips.spec.ts      # Spec chips on PDP and cards
 ├── smoke.spec.ts           # Core smoke tests (homepage, login, navigation)
 ├── theme.spec.ts           # Theme toggle, persistence, script injection
-├── accessibility.spec.ts   # aXe-core WCAG scans (homepage, login, products)
-└── catalog.spec.ts         # Catalog browsing tests
+└── accessibility.spec.ts   # aXe-core WCAG scans (homepage, login, products)
 ```
 
 ## Guidelines

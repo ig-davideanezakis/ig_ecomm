@@ -120,7 +120,7 @@ See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
 - Dashboard widgets: daily sales, new orders, pending shipments, low stock alerts
 - Revenue chart (7/30/90 days)
 - Export orders to CSV / Excel
-- Role management (ADMIN, WAREHOUSE, SUPPORT)
+- Role management (CUSTOMER, STAFF, ADMIN)
 
 ## Admin — Products
 **Linear:** IG-15
