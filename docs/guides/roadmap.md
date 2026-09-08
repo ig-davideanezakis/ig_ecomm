@@ -1,7 +1,7 @@
 # Roadmap — ig_ecomm (Infograf Store)
 
 > Living document. Owner: Davide Anezakis (PM) + AI agent (architect/executor).
-> Last updated: 2026-09-05.
+> Last updated: 2026-09-08.
 > Sources of truth: `AGENTS.md`, `docs/guides/features.md`, `docs/guides/scope.md`,
 > `docs/decisions/architecture.md`, and the Linear project `IG-Ecomm`.
 
@@ -13,18 +13,52 @@ tracks the known technical debt. Feature areas without a `Status` line in
 
 ## 0. Immediate fixes (correctness & tech debt)
 
-Verified against the current source. Do these first — they are small, low-risk,
-and remove real friction.
+### Resolved since the last update (this session)
+
+A full-project audit (docs + code) found and fixed:
+
+- **Checkout trusted the client-supplied item price** and never checked
+  whether the guarded stock `UPDATE` actually matched a row — a manipulated
+  `price` in the request body was accepted as-is, and a stock shortfall
+  silently produced a confirmed order with no stock ever decremented (and no
+  transaction, so a mid-cart failure left partial writes committed). Now
+  priced server-side from `product_variant` (row-locked `FOR UPDATE`) inside
+  a single DB transaction. `src/app/api/checkout/route.ts`.
+- **Cancelling an order never restored the stock reserved at checkout** —
+  every cancellation permanently under-counted inventory. Now restored
+  atomically with the status change. `src/app/api/admin/orders/[id]/status/route.ts`.
+- **Post-purchase "Crea account" on the thank-you page always failed** — the
+  client sent an empty `email` with a comment saying the API would look it
+  up from the order, but the API never did and rejected the empty string.
+  The email is now resolved server-side from the order's `billing_email`.
+  `src/app/api/auth/register-from-order/route.ts`.
+- **`.env.example` never existed in the repo** — README's setup steps say
+  `cp .env.example .env`, but `.gitignore`'s blanket `.env*` pattern excluded
+  it from every commit, including the ones that documented it. Added the
+  file + a `.gitignore` exception.
+- **STAFF-role login/2FA redirected to `/staff`, which didn't exist** (404).
+  `architecture.md`/`organization.md` already documented a
+  `authorize("STAFF")`-gated `/staff/*` layout; it was never built. Added the
+  layout + a placeholder page.
+- **Homepage "Contattaci" button was a dead `href="#"` link** — now anchors
+  to the footer's contacts block.
+- **`groq-sdk` unused dependency removed** (AI SEO calls DeepSeek directly).
+- **Doc drift**: `features.md` listed WAREHOUSE/SUPPORT roles that don't
+  exist (actual: CUSTOMER/STAFF/ADMIN); `features.md`/`guest-checkout.md`
+  claimed order-confirmation emails are sent — `/api/checkout` has no
+  email-sending code at all; `features.md` claimed a contact form exists —
+  it doesn't; `architecture.md`'s role-hierarchy numbers didn't match
+  `auth-helpers.ts`; `testing.md`'s e2e spec list named a removed spec file
+  and was missing three that exist; `admin-products.md` had one line
+  duplicated 3×; `brand.md` had a broken table.
+
+### Still open
 
 | # | Issue | Evidence | Action |
 |---|-------|----------|--------|
-| 0.1 | **Homepage is hero-only → not scrollable.** `(shop)/page.tsx` renders only the hero + `BrandLogoWidget`; `features.md` claims "featured categories grid / featured products carousel / promotions" as Done. With `show_brand_widget_home=false` (current DB setting) the page is exactly viewport-height, so it never scrolls. | `src/app/(shop)/page.tsx` | Implement featured products/categories sections (see 1.3), or at minimum flip the brand-widget setting so the page has height. |
-| 0.2 | **README.md is stale** (Next "15/Turbopack" → actually 16.2.7; AI "GROQ" → actually DeepSeek; broken `docs/GUIDELINES.md` link; missing `db:cleanup-products`). | `README.md` vs `package.json` | Fixed this session (see commit). |
-| 0.3 | **`organization.md` describes a different stack** than what the code uses: "React Hook Form + Zod" (no react-hook-form), "React Query" (absent), "Zustand for cart" (cart is React Context + `useReducer`), `catalog.spec.ts` (doesn't exist). | grep across `src/`, `package.json` | Fixed this session. |
-| 0.4 | **Tiptap "Duplicate extension names ['link','underline']"** warning in admin editor. | `rich-text-editor.tsx` | Fixed this session (`StarterKit.configure({ link: false, underline: false })`). |
-| 0.5 | **`groq-sdk` dependency is unused** (AI SEO now calls DeepSeek via raw `fetch`). Remove it or wire a Groq fallback. | `package.json`, `src/app/api/ai/seo-format/route.ts` | Remove the dep + any leftover Groq references; keep DeepSeek as the single provider. |
-| 0.6 | **Email sender still `onboarding@resend.dev`** — switch to `noreply@infografstore.it` once the domain is verified on Resend. | `forgot-password/route.ts`, `orders/[id]/notify/route.ts` | Domain verification (PM action) + swap `from`. |
-| 0.7 | **Hermes infra: `~/.hermes/state.db` structural corruption** broke the post-CI cleanup cron jobs twice. Not part of the repo, but blocks reliable scheduled cleanup. | cron outputs | Run `hermes doctor --fix` (or salvage state.db), then re-test a cron job. |
+| 0.1 | **Homepage still doesn't scroll — no featured content.** The dead "Contattaci" link is fixed, but `(shop)/page.tsx` still renders only the hero + `BrandLogoWidget`; with `show_brand_widget_home=false` (current DB setting) the page is exactly viewport-height. `features.md` claims featured categories/products/promotions as done. | `src/app/(shop)/page.tsx` | Implement featured products/categories sections (see 1.3), or at minimum flip the brand-widget setting so the page has height. |
+| 0.2 | **Email sender still `onboarding@resend.dev`** for forgot-password (order-notify already uses `noreply@infografstore.it`) — switch once the domain is verified on Resend. | `forgot-password/route.ts` | Domain verification (PM action) + swap `from`. |
+| 0.3 | **Hermes infra: `~/.hermes/state.db` structural corruption** broke the post-CI cleanup cron jobs twice. Not part of the repo, but blocks reliable scheduled cleanup. | cron outputs | Run `hermes doctor --fix` (or salvage state.db), then re-test a cron job. |
 
 ---
 
@@ -44,11 +78,13 @@ card/wallet capture happens.
   webhook to mark `order` paid → thank-you.
 - Scope: single provider, EUR, one-time payments. Installments are post-MVP.
 
-### 1.2 Order confirmation email (verify + complete)
-`guest-checkout.md` documents "conferma ordine" but the checkout route's email
-path is unverified. Confirm the email is actually sent (and the right sender),
-add an order-confirmation template, and cover it with an E2E assertion (mock
-Resend in CI/dev like the forgot-password flow).
+### 1.2 Order confirmation email (build it — confirmed missing, not just unverified)
+`/api/checkout` creates the order and (optionally) subscribes to the
+newsletter, but sends **no email at all** — verified by reading the route.
+`guest-checkout.md` and `features.md` have been corrected to stop claiming
+this is done. Build: an order-confirmation template (React Email), send it
+from `POST /api/checkout` on success (mock Resend in CI/dev like the
+forgot-password flow), and cover it with an E2E assertion.
 
 ### 1.3 Homepage content (featured products/categories)
 Currently hero-only. Implement the sections already claimed in `features.md`:
@@ -113,7 +149,8 @@ dropshipping automation, affiliate program, product comparison tool, gift cards.
 | 4.4 | **UI primitive consolidation** | `@base-ui/react` (button) coexists with `@radix-ui/*` (slot, tooltip) and a `shadcn` dep. Pick one primitive source to reduce bundle + API drift. |
 | 4.5 | **Animation stack** | `framer-motion`, `tw-animate-css`, and custom `@utility animate-*` in globals.css overlap. Consolidate (prefer Tailwind v4 CSS animations + the existing reveal utilities; drop framer-motion if unused). |
 | 4.6 | **Lighthouse 90+** | From IG-20: image optimization (already next/image + WebP), font subsetting, bundle analysis. |
-| 4.7 | **Docs index auto-sync** | `AGENTS.md` is protected and its status table is manually maintained — the drift we fixed here recurs. Consider a small script/CI check that cross-references `features.md` statuses vs. code. |
+| 4.7 | **Docs index auto-sync** | `AGENTS.md` is protected and its status table is manually maintained — the drift found and fixed twice now (this session and the previous one) recurs. Consider a small script/CI check that cross-references `features.md` statuses vs. code. |
+| 4.8 | **STAFF area has no real tools** | The role exists end-to-end (login, 2FA, route protection) and now lands on a real page (fixed this session), but there's nothing STAFF-specific to do there yet. Define what STAFF can access before building it — orders? stock? a subset of admin? — then build against `src/app/staff/`. |
 
 ---
 
