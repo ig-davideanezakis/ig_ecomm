@@ -61,7 +61,7 @@ modificare, organizzare e pubblicare i prodotti del catalogo. Include:
 
 | Funzione | Descrizione |
 |----------|-------------|
-| **Ricerca** | Cerca per titolo, identificativo o SKU (case-insensitive) |
+| **Ricerca** | Cerca per sottostringa su titolo, identificativo, SKU, EAN/GTIN (`barcode`) o codice Icecat (case-insensitive) |
 | **Filtro categoria** | Filtra per categoria |
 | **Filtro marca** | Filtra per marca |
 | **Filtro stato** | Mostra solo pubblicati / solo bozze / tutti |

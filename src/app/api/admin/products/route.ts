@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
     let idx = 0;
 
     if (search) {
-      idx++; conditions.push(`(p.title ILIKE $${idx} OR p.identifier ILIKE $${idx} OR p.sku ILIKE $${idx})`);
+      idx++;
+      conditions.push(
+        `(p.title ILIKE $${idx} OR p.identifier ILIKE $${idx} OR p.sku ILIKE $${idx} OR p.barcode ILIKE $${idx} OR p.icecat_code ILIKE $${idx})`,
+      );
       queryParams.push(`%${search}%`);
     }
     if (category) { idx++; conditions.push(`c.slug = $${idx}`); queryParams.push(category); }
