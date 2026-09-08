@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 interface Product {
@@ -18,15 +18,18 @@ interface Filters { categories: { id: string; name: string; slug: string }[]; br
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [filters, setFilters] = useState<Filters | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("");
-  const [brandFilter, setBrandFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [sort, setSort] = useState("newest");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(() => searchParams.get("search") || "");
+  const [catFilter, setCatFilter] = useState(() => searchParams.get("category") || "");
+  const [brandFilter, setBrandFilter] = useState(() => searchParams.get("brand") || "");
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") || "");
+  const [sort, setSort] = useState(() => searchParams.get("sort") || "newest");
+  const [page, setPage] = useState(() => Math.max(1, Number(searchParams.get("page")) || 1));
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -39,13 +42,18 @@ export default function AdminProductsPage() {
     if (brandFilter) params.set("brand", brandFilter);
     if (statusFilter) params.set("status", statusFilter);
 
+    // Keep the list's filters/page in the URL — the "Torna alla ricerca"
+    // breadcrumb on the product form relies on browser-back landing here
+    // with the same search state, and a refresh should not reset it either.
+    router.replace(`${pathname}?${params}`, { scroll: false });
+
     const res = await fetch(`/api/admin/products?${params}`);
     const json = await res.json();
     setProducts(json.products);
     setFilters(json.filters);
     setTotalPages(json.pagination.totalPages);
     setLoading(false);
-  }, [page, sort, search, catFilter, brandFilter, statusFilter]);
+  }, [page, sort, search, catFilter, brandFilter, statusFilter, router, pathname]);
 
   const initRef = useRef(false);
   useEffect(() => {
@@ -97,8 +105,8 @@ export default function AdminProductsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <input type="search" placeholder="Cerca prodotti..." value={search}
-          onChange={(e) => setSearch(e.target.value)}
+        <input type="search" placeholder="Cerca per titolo, SKU, EAN o codice..." value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           onKeyDown={(e) => e.key === "Enter" && fetchProducts()}
           className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring" />
         <select value={catFilter} onChange={(e) => { setCatFilter(e.target.value); setPage(1); }}
