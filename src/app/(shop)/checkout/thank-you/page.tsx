@@ -25,7 +25,7 @@ function ThankYouContent() {
       const res = await fetch("/api/auth/register-from-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "", password }),  // email will come from the order lookup
+        body: JSON.stringify({ orderNumber, password }),
       });
       const json = await res.json();
       if (!json.success) {

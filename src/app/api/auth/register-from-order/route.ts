@@ -7,17 +7,30 @@ import bcrypt from "bcryptjs";
  * Creates a CUSTOMER account from order data (post-purchase registration).
  * Called from the Thank You page when user chooses "Salva i tuoi dati".
  *
- * Body: { email, password, name }
+ * Body: { orderNumber, password }
+ *
+ * The email is looked up server-side from the order (never trusted from the
+ * client) so an account can only ever be linked to its own order's address.
  */
 export async function POST(request: Request) {
-  const { email, password, name } = await request.json();
+  const { orderNumber, password } = await request.json();
 
-  if (!email || typeof email !== "string") {
-    return NextResponse.json({ error: "Email richiesta." }, { status: 400 });
+  if (!orderNumber || typeof orderNumber !== "string") {
+    return NextResponse.json({ error: "Numero ordine richiesto." }, { status: 400 });
   }
   if (!password || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Password: minimo 6 caratteri." }, { status: 400 });
   }
+
+  const orderResult = await pool.query(
+    `SELECT billing_email, billing_name FROM "order" WHERE order_number = $1 LIMIT 1`,
+    [orderNumber],
+  );
+  if (orderResult.rows.length === 0) {
+    return NextResponse.json({ error: "Ordine non trovato." }, { status: 404 });
+  }
+  const email: string = orderResult.rows[0].billing_email;
+  const name: string | null = orderResult.rows[0].billing_name;
 
   // Check if already registered
   const existing = await pool.query(
