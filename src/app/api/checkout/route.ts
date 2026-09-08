@@ -4,19 +4,50 @@ import { auth } from "@/lib/auth";
 import { checkoutSchema, validateOrThrow } from "@/lib/validation";
 
 export async function POST(request: Request) {
+  let data;
   try {
     const body = await request.json();
-    const data = await validateOrThrow(checkoutSchema, body);
+    data = await validateOrThrow(checkoutSchema, body);
+  } catch (err) {
+    if (err instanceof Response) {
+      const text = await err.text();
+      return NextResponse.json(JSON.parse(text), { status: err.status });
+    }
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Dati non validi." }, { status: 400 });
+  }
 
-    const session = await auth();
-    const userId = session?.user?.id ?? null;
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
 
-    const subtotal = data.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Never trust client-supplied prices — look up the real price and lock the
+    // stock row so concurrent checkouts of the same variant serialize correctly.
+    const items: { productId: string; variantId: string; quantity: number; price: number }[] = [];
+    for (const item of data.items) {
+      const variantResult = await client.query(
+        `SELECT price, stock FROM product_variant WHERE id = $1 AND product_id = $2 FOR UPDATE`,
+        [item.variantId, item.productId]);
+      if (variantResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ error: "Uno o più prodotti nel carrello non sono più disponibili." }, { status: 400 });
+      }
+      const variant = variantResult.rows[0];
+      if (variant.stock < item.quantity) {
+        await client.query("ROLLBACK");
+        return NextResponse.json({ error: "Stock insufficiente per uno o più prodotti nel carrello." }, { status: 409 });
+      }
+      items.push({ productId: item.productId, variantId: item.variantId, quantity: item.quantity, price: Number(variant.price) });
+    }
+
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const shippingCost = subtotal >= 150 ? 0 : 9.90;
     const total = subtotal + shippingCost;
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    const orderResult = await pool.query(
+    const orderResult = await client.query(
       `INSERT INTO "order" (order_number, status, subtotal, shipping_cost, total,
         billing_name, billing_email, billing_phone,
         billing_address, billing_city, billing_province, billing_zip, billing_country,
@@ -34,25 +65,26 @@ export async function POST(request: Request) {
 
     const order = orderResult.rows[0];
 
-    for (const item of data.items) {
-      await pool.query(
+    for (const item of items) {
+      await client.query(
         `INSERT INTO order_item (quantity, unit_price, total_price, order_id, product_id, variant_id)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [item.quantity, item.price.toFixed(2), (item.price * item.quantity).toFixed(2), order.id, item.productId, item.variantId]);
-      await pool.query(`UPDATE product_variant SET stock = stock - $1 WHERE id = $2 AND stock >= $1`,
+      await client.query(`UPDATE product_variant SET stock = stock - $1 WHERE id = $2`,
         [item.quantity, item.variantId]);
     }
 
     if (data.newsletterConsent) {
-      await pool.query(`INSERT INTO newsletter_subscriber (email) VALUES ($1) ON CONFLICT (email) DO NOTHING`, [data.email]);
+      await client.query(`INSERT INTO newsletter_subscriber (email) VALUES ($1) ON CONFLICT (email) DO NOTHING`, [data.email]);
     }
+
+    await client.query("COMMIT");
 
     return NextResponse.json({ success: true, order: { id: order.id, orderNumber: order.order_number, total: total.toFixed(2) } });
   } catch (err) {
-    if (err instanceof Response) {
-      const text = await err.text();
-      return NextResponse.json(JSON.parse(text), { status: err.status });
-    }
+    await client.query("ROLLBACK").catch(() => {});
     return NextResponse.json({ error: err instanceof Error ? err.message : "Errore durante il checkout." }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
