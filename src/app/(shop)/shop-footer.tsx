@@ -85,7 +85,7 @@ export default function ShopFooter() {
           </div>
 
           {/* Contacts */}
-          <div>
+          <div id="footer-contacts">
             <h3 className="text-sm font-semibold mb-3">{settings.footer_contacts_title || "Contatti"}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               {settings.store_address && <li>{settings.store_address}</li>}
