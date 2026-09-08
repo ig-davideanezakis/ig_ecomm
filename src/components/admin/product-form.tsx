@@ -7,6 +7,7 @@ import RichTextEditor from "@/components/admin/rich-text-editor";
 import IcecatDialog from "@/components/admin/icecat-dialog";
 import SpecificationsView from "@/components/shop/specifications-view";
 import { SpecificationsEditor } from "@/components/admin/specifications-editor";
+import { ProductFilterValuesEditor } from "@/components/admin/product-filter-values-editor";
 import type { IcecatProductData } from "@/lib/icecat";
 import {
   applyIcecatSelection,
@@ -1019,6 +1020,19 @@ export default function ProductForm({ productId, initialImportError }: Props) {
           )}
         </div>
       </section>
+
+      {/* ── Part 4b: Attributi & filtri (derivati o manuali, per prodotto) ── */}
+      {productId && (
+        <section className="rounded-lg border bg-card p-5 space-y-4">
+          <h2 className="font-semibold">Attributi & filtri</h2>
+          <p className="text-xs text-muted-foreground">
+            Valori usati per le chip in evidenza e per i filtri del catalogo. Quelli automatici
+            si ricalcolano da soli quando cambi le specifiche tecniche — puoi comunque correggerli
+            a mano qui, o riportarli al valore derivato con &quot;Ricalcola&quot;.
+          </p>
+          <ProductFilterValuesEditor productId={productId} />
+        </section>
+      )}
 
       <IcecatDialog
         open={icecatOpen}

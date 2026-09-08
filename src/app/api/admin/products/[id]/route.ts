@@ -20,7 +20,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('id', c.id, 'name', c.name, 'slug', c.slug) ELSE NULL END as category,
         CASE WHEN b.id IS NOT NULL THEN jsonb_build_object('id', b.id, 'name', b.name, 'slug', b.slug) ELSE NULL END as brand,
         COALESCE((SELECT jsonb_agg(jsonb_build_object('id', img.id, 'url', img.url, 'alt', img.alt, 'sortOrder', img."sort_order") ORDER BY img."sort_order" ASC) FROM "product_image" img WHERE img."product_id" = p.id), '[]'::jsonb) as images,
-        COALESCE((SELECT jsonb_agg(jsonb_build_object('id', v.id, 'name', v.name, 'sku', v.sku, 'price', v.price::float, 'stock', v.stock, 'lowStock', v."low_stock", 'image', v.image, 'sortOrder', v."sort_order") ORDER BY v."sort_order" ASC) FROM "product_variant" v WHERE v."product_id" = p.id), '[]'::jsonb) as variants
+        COALESCE((SELECT jsonb_agg(jsonb_build_object('id', v.id, 'name', v.name, 'sku', v.sku, 'price', v.price::float, 'stock', v.stock, 'lowStock', v."low_stock", 'image', v.image, 'sortOrder', v."sort_order") ORDER BY v."sort_order" ASC) FROM "product_variant" v WHERE v."product_id" = p.id), '[]'::jsonb) as variants,
+        COALESCE((SELECT jsonb_agg(jsonb_build_object('filterId', pfv."filter_id", 'value', pfv.value, 'isOverride', pfv."is_override")) FROM "product_filter_value" pfv WHERE pfv."product_id" = p.id), '[]'::jsonb) as "filterValues"
       FROM "product" p
       LEFT JOIN "category" c ON p."category_id" = c.id
       LEFT JOIN "brand" b ON p."brand_id" = b.id
