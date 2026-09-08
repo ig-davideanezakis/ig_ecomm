@@ -11,7 +11,7 @@ See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
 - Navbar — logo, categories dropdown, search bar, cart icon, login/account link
 - Footer — contacts, info links, social links, newsletter signup
 - Homepage — hero section + brand logos widget (featured categories grid / featured products carousel / promotions: 🚧 not yet implemented — see [roadmap](roadmap.md))
-- Info pages — about us, contact form, FAQ, privacy policy, terms of service
+- Info pages — about us, FAQ, privacy policy, terms of service (CMS pages, `/page/[slug]`) + contact details in the footer. No dedicated contact *form* exists.
 - Custom 404 page with navigation
 - Floating **"Torna su"** button — bottom-right, appears after 300px of scroll (window or scrollable container), 200ms fade in/out, smooth scroll back to top, keyboard accessible
 
@@ -87,7 +87,7 @@ See [roadmap.md](roadmap.md) for the prioritized plan and known technical debt.
 - Guest checkout (see [guest-checkout guide](guest-checkout.md))
 - Estimated shipping cost calculation
 - Checkout flow: address → shipping method → payment → confirmation
-- Order confirmation email via Resend
+- Order confirmation email via Resend: 🚧 not yet implemented — checkout creates the order but sends no email — see [roadmap](roadmap.md)
 
 ## Payments
 **Linear:** IG-11

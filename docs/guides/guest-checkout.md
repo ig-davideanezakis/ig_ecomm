@@ -142,7 +142,7 @@ Alla creazione dell'account da ordine:
 
 | Aspetto | Implementazione |
 |---------|----------------|
-| Email usata solo per transazioni | ✅ Solo conferma ordine e tracking |
+| Email usata solo per transazioni | 🚧 Nessuna email di conferma ordine è ancora implementata (`/api/checkout` non invia email) — vedi [roadmap](roadmap.md) |
 | Newsletter opt-in esplicito | ✅ Checkbox non preselezionata con testo chiaro |
 | Dati minimi raccolti | ✅ Solo nome, email, indirizzo, telefono (opzionale) |
 | Password non richiesta in checkout | ✅ Richiesta solo nella thank-you page (post-pagamento) |
